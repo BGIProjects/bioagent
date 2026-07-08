@@ -262,3 +262,99 @@ ENABLE_FORWARD_USER_INFO_HEADERS=True
 - Snakemake 两次确认是 Skill 行为规则，不是底层强制权限闸门。
 - runtime 当前按单个 uvicorn worker 设计，同一 chat 不应并发写入。
 - Open WebUI backend 最近一次重启受到 cyclone `/data` 系统级磁盘 I/O 阻塞影响；这不是 Python 语法或 Header 回退错误。
+
+## 4. Developer Guide
+
+This guide is nearly identical to the [Open WebUI official document](https://docs.openwebui.com/getting-started/advanced-topics/development), with slight changes.
+
+### 1. Clone the Repository
+
+```bash
+git clone --recurse-submodules git@github.com:BGIProjects/bioagent.git
+cd bioagent
+```
+
+### 2. Agent Setup
+
+In your **first terminal**:
+
+```bash
+cd agent
+```
+
+Create and activate a virtual environment:
+
+```bash
+conda create --name adapter python=3.11
+conda activate adapter
+```
+
+Install dependencies and start the server:
+
+```bash
+pip install claude-agent-sdk fastapi uvicorn
+AGENT_PORT=8001 bash start.sh
+```
+
+### 3. Frontend Setup
+
+In your **second terminal**:
+
+```bash
+cd open-webui
+cp -RPp .env.example .env
+# change OPENAI_API_BASE_URL if needed
+# if the backend port is not 8080,
+# uncomment VITE_WEBUI_PORT and set the correct port in .env
+npm install
+NODE_OPTIONS=--max-old-space-size=8192 npm run build
+npm run dev -- --port 5173
+# you can use dev:fast afterwards
+```
+
+`npm run build` compiles the frontend, catches build-time errors early, and prepares several static resources. `npm run dev` then starts the dev server at http://localhost:5173. It will show a waiting screen until the backend is running.
+
+> [!TIP]  
+> If `npm install` falls with compatibility warnings, run `npm install --force`.
+
+### 4. Backend Setup
+
+In your **third terminal**:
+
+```bash
+cd open-webui/backend
+```
+
+Create and activate a virtual environment (Conda or venv):
+
+```bash
+# Option A: Conda
+conda create --name open-webui python=3.11
+conda activate open-webui
+
+# Option B: venv
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+```
+
+Install dependencies and start the server:
+
+```bash
+pip install -r requirements.txt -U
+cp -RPp dev.sh dev-custom.sh
+# set the correct ports in dev-custom.sh
+bash dev-custom.sh
+```
+
+### 5. Connect to CycloneSeq Server
+
+```bash
+ssh -N \
+  -L 5173:127.0.0.1:5173 \
+  -L 8080:127.0.0.1:8080 \
+  cyclone  # <name>@172.24.195.66
+```
+
+The backend starts at http://localhost:8080. API docs are available at http://localhost:8080/docs.
+
+Refresh the frontend at http://localhost:5173 and you should see the full application.
