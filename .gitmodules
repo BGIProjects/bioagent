@@ -1,0 +1,7 @@
+[submodule "agent"]
+	path = agent
+	url = git@github.com:Pulp-fiction-42/virus-classification-agent
+[submodule "open-webui"]
+	path = open-webui
+	url = git@github.com:BGIProjects/open-webui
+	branch = bgi
