@@ -14,6 +14,7 @@ Open WebUI Frontend（SvelteKit/Vite，127.0.0.1:5173）
   ▼
 Open WebUI Backend（FastAPI，127.0.0.1:8080）
   │  OpenAI-compatible HTTP + X-OpenWebUI-Chat-Id
+  │  后台任务额外携带 X-OpenWebUI-Task
   ▼
 BioAgent Adapter（FastAPI，127.0.0.1:8001）
   │  OpenAI 协议与 Claude Agent SDK 协议转换
@@ -39,13 +40,15 @@ MiniMax Anthropic-compatible API
 - 负责用户、权限、聊天记录和 OpenAI-compatible 模型连接。
 - 数据保存在 `/data/bioagent/data/open-webui`。
 - 通过 `X-OpenWebUI-Chat-Id` 将当前 chat UUID 转发给 adapter。
+- 标题、标签等后台任务同时通过 `X-OpenWebUI-Task` 标记，避免进入用户主会话。
 
 #### BioAgent Adapter 与 Runtime
 
 - 源码位于 `/data/bioagent/agent`。
 - adapter 暴露 `/v1/models` 和 `/v1/chat/completions`，只负责协议转换。
 - runtime 负责 Claude SDK 配置、session 创建与恢复、Skill 和工具加载。
-- runtime 不访问 Open WebUI 数据库，不保存额外 chat/session 映射。
+- runtime 不访问 Open WebUI 数据库。
+- runtime 在本地维护 `Open WebUI chat_id -> Claude session_id` 映射，并使用 Claude transcript 恢复多轮会话。
 
 #### Snakemake Workflows
 
@@ -66,6 +69,8 @@ MiniMax Anthropic-compatible API
 │   └── .claude/
 │       ├── skills/
 │       └── sessions/
+│           ├── bioagent/chat-map/
+│           └── projects/
 ├── open-webui/
 ├── conda/
 │   ├── envs/adapter/
@@ -101,22 +106,22 @@ ssh -N \
 
 修改文件：`/data/bioagent/agent/adapter.py`
 
-- 现在只负责 FastAPI 路由、OpenAI-compatible 数据结构和 SSE 流式输出。
+- 负责 FastAPI 路由、OpenAI-compatible 数据结构和 SSE 流式输出。
 - 从请求头读取 `X-OpenWebUI-Chat-Id`，把消息和 chat ID 交给 `SessionManager`。
+- 识别 `X-OpenWebUI-Task` 或 `metadata.task`，将 Open WebUI 后台任务交给临时 session。
 - 同时支持流式与非流式 completion。
 - 移除 Skill 文件读取、阶段切换、prompt 拼接和工具权限业务逻辑。
-- 删除 `/plan`、`/execute` 命令和 plan/execute 两种运行模式。
 
 ### 2.2 Runtime 与 SessionManager
 
 新增文件：`/data/bioagent/agent/runtime.py`
 
 - 新增 `SessionManager`，负责 SDK options、session 创建、恢复和结果校验。
-- 不持有长期运行的 `ClaudeSDKClient`；每个 HTTP 请求使用独立 `query()` subprocess。
-- 不访问 `webui.db`，不维护额外数据库映射。
+- 为每个 Open WebUI 主对话维护一个长生命周期 `ClaudeSDKClient`，空闲超时后断开。
+- 不访问 `webui.db`，使用本地 JSON 文件维护 Open WebUI chat ID 与 Claude session ID 的映射。
 - 校验 chat ID 必须是规范 UUID。
 - 校验 transcript 是合法 JSONL，损坏时明确拒绝恢复。
-- 校验 SDK 返回 session ID 与 Open WebUI chat ID 一致。
+- 校验 SDK 返回 session ID 与映射中的 Claude session ID 一致。
 
 删除文件：`/data/bioagent/agent/phases.py`
 
@@ -126,20 +131,28 @@ ssh -N \
 
 ```text
 Open WebUI chat_id
-  ├── transcript 不存在：ClaudeAgentOptions(session_id=chat_id)
-  │                        首次发送当前 Open WebUI 历史进行引导
-  └── transcript 已存在：ClaudeAgentOptions(resume=chat_id)
-                           只发送最新用户消息
+  │
+  ├── chat-map 不存在
+  │     └── 创建新 Claude session
+  │         首次发送当前 Open WebUI 历史
+  │         保存 ResultMessage.session_id
+  │
+  └── chat-map 已存在
+        └── ClaudeAgentOptions(resume=claude_session_id)
+            connect() 时加载 transcript
+            后续只发送最新用户消息
 ```
 
-Transcript 位置：
+映射与 transcript 位置：
 
 ```text
-/data/bioagent/agent/.claude/sessions/projects/-data-bioagent-agent/<chat_id>.jsonl
+/data/bioagent/agent/.claude/sessions/bioagent/chat-map/<openwebui_chat_id>.json
+/data/bioagent/agent/.claude/sessions/projects/-data-bioagent-agent/<claude_session_id>.jsonl
 ```
 
 - `.claude/sessions/` 已加入 `.gitignore`。
-- `local:` 和 `channel:` 类型 chat ID 使用临时单次会话。
+- SDK 的 `query(..., session_id=...)` 只标识流式输入消息，不能恢复历史；恢复必须在 `connect()` 前配置 `ClaudeAgentOptions.resume`。
+- 标题、标签等 Open WebUI 后台任务使用临时单次会话，不创建 chat-map。
 
 ### 2.4 集中配置
 
@@ -196,7 +209,8 @@ ENABLE_FORWARD_USER_INFO_HEADERS=True
 - Open WebUI 通过 `X-OpenWebUI-Chat-Id` 转发当前 chat UUID。
 - adapter 使用该 UUID 创建或恢复 Claude session。
 - 未修改 Open WebUI 数据库结构，没有增加 `claude_session_id` 列。
-- 当前没有 `X-OpenWebUI-Task` 逻辑。此前增加的后台 task Header 和临时会话隔离已经回退，runtime 不对标题、标签等后台请求做专门分类。
+- Open WebUI 将 `metadata.task` 转发为 `X-OpenWebUI-Task`。
+- adapter 对标题、标签等后台任务使用临时 Claude client，任务结束后立即断开，不读取或写入主会话映射。
 
 ### 2.8 Dashboard 页面
 
@@ -240,19 +254,86 @@ ENABLE_FORWARD_USER_INFO_HEADERS=True
 
 ### 2.11 测试
 
-新增文件：`/data/bioagent/agent/tests/test_runtime.py`
+涉及文件：
 
-当前 6 个测试覆盖：
+```text
+/data/bioagent/agent/tests/test_runtime.py
+/data/bioagent/agent/tests/test_adapter.py
+```
 
-- 新 chat 使用 `session_id=chat_id`。
-- 已有 transcript 使用 `resume=chat_id`。
+当前测试覆盖：
+
+- 新 chat 创建并保存 Claude session 映射。
+- 已有 transcript 通过 `ClaudeAgentOptions.resume` 恢复。
+- `SessionManager` 重建后仍能恢复相同 Claude session。
 - 恢复后只发送最新用户消息。
 - 缺失或非法 chat ID 被拒绝。
 - 损坏 transcript 被拒绝。
-- `local:` chat 使用临时会话。
+- Open WebUI 后台任务使用临时会话且不创建 chat-map。
+- 流式失败返回结构化 error 和 `[DONE]`，不会再产生不完整 chunked response。
+- SDK 临时运行目录的 `projects` 正确链接到持久 transcript 目录。
 - SDK 加载全部 Skills 和 Claude Code 工具 preset。
 
-所有测试均已通过。真实两轮调用也已验证第一轮创建 transcript、第二轮恢复并保留上下文。
+22 项测试均已通过。真实跨进程调用也已验证第一轮创建 transcript、Adapter 重启后通过原 Claude session ID 恢复并保留上下文。
+
+### 2.12 2026-07-09 Session 修复
+
+#### Bug 1：空闲后历史对话无法恢复
+
+现象：
+
+```text
+Response payload is not completed:
+<TransferEncodingError: 400, message='Not enough data to satisfy transfer length header.'>
+```
+
+原因：
+
+- runtime 虽然保存了 `chat_id -> claude_session_id` 映射，但错误地调用 `client.query(prompt, session_id=...)`。
+- 新 `ClaudeSDKClient` 没有通过 `ClaudeAgentOptions.resume` 恢复 transcript，因此创建了新的 Claude session。
+- SDK 返回的新 session ID 与旧映射不一致，runtime 在已经发送部分 SSE 文本后抛错，导致响应没有 `[DONE]`。
+
+代码改动：
+
+- `runtime.py` 在创建 client 时加载 chat-map，并设置 `ClaudeAgentOptions(resume=claude_session_id)`。
+- 同一个已连接 client 的后续消息只调用 `client.query(prompt)`。
+- `adapter.py` 捕获流式 session 异常，发送结构化 error event 和 `[DONE]`，避免底层传输错误掩盖真实原因。
+- `tests/test_runtime.py` 使用符合真实 SDK 语义的 FakeClient，并覆盖跨 `SessionManager` 重建恢复。
+
+#### Bug 2：Open WebUI 后台任务污染主对话
+
+原因：
+
+- Open WebUI 标题、标签等后台任务与用户消息携带相同 `X-OpenWebUI-Chat-Id`。
+- `metadata.task` 没有转发给 adapter，后台任务因此进入主 Claude session，产生 title/tag prompt 污染。
+
+代码改动：
+
+- `open-webui/backend/open_webui/env.py` 增加 `X-OpenWebUI-Task` Header 配置。
+- `open-webui/backend/open_webui/routers/openai.py` 将 `metadata.task` 转发给 adapter。
+- `adapter.py` 同时兼容 Header 与请求体中的 `metadata.task`。
+- `runtime.py` 为后台任务创建一次性 client，不创建 chat-map，完成后立即断开。
+- `tests/test_adapter.py` 覆盖主会话、临时任务和流式异常收尾。
+
+### 2.13 `.claude` 持久化目录约束
+
+`.claude` 只保留以下三类持久数据：
+
+```text
+.claude/
+├── skills/
+└── sessions/
+    ├── bioagent/chat-map/
+    └── projects/
+```
+
+- `skills/` 保存项目级 Skill。
+- `sessions/bioagent/chat-map/` 保存 Open WebUI chat ID 与 Claude session ID 映射。
+- `sessions/projects/` 保存 Claude transcript 和 subagent transcript。
+- SDK 的 `CLAUDE_CONFIG_DIR` 调整为 `/tmp/bioagent-claude-runtime`。
+- `/tmp/bioagent-claude-runtime/projects` 是指向持久 `sessions/projects/` 的符号链接。
+- `plans`、`telemetry`、`backups`、`session-env`、`shell-snapshots` 等 SDK 临时内容只生成在 `/tmp`，不会写入项目 `.claude`。
+- Adapter 启动时会自动创建运行目录和 `projects` 链接，服务器重启后无需手动恢复。
 
 ## 3. 当前状态与限制
 
