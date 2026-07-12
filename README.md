@@ -293,7 +293,9 @@ Install dependencies and start the server:
 
 ```bash
 pip install claude-agent-sdk fastapi uvicorn
-AGENT_PORT=8001 bash start.sh
+cp -RPp start.sh start-custom.sh
+# set the port and BioAgent run root in start-custom.sh
+bash start-custom.sh
 ```
 
 ### 3. Frontend Setup
@@ -342,7 +344,8 @@ Install dependencies and start the server:
 ```bash
 pip install -r requirements.txt -U
 cp -RPp dev.sh dev-custom.sh
-# set the correct ports in dev-custom.sh
+# set the correct ports, BioAgent run root,
+# and WebUI secret key in dev-custom.sh
 bash dev-custom.sh
 ```
 
