@@ -1,6 +1,6 @@
 # BioAgent Runtime 修复记录
 
-本分支修复 BioAgent 历史会话恢复和 Open WebUI 后台任务污染问题，并收敛 `.claude` 的持久化目录结构。
+本分支修复 BioAgent 历史会话恢复、Open WebUI 后台任务污染和分析进度不准确问题，并收敛 `.claude` 的持久化目录结构。
 
 ## Bug 1：长时间空闲后历史对话恢复失败
 
@@ -82,7 +82,7 @@ client.query(prompt, session_id=claude_session_id)
 Open WebUI 生成标题、标签等后台内容时，会把类似下面的结果写入 BioAgent 主对话：
 
 ```json
-{"title": "Simple Hello Greeting"}
+{ "title": "Simple Hello Greeting" }
 ```
 
 后台任务 prompt 也会进入用户主 Claude transcript，破坏后续多轮对话上下文。
@@ -171,18 +171,18 @@ FORWARD_SESSION_INFO_HEADER_TASK = "X-OpenWebUI-Task"
 
 ```python
 CLAUDE_STATE_DIR = PROJECT_ROOT / ".claude" / "sessions"
-CLAUDE_RUNTIME_CONFIG_DIR = Path("/tmp/bioagent-claude-runtime")
+CLAUDE_RUNTIME_CONFIG_DIR = Path(os.getenv("CLAUDE_RUNTIME_CONFIG_DIR", ...))
 ```
 
 修改 `agent/runtime.py`：
 
 1. `CLAUDE_STATE_DIR` 只保存 chat-map 和 transcript。
-2. SDK subprocess 使用 `/tmp/bioagent-claude-runtime` 作为 `CLAUDE_CONFIG_DIR`。
+2. SDK subprocess 使用独立的用户级临时目录作为 `CLAUDE_CONFIG_DIR`。
 3. Adapter 启动时自动创建符号链接：
 
    ```text
-   /tmp/bioagent-claude-runtime/projects
-     -> /data/bioagent/agent/.claude/sessions/projects
+   CLAUDE_RUNTIME_CONFIG_DIR/projects
+     -> CLAUDE_STATE_DIR/projects
    ```
 
 4. Claude SDK 仍可通过该链接创建和恢复 transcript。
@@ -207,3 +207,42 @@ CLAUDE_RUNTIME_CONFIG_DIR = Path("/tmp/bioagent-claude-runtime")
 - 后台 task 请求完成后没有生成 chat-map。
 - Adapter 重启后成功通过原 Claude session ID 恢复上下文。
 - 真实 Claude 请求执行后，`.claude` 没有重新生成 `plans`、`telemetry`、`backups` 等目录。
+
+## Bug 3：分析进度与真实执行状态不一致
+
+### 问题现象
+
+分析页面无法稳定识别当前方案和实际运行阶段：旧方案可能仍可启动，进度卡片与 Snakemake 当前步骤不一致，刷新页面后结构化方案也可能丢失。
+
+### 原因
+
+- Agent 以前把方案控制数据混在可见 Markdown 中，Open WebUI 没有将其作为结构化 output item 持久化。
+- plan 和 execute 回合没有共享同一个 run reservation，执行时可能产生不同的运行目录。
+- 后端主要依赖固定阶段或日志推测进度，没有统一读取 runtime state 中的用户步骤和执行结果。
+
+### 具体改动方法
+
+修改 `agent/runtime.py` 和 `agent/config.py`：
+
+1. plan 模式生成 `analysis_plan` 控制块，runtime 将其从可见文本中移除。
+2. runtime 为方案分配唯一 run reservation，并通过 `response.output_item.added` 发送结构化方案。
+3. execute 模式只使用已确认方案中的 run、步骤和规则信息。
+4. 执行开始时创建标准 `.bioagent/state.json`，记录步骤状态、当前步骤、退出状态和日志位置。
+
+修改 Open WebUI backend：
+
+1. 流式处理中保留并持久化 `analysis_plan` output item。
+2. 状态接口统一读取 `.bioagent/state.json`，并用 Snakemake 日志补充规则级进度。
+3. 进度由已完成步骤数计算；失败和完成状态以 execution state 为准。
+
+修改分析页面：
+
+1. 只允许启动最新且 `ready_to_execute` 的结构化方案。
+2. 生成方案或已有分析运行时禁用重复确认。
+3. 使用后端返回的当前步骤、下一步骤和百分比展示真实进度。
+
+### 验证结果
+
+- Agent 和 Adapter 共 32 项测试通过，覆盖方案过滤、run reservation、session resume、后台任务隔离和错误 SSE。
+- 结构化 stream 持久化测试通过，文本和 `analysis_plan` 可以同时保存。
+- 变更的前端文件通过 Prettier 检查。
