@@ -19,9 +19,9 @@ BioAgent Adapter（FastAPI，127.0.0.1:8001）
   │  OpenAI 协议与 Claude Agent SDK 协议转换
   ▼
 Claude Agent SDK Runtime
-  │  项目级 Skills、Claude Code 内置工具、本地 session transcript
-  ▼
-MiniMax Anthropic-compatible API
+  ├── 项目级 Skills、Claude Code 内置工具、本地 session transcript
+  ├── ICTV 查询 → MCP Streamable HTTP → TaxonAgent MCP Server（5090:8765）
+  └── MiniMax Anthropic-compatible API
 
 固定工作流执行路径：Claude Agent SDK -> Bash -> Snakemake -> workflow1-workflow6
 ```
@@ -45,7 +45,15 @@ MiniMax Anthropic-compatible API
 - 源码位于 `/data/bioagent/agent`。
 - adapter 暴露 `/v1/models` 和 `/v1/chat/completions`，只负责协议转换。
 - runtime 负责 Claude SDK 配置、session 创建与恢复、Skill 和工具加载。
+- runtime 在 ICTV 分类问题中通过 MCP 调用 5090 上的 TaxonAgent。
 - runtime 不访问 Open WebUI 数据库，不保存额外 chat/session 映射。
+
+#### TaxonAgent MCP Server
+
+- 运行于 5090，监听 `0.0.0.0:8765`，MCP endpoint 为 `/mcp`。
+- 暴露 `ictv_family_info(family_name)`，用于查询 ICTV 分类规则、划界标准、marker gene 与 genome type。
+- Server 源码位于 5090 的独立 `~/projects/taxonagent` 项目，不属于本 repo 的 `agent/` submodule。
+- BioAgent 使用内网地址 `http://172.24.202.246:8765/mcp` 访问该服务。
 
 #### Snakemake Workflows
 
@@ -84,6 +92,8 @@ MiniMax Anthropic-compatible API
 | BioAgent adapter | `bioagent-adapter.service` | `127.0.0.1:8001` | `/data/bioagent/agent` |
 | Open WebUI backend | `open-webui-backend.service` | `127.0.0.1:8080` | `/data/bioagent/open-webui/backend` |
 | Open WebUI frontend | `open-webui-frontend.service` | `127.0.0.1:5173` | `/data/bioagent/open-webui` |
+
+TaxonAgent MCP Server 位于 5090，当前需在 `taxonagent` conda 环境中手动启动，不由 cyclone 的用户级 systemd 管理。
 
 ```bash
 systemctl --user status bioagent-adapter open-webui-backend open-webui-frontend
@@ -274,9 +284,21 @@ git clone --recurse-submodules git@github.com:BGIProjects/bioagent.git
 cd bioagent
 ```
 
-### 2. Agent Setup
+### 2. TaxonAgent MCP Server Setup
 
-In your **first terminal**:
+In your **first terminal**, connect to 5090 and start the MCP server:
+
+```bash
+ssh 5090
+conda activate taxonagent
+python ~/projects/taxonagent/mcp/taxonagent_mcp.py
+```
+
+The server listens on `0.0.0.0:8765` and exposes the Streamable HTTP endpoint at `/mcp`. BioAgent connects to it over the internal network, so browser SSH port forwarding for port 8765 is not required.
+
+### 3. Agent Setup
+
+In your **second terminal**:
 
 ```bash
 cd agent
@@ -298,9 +320,9 @@ cp -RPp start.sh start-custom.sh
 bash start-custom.sh
 ```
 
-### 3. Frontend Setup
+### 4. Frontend Setup
 
-In your **second terminal**:
+In your **third terminal**:
 
 ```bash
 cd open-webui
@@ -319,9 +341,9 @@ npm run dev -- --port 5173
 > [!TIP]  
 > If `npm install` falls with compatibility warnings, run `npm install --force`.
 
-### 4. Backend Setup
+### 5. Backend Setup
 
-In your **third terminal**:
+In your **fourth terminal**:
 
 ```bash
 cd open-webui/backend
@@ -349,7 +371,7 @@ cp -RPp dev.sh dev-custom.sh
 bash dev-custom.sh
 ```
 
-### 5. Connect to CycloneSeq Server
+### 6. Connect to CycloneSeq Server
 
 ```bash
 ssh -N \
@@ -357,6 +379,8 @@ ssh -N \
   -L 8080:127.0.0.1:8080 \
   cyclone  # <name>@172.24.195.66
 ```
+
+Only the browser-facing frontend and backend ports are forwarded. The BioAgent runtime reaches TaxonAgent MCP directly over the internal network.
 
 The backend starts at http://localhost:8080. API docs are available at http://localhost:8080/docs.
 
