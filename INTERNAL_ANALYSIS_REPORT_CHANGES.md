@@ -31,11 +31,20 @@
 - 使用者與 AI 交互表使用專屬 `conversation-table`，狀態欄最小寬度為 `72px`、置中且禁止字內換行，不影響其他報告表格。
 - 所有對話、路徑、命令與資源內容均經 HTML escaping，螢幕與列印共用主要欄寬規則。
 
+### 診斷意見書
+
+- 交付報告不再由 AI 撰寫 HTML；後端根據成功 run 的 state 與版本化 workflow1 telemetry 即時確定性生成自包含 HTML。
+- 報告固定包含摘要、分析範圍、樣本輸入、S0–S4 結果、四個內嵌 SVG 圖位、結果邊界、真實產物及科研用途聲明；未執行與未產生資料均明確標示，不以 0 代替。
+- reads 統一以單條序列計數並顯示為 `M reads`，雙端資料另列 `M pairs`；測序 bases 顯示為 `Gb`，比例保留兩位小數，整數使用千分位。
+- 報告僅陳述客觀質控與組裝結果，不套用 portable 的批次綜合評分，也不從上游結果推導病原分類或病因學結論。
+- 診斷意見書 endpoint 不再讀取 run 內由模型生成的 HTML 檔，而是驗證成功終態、workflow、report schema 與 telemetry 後即時渲染。
+- 圖表為條形軌道與右側數值保留固定獨立欄位，滿值、近滿值、短值及較長單位文字不再互相遮擋。
+
 ### 前端
 
 - `/analysis` 僅在管理員查看成功或失敗終態 run 時顯示「下载内部技术报告」。
 - 新增報告 Blob 下載 API、下載中狀態與錯誤提示；成功與失敗 run 均可下載內部技術報告。
-- 一般使用者界面與既有診斷意見書下載流程不變。
+- 成功 workflow1 run 的狀態接口對所有已驗證使用者提供 `report_available`，右側任務區是唯一的「下载诊断意见书」入口；聊天消息不再保存或顯示報告卡片。
 
 ### 分支 commits
 
@@ -67,6 +76,8 @@
 - runner 對 workflow 準備、輸入驗證、成功、失敗、取消與部分輸出統一寫入終態 state、execution log、telemetry、benchmark JSONL、manifest 與報告可用狀態。
 - 每個 job 記錄 rule、wildcards、開始與結束時間、wall time、CPU time、平均有效核心、最大 RSS/VMS/USS/PSS、I/O、threads、輸入大小、資源、完整命令及軟體版本；敏感 token、密鑰與環境值會統一遮罩。
 - 自動收集原始輸入與各階段 seqkit extended stats，解析 Fastp JSON、去 rRNA 比對率、組裝與最終過濾指標，並按方案 rules 聚合為 step，同時保留 job 級明細。
+- 新增 workflow1 交付資料 schema，按 sample 聚合多個 run/lane，保存 S0–S4 結構化指標、外部中途輸入語義與各階段狀態；Bowtie2 摘要按 run 獨立保存。
+- runner 在成功終態標記交付報告可用，失敗或取消終態標記不可用；runtime 不再接收 AI `diagnostic_report` 控制塊，也不發送報告 output item，下載完全由 Open WebUI 的 run 狀態驅動。
 
 ### 問題修復與實際恢復
 
@@ -81,12 +92,14 @@
 
 ## 驗證結果
 
-- Agent 單元測試共 48 項通過，覆蓋 typed input、所有 workflow1 入口、連續區段、中途 symlink、targets、成功、失敗、取消、部分輸出、benchmark、state 原子更新、命令遮罩與生物資訊指標解析。
-- Open WebUI 後端分析報告單元測試共 24 項通過，覆蓋管理員權限、chat/run 驗證、路徑逃逸、成功與失敗報告、HTML escaping、方案差異、欄寬、四分位圖與缺失資料。
+- Agent 單元測試共 54 項通過，覆蓋 typed input、所有 workflow1 入口、連續區段、中途 symlink、targets、成功、失敗、取消、部分輸出、benchmark、state 原子更新、命令遮罩、多 run 交付指標聚合、報告可用狀態及聊天串流不發送報告 item。
+- Open WebUI 後端相關單元測試共 30 項通過，覆蓋管理員權限、chat/run 驗證、路徑逃逸、成功與失敗報告、HTML escaping、方案差異、欄寬、四分位圖、交付報告 schema、固定圖位、圖表數值分欄、單位、缺失資料及結構化串流持久化。
+- 前端 analysis 結構化 output Vitest 共 7 項通過；本次修改的 TypeScript/Svelte 檔案 Prettier check 通過。
 - Agent 與 Open WebUI 本次修改檔案的 Ruff format/check 通過，所有 repo 的 `git diff --check` 通過。
-- Snakemake 9.23.1 dry-run 已驗證原始 reads 執行至 merge 只建立 `fastp`、`bowtie2`、`merge` 三個 job，從既有 clean reads 單獨執行 merge 只建立一個 job。
+- Snakemake 9.23.1 已解析 instrumented workflow，確認每 run Bowtie2 摘要重定向後仍可正確載入全部 rules。
 - 真實三步恢復 run 已成功完成，並使用真實 DB 對話、state 與 telemetry 驗證自包含技術報告可以正確渲染。
-- 本次未啟動前端，未執行 npm build，完成後未留下 agent、後端或前端服務。
+- 真實 run `analysis-20260728-145014-792b62d7` 已驗證新交付報告顯示 `5.54 M reads`、`0.83 Gb`、fastp 保留率 `77.41%`、rRNA 比對率 `0.02%`，未執行的 merge/assembly 顯示占位說明。
+- Node 22 前端 production build 成功；本次未啟動前端、後端或 agent，完成後不留下相關服務。
 
 ## 後續更新方式
 
