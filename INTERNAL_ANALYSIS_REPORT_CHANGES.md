@@ -4,10 +4,10 @@
 
 ## Submodule 版本
 
-| Submodule | 分支 | 基準分支 | 目前 commit |
-| --- | --- | --- | --- |
-| `open-webui` | `feat/internal-analysis-report` | `bgi` | `01c030c11` |
-| `agent` | `feat/internal-analysis-report` | `main` | `487421b` |
+| Submodule    | 分支                            | 基準分支 | 目前 commit |
+| ------------ | ------------------------------- | -------- | ----------- |
+| `open-webui` | `feat/internal-analysis-report` | `bgi`    | `8fc723985` |
+| `agent`      | `feat/internal-analysis-report` | `main`   | `e126c7b`   |
 
 ## `open-webui` 改動
 
@@ -46,10 +46,17 @@
 - 新增報告 Blob 下載 API、下載中狀態與錯誤提示；成功與失敗 run 均可下載內部技術報告。
 - 成功 workflow1 run 的狀態接口對所有已驗證使用者提供 `report_available`，右側任務區是唯一的「下载诊断意见书」入口；聊天消息不再保存或顯示報告卡片。
 
+### 新對話回覆與標題排程
+
+- 新分析對話不再於主回覆前建立未註冊的 title-generation task，避免同一 BioAgent 並行初始化兩個 Claude SDK client，導致首次 assistant 僅留下空白 placeholder。
+- `title_generation` 保留在主 completion 的 background task 集合中，待 assistant 完成並持久化後再使用完整 user/assistant 上下文生成標題；既有 fallback、API payload 與前端資料結構維持不變。
+- 新增 handler 級回歸測試，確認開啟或關閉自動標題時設定均完整交給主 completion，且新對話只建立一個主 task。
+
 ### 分支 commits
 
 - `dcfe31a57 :bug: prevent BioAgent chat submit during IME composition`
 - `01c030c11 :sparkles: add admin internal technical reports for analysis runs`
+- `8fc723985 :sparkles: add deterministic analysis report delivery`
 
 ## `agent` 改動
 
@@ -86,20 +93,29 @@
 - 已在原 Open WebUI 對話建立新 run `analysis-20260728-120606-9453ee29`，以 `raw_paired_reads` 執行 `fastp → bowtie2 → merge`，三個 job 全部成功，returncode 為 0。
 - 實際 run 共處理 5,536,168 reads，Fastp 後保留 4,285,442 reads，保留率為 77.41%，去 rRNA 比對率為 0.02%；telemetry、benchmark、12 個輸出檔案與內部技術報告資料均已就緒，舊失敗 run 保留不變。
 
-### 分支 commit
+### 串流 Markdown 回合邊界
+
+- runtime 依 Claude SDK `message_start` 保存 assistant 回合邊界；前一回合已有可見文字時，在下一回合第一個 `text_delta` 前補足 Markdown 所需的兩個換行。
+- 邊界計算會扣除前段結尾與新段開頭既有的換行；同一 assistant 回合內的多個 delta 原樣串接，沒有前置文字的工具回合不產生開頭空行。
+- 持久聊天與 ephemeral/background task 共用同一正規化器，正規化後才交給 `analysis_plan` filter，因此跨 delta、跨 assistant 回合的控制塊仍不會洩漏。
+- streaming 與 non-streaming adapter 均合併為相同文字，工具後的 `##` 標題可以穩定渲染為 Markdown 標題。
+
+### 分支 commits
 
 - `487421b :sparkles: add typed workflow segments and deterministic analysis runner`
+- `e126c7b :sparkles: add deterministic workflow1 execution reporting`
 
 ## 驗證結果
 
-- Agent 單元測試共 54 項通過，覆蓋 typed input、所有 workflow1 入口、連續區段、中途 symlink、targets、成功、失敗、取消、部分輸出、benchmark、state 原子更新、命令遮罩、多 run 交付指標聚合、報告可用狀態及聊天串流不發送報告 item。
-- Open WebUI 後端相關單元測試共 30 項通過，覆蓋管理員權限、chat/run 驗證、路徑逃逸、成功與失敗報告、HTML escaping、方案差異、欄寬、四分位圖、交付報告 schema、固定圖位、圖表數值分欄、單位、缺失資料及結構化串流持久化。
+- Agent 單元測試共 60 項通過，覆蓋 typed input、所有 workflow1 入口、連續區段、中途 symlink、targets、成功、失敗、取消、部分輸出、benchmark、state 原子更新、命令遮罩、多 run 交付指標聚合、報告可用狀態、聊天串流不發送報告 item，以及持久與 ephemeral 串流的跨 assistant 回合 Markdown 邊界。
+- Open WebUI 後端相關單元測試共 32 項通過，覆蓋管理員權限、chat/run 驗證、路徑逃逸、成功與失敗報告、HTML escaping、方案差異、欄寬、四分位圖、交付報告 schema、固定圖位、圖表數值分欄、單位、缺失資料、結構化串流持久化及新對話標題 task 排程。
 - 前端 analysis 結構化 output Vitest 共 7 項通過；本次修改的 TypeScript/Svelte 檔案 Prettier check 通過。
-- Agent 與 Open WebUI 本次修改檔案的 Ruff format/check 通過，所有 repo 的 `git diff --check` 通過。
+- Agent 本次修改檔案及 Open WebUI 新增回歸測試的 Ruff format/check 通過；`main.py` 全檔檢查仍只有既有 lint 債務，所有 repo 的 `git diff --check` 通過。
 - Snakemake 9.23.1 已解析 instrumented workflow，確認每 run Bowtie2 摘要重定向後仍可正確載入全部 rules。
 - 真實三步恢復 run 已成功完成，並使用真實 DB 對話、state 與 telemetry 驗證自包含技術報告可以正確渲染。
 - 真實 run `analysis-20260728-145014-792b62d7` 已驗證新交付報告顯示 `5.54 M reads`、`0.83 Gb`、fastp 保留率 `77.41%`、rRNA 比對率 `0.02%`，未執行的 merge/assembly 顯示占位說明。
-- Node 22 前端 production build 成功；本次未啟動前端、後端或 agent，完成後不留下相關服務。
+- 隔離的新分析對話 smoke test 已驗證第一條訊息即可得到非空回覆，assistant 正常完成、持久 transcript 只包含一份 user request，標題在主回覆後更新；測試使用的 DB、Claude state 與 runs 均已刪除。
+- Node 22 前端 production build 成功；本次未啟動前端，隔離測試使用的後端與 agent 已停止，完成後不留下相關服務。
 
 ## 後續更新方式
 
