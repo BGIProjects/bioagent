@@ -49,6 +49,13 @@
 - 新增報告 Blob 下載 API、下載中狀態與錯誤提示；成功與失敗 run 均可下載內部技術報告。
 - 成功 workflow1 或病毒分類 run 的狀態接口對所有已驗證使用者提供 `report_available`，右側任務區是唯一的「下载诊断意见书」入口；分析卡片沿用線性 steps，不顯示底層 workflow 邊界或並行分支。
 
+### 歷史資源估算卡片與啟動判定
+
+- `/analysis` 資源卡片改用版本化結構資料，分三欄顯示耗時 P50/P90/建議預留、峰值記憶體 P50/P90/建議容量與核心數，以及可信度、匹配 run 數、不同輸入規模數和資料不足警告。
+- 前端分開解析核心 `analysis_plan` 與可選的 `resource_estimate`；資源資料缺失或格式無效時顯示「暂不可估」，不會丟棄有效方案或停用啟動按鈕。
+- 啟動判定只依賴是否為最新方案、`ready_to_execute` 與是否仍在生成；`resource_estimate.status="insufficient"`、零匹配樣本或校準器失敗均不影響有效方案啟動。
+- 無法執行的方案可攜帶 `blocking_reason`，最新方案會在停用的啟動按鈕旁直接顯示真實原因，避免把 execution spec 驗證失敗誤認為硬體資源不足。
+
 ### 新對話回覆與標題排程
 
 - 新分析對話不再於主回覆前建立未註冊的 title-generation task，避免同一 BioAgent 並行初始化兩個 Claude SDK client，導致首次 assistant 僅留下空白 placeholder。
@@ -94,6 +101,17 @@
 - runner 在成功終態標記交付報告可用，失敗或取消終態標記不可用；runtime 不再接收 AI `diagnostic_report` 控制塊，也不發送報告 output item，下載完全由 Open WebUI 的 run 狀態驅動。
 - workflow2 的 run-local 副本為全部 rules 注入 extended benchmark，並讓既有 pandas 匯總步驟額外輸出候選、聚類代表及脊椎動物候選 CSV；runner 以標準庫解析後寫入分類 telemetry。
 
+### 歷史 Telemetry 資源校準
+
+- 新增 `.claude/sessions/bioagent/resource-history.sqlite3` SQLite 索引，以 WAL、`run_id` 唯一鍵與增量 mtime 檢查回填既有 v2/v3 telemetry；每個 terminal run 自動 upsert，成功、失敗與取消狀態均保留供稽核，但只有成功且資源欄位完整的 run 參與估算。
+- `input_stats` 以路徑雜湊、檔案大小及 mtime 快取 `seqkit stats` 的 sequences/bases，不保存原始輸入路徑；後續規劃不再逐次掃描與重算所有歷史 run。
+- 候選 run 嚴格匹配相同有序 rule 區段、typed input、RNA/DNA 範圍與資料庫指紋，並要求 reads/bases 或 contig/bases 均在 0.5–2 倍範圍內；按最大對數比例距離選取最近 20 筆，優先使用相同 `0`、`1`、`2+` 並行負載資料。
+- 耗時及記憶體 P50 使用中位數、P90 使用 nearest-rank empirical quantile；高、中、低可信度分別保留 10%、15%、25% 安全餘量，舊 telemetry、未知負載或樣本規模不足時固定降為低可信度。
+- 完全沒有匹配資料時不外推 P50/P90，僅提供 8 GiB 一般上游、24 GiB MEGAHIT、128 GiB 病毒分類的保守記憶體下限及 runner 的 8 核配置，因此新流程第一次執行不會被歷史資料缺口阻擋。
+- runtime 會丟棄模型提供的資源數字，在 execution spec 驗證後加入確定性估算；若資源校準本身異常，僅省略估算，不改變有效方案的 `ready_to_execute`。
+- runner 每秒彙總 Snakemake process tree RSS、整機記憶體與其他 analysis runner 數量；telemetry v3 保存 run 級峰值與負載桶，實績記憶體取 process-tree 峰值和 benchmark 最大值的較大者，不保存冗長時間序列。
+- workflow1 plan 若遺漏 `entry_rule` 或 `exit_rule`，runtime 只在 `steps[].rules` 可唯一對應一個非空連續區段時補全；顯式衝突、不連續 rules 或輸入類型不匹配仍拒絕執行並輸出 `blocking_reason`。System prompt 與 gatekeeper 亦明確禁止將分類專用的 `viral_type` 寫入 workflow1 spec。
+
 ### 問題修復與實際恢復
 
 - 分類失敗 run `analysis-20260730-165639-db7516fd` 在 DNA HMM 第一輪得到零命中；這是合法的空分析結果，但原迭代腳本仍嘗試以 pandas 讀取只有 HMMER 註解的 `domtblout`，因而拋出 `EmptyDataError`。
@@ -119,9 +137,9 @@
 
 ## 驗證結果
 
-- Agent 單元測試共 69 項通過，覆蓋 typed input、所有 workflow1 入口、reads/contigs 病毒分類、RNA/DNA/RNA+DNA、phase 串接與兩階段失敗短路、run-local instrumentation、分類 CSV、phase-tagged job 輸入輸出與命令、workflow 工具 PATH、`"NA"` benchmark、空 HMM 搜索、成功、失敗、取消、state 原子更新、報告可用狀態及聊天串流回合邊界。
+- Agent 單元測試共 80 項通過，除既有 typed input、workflow adapter、runner、報告及串流覆蓋外，新增輸入統計快取、SQLite 冪等更新、歷史回填、workflow/DB/負載隔離、P50/P90、安全餘量、可信度門檻、零樣本基線、run 級資源取樣、失敗 run 排除、workflow1 邊界補全及資源估算故障隔離測試。
 - Open WebUI 後端相關單元測試共 33 項通過，覆蓋管理員權限、chat/run 驗證、路徑逃逸、state/telemetry/report 新 schema、成功與失敗報告、分類結果與空結果、HTML escaping、workflow1 圖表、結構化串流持久化及新對話標題 task 排程。
-- 前端 analysis 結構化 output Vitest 共 7 項通過；本次修改的 TypeScript/Svelte 檔案 Prettier check 通過。
+- 前端 analysis 結構化 output Vitest 共 11 項通過，覆蓋新版資源 schema、時間與容量格式化、資源不足/缺失/無效時仍可啟動，以及 execution blocking reason；本次修改的 TypeScript/Svelte 檔案 Prettier check 通過。
 - Agent 本次修改檔案及 Open WebUI 新增回歸測試的 Ruff format/check 通過；`main.py` 全檔檢查仍只有既有 lint 債務，所有 repo 的 `git diff --check` 通過。
 - Snakemake 9.23.1 已解析 instrumented workflow1；真實 `workflow2_virusid_2026db` 使用範例 contigs 與 RNA+DNA dry-run 成功解析 21 個 jobs，包含雙 HMM 搜索、聚類、CheckV、多資料庫比對及匯總，return code 為 0。
 - 使用失敗 run 的真實 ORF、RdRp HMM 與修正後的工具 `PATH` 完成 5 輪 iterative HMM smoke test，`seqkit`、HMMER 與 CD-HIT 均可解析，return code 為 0。
