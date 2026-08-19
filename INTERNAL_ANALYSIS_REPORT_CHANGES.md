@@ -56,6 +56,23 @@
 - 啟動判定只依賴是否為最新方案、`ready_to_execute` 與是否仍在生成；`resource_estimate.status="insufficient"`、零匹配樣本或校準器失敗均不影響有效方案啟動。
 - 無法執行的方案可攜帶 `blocking_reason`，最新方案會在停用的啟動按鈕旁直接顯示真實原因，避免把 execution spec 驗證失敗誤認為硬體資源不足。
 
+### 自適應路由介面與原子啟動
+
+- `/analysis` 頂部新增「智能／緊急／標準／深度」路由選擇器；深度模式標示為暫未開放，緊急模式可設定目標時限，方案卡固定展示 `5% 快速初筛 → 自适应路由决策` 及各模式的後續路徑。
+- 路由設定以 `chat_meta.analysis_routing` 持久化；載入舊對話時以最新結構化方案的 routing 優先恢復控制器，修改模式或時限會使舊方案失效，必須套用設定並重新生成。
+- 確認按鈕以單一請求攜帶 `analysis_mode=execute`，不再先發送隱藏 `/execute` 或輪詢等待；前端使用本地 `confirming` 鎖避免快速雙擊建立重複執行請求，提交後回到規劃模式。
+- BioAgent 請求只白名單轉發 `analysis_mode`、`analysis_routing` 與 `source`，其他 chat metadata 不會傳給模型；既有對話每次請求仍合併保存最新 routing。
+- 原始雙端 reads 的病毒分類方案只有在規範化為 `adaptive_virus_analysis` 且 routing 與 UI 一致時才能確認；純 workflow1 與 contigs 分類不會被強制轉換。
+
+### 路由狀態、阻斷與報告交付
+
+- `/analysis/runs/status` 可同時返回 routing 決策與 `blocked` 終態，前端顯示初篩階段、模式、最終路徑、置信度、資源阻斷及目標時限是否達成。
+- 路徑 B 因資源不足而阻斷時保留已完成的初篩結果，並允許下載低置信初篩報告；`execution.status=blocked` 與 `report.available=true` 可以同時成立。
+- 完整分類報告新增「自适应路由说明」，逐樣本顯示最高物種命中 reads、抽樣占比、病毒內占比的實際值、門檻與通過狀態，並確定性說明智能模式選擇路徑 A 或 B 的原因。
+- 內部技術報告新增路由請求、最終路徑、reason codes、逐樣本置信檢查、資源准入快照與歷史估算摘要；快速預警與快速初篩報告共用相同門檻解釋。
+- 報告下載時會從逐 job 時間重新計算既有 telemetry 的階段時間，因此不改寫歷史 run 也能修正跨午夜時把 `Thu...`、`Fri...` 直接按字串比較所造成的起止顛倒。
+- 階段時間欄位區分實際「階段歷時」與「Job 耗時合計」，平均有效核心以 CPU 時間除以實際階段歷時計算；逐 job 時間、CPU、RSS、分類證據及整體 run 耗時不因舊聚合錯誤而重算。
+
 ### 新對話回覆與標題排程
 
 - 新分析對話不再於主回覆前建立未註冊的 title-generation task，避免同一 BioAgent 並行初始化兩個 Claude SDK client，導致首次 assistant 僅留下空白 placeholder。
@@ -112,6 +129,22 @@
 - runner 每秒彙總 Snakemake process tree RSS、整機記憶體與其他 analysis runner 數量；telemetry v3 保存 run 級峰值與負載桶，實績記憶體取 process-tree 峰值和 benchmark 最大值的較大者，不保存冗長時間序列。
 - workflow1 plan 若遺漏 `entry_rule` 或 `exit_rule`，runtime 只在 `steps[].rules` 可唯一對應一個非空連續區段時補全；顯式衝突、不連續 rules 或輸入類型不匹配仍拒絕執行並輸出 `blocking_reason`。System prompt 與 gatekeeper 亦明確禁止將分類專用的 `viral_type` 寫入 workflow1 spec。
 
+### 自適應病毒分析與路由決策
+
+- 新增 `adaptive_virus_analysis` adapter：對每個樣本以固定隨機種子抽取 5% 成對 reads，校驗 R1/R2 數量與 read ID，執行輕量 fastp、去 rRNA 與 `Viral_20260226` Kraken2 快速初篩。
+- 每個樣本必須同時滿足最高物種命中至少 1,000 reads、占抽樣 read pairs 至少 1%、占病毒 reads 至少 80% 才屬高置信；多樣本任務要求全部樣本通過。
+- `auto` 在高置信時選擇路徑 A 快速預警，低置信時選擇路徑 B 完整分類；`standard` 固定進入 B；`emergency` 無論置信度均在初篩後直接產生報告，不自動升級完整流程；`deep` 本期不可執行。
+- 快速初篩為每個樣本保存三項 `confidence_checks`、門檻快照、實際值、通過狀態與失敗原因碼；`.bioagent/state.json`、`routing.json` 與 telemetry 同步記錄決策、資源、歷史、實際耗時、deadline 結果及終態，`accuracy` 與 `expert_feedback` 暫留空值。
+- UI 提供 routing 且模型產生 `virus_classification + raw_paired_reads` 時，runtime 確定性升級為 adaptive spec，補上快速初篩與路由決策步驟並以 UI routing 覆蓋模型設定；既有 adaptive 方案只更新 routing。
+- `analysis_mode=execute` 在同一請求內先切換模式再消費最新方案；run 建立前檢查同一方案是否已執行，重複確認不覆寫 state 或重跑。
+
+### 資源准入與時間 telemetry
+
+- 初篩前要求 CPU 低於 85%、至少 4 個可用執行緒及 4 GiB 可用記憶體；只有選擇路徑 B 時才再次檢查完整流程資源，不排隊、不拆批、不自動降級。
+- 有可靠歷史校準時採用校準後 reserve；沒有同規模歷史或估算狀態不足時，raw reads 完整流程以 8 個執行緒及 24 GiB 可用記憶體作為最低准入，不再因固定 128 GiB 估算超過實體記憶體而永久阻斷。
+- Snakemake 日誌中的本地時間在解析邊界轉為帶時區的 ISO 8601，階段起止以時間值而非星期字串聚合，並同步寫回 state steps。
+- telemetry 的 `wall_seconds` 表示最早開始至最晚結束的實際階段歷時，`job_wall_seconds` 表示 benchmark job 耗時合計，`effective_cores` 改以實際階段歷時計算，避免並行 job 被誤報為串行耗時。
+
 ### 問題修復與實際恢復
 
 - 分類失敗 run `analysis-20260730-165639-db7516fd` 在 DNA HMM 第一輪得到零命中；這是合法的空分析結果，但原迭代腳本仍嘗試以 pandas 讀取只有 HMMER 註解的 `domtblout`，因而拋出 `EmptyDataError`。
@@ -137,15 +170,16 @@
 
 ## 驗證結果
 
-- Agent 單元測試共 80 項通過，除既有 typed input、workflow adapter、runner、報告及串流覆蓋外，新增輸入統計快取、SQLite 冪等更新、歷史回填、workflow/DB/負載隔離、P50/P90、安全餘量、可信度門檻、零樣本基線、run 級資源取樣、失敗 run 排除、workflow1 邊界補全及資源估算故障隔離測試。
-- Open WebUI 後端相關單元測試共 33 項通過，覆蓋管理員權限、chat/run 驗證、路徑逃逸、state/telemetry/report 新 schema、成功與失敗報告、分類結果與空結果、HTML escaping、workflow1 圖表、結構化串流持久化及新對話標題 task 排程。
-- 前端 analysis 結構化 output Vitest 共 11 項通過，覆蓋新版資源 schema、時間與容量格式化、資源不足/缺失/無效時仍可啟動，以及 execution blocking reason；本次修改的 TypeScript/Svelte 檔案 Prettier check 通過。
+- Agent 完整單元測試共 100 項通過；新增覆蓋 Kraken2 解析、三項置信門檻邊界、多樣本聚合、模式矩陣、緊急低置信直接出報告、資源准入與阻斷、重複執行保護、adaptive spec 規範化、跨午夜時間排序及階段／Job 耗時語義。
+- Open WebUI analysis 後端相關單元測試共 34 項通過；新增覆蓋 analysis metadata 白名單轉發與持久化、blocked 與 report available 並存、三類確定性報告、路徑 B 低置信原因、既有 telemetry 跨日時間重算及非 adaptive 報告不顯示路由章節。
+- 前端 analysis 結構化 output Vitest 共 18 項通過，覆蓋模式選擇、緊急目標時限、最新方案 routing 恢復、設定失效與重新生成、單次原子確認、雙擊鎖及 adaptive 方案確認條件；相關 TypeScript/Svelte 檔案通過 Prettier check。
 - Agent 本次修改檔案及 Open WebUI 新增回歸測試的 Ruff format/check 通過；`main.py` 全檔檢查仍只有既有 lint 債務，所有 repo 的 `git diff --check` 通過。
 - Snakemake 9.23.1 已解析 instrumented workflow1；真實 `workflow2_virusid_2026db` 使用範例 contigs 與 RNA+DNA dry-run 成功解析 21 個 jobs，包含雙 HMM 搜索、聚類、CheckV、多資料庫比對及匯總，return code 為 0。
 - 使用失敗 run 的真實 ORF、RdRp HMM 與修正後的工具 `PATH` 完成 5 輪 iterative HMM smoke test，`seqkit`、HMMER 與 CD-HIT 均可解析，return code 為 0。
 - 使用 run `analysis-20260730-165639-db7516fd` 的真實 ORF 與 DNA marker HMM 重現零命中；修正後通道 return code 為 0、五輪 `domtblout` target 齊全，coverage 彙整器在 DNA-only 模式輸出零候選 CSV，並在 RNA+DNA 模式保留該 run 的一個 RNA 候選。
 - 真實三步恢復 run 已成功完成，並使用真實 DB 對話、state 與 telemetry 驗證自包含技術報告可以正確渲染。
 - 真實 run `analysis-20260728-145014-792b62d7` 已驗證新交付報告顯示 `5.54 M reads`、`0.83 Gb`、fastp 保留率 `77.41%`、rRNA 比對率 `0.02%`，未執行的 merge/assembly 顯示占位說明。
+- 真實 adaptive run `analysis-20260813-160906-0f9eda85` 的既有 state/telemetry 未被改寫；動態分類報告已驗證顯示 `811 / ≥ 1,000`、`0.0746% / ≥ 1%`、`96.55% / ≥ 80%` 及選擇路徑 B 的原因，內部報告將「分類證據分析」修正為 `2026-08-13 16:45:01` 至 `2026-08-14 04:57:01`，並分列 43,920 秒階段歷時與 43,931.49 秒 Job 合計。
 - 隔離的新分析對話 smoke test 已驗證第一條訊息即可得到非空回覆，assistant 正常完成、持久 transcript 只包含一份 user request，標題在主回覆後更新；測試使用的 DB、Claude state 與 runs 均已刪除。
 - Node 22 前端 production build 成功；本次未啟動前端，隔離測試使用的後端與 agent 已停止，完成後不留下相關服務。
 
