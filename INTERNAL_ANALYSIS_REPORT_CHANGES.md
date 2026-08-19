@@ -24,7 +24,7 @@
 
 ### 內部技術報告
 
-- 後端以 DB 對話、run state、telemetry 與 agent trace 確定性組合自包含 HTML 報告，不使用 agent 撰寫報告。
+- 後端以 DB 對話、run state 與 telemetry 確定性組合自包含 HTML 報告，不使用 agent 撰寫報告；舊 run 若已有 agent trace 仍可作為歷史資料讀取，新 run 不再產生該檔案。
 - 報告包含檔案管理、使用者與 AI 交互時間線、方案 revision 差異、執行階段、job 級時間與資源、軟體命令與版本、輸入輸出 manifest、Fastp、去 rRNA、組裝及最終過濾指標。
 - 長度分布以內嵌 SVG 箱線圖呈現 Q1、中位數與 Q3；缺少或未完成的產物顯示「未產生」，不推測數值。
 - job 資源明細表使用專屬 `job-table`，資源欄最小寬度為 `360px`，資源內容以縮排 JSON 顯示並保留水平滾動。
@@ -79,6 +79,20 @@
 - `title_generation` 保留在主 completion 的 background task 集合中，待 assistant 完成並持久化後再使用完整 user/assistant 上下文生成標題；既有 fallback、API payload 與前端資料結構維持不變。
 - 新增 handler 級回歸測試，確認開啟或關閉自動標題時設定均完整交給主 completion，且新對話只建立一個主 task。
 
+### 非同步執行終態交付與中斷恢復
+
+- 後端向 BioAgent 轉送 `X-OpenWebUI-Message-Id`；agent 回傳 `analysis_run` 結構化 output item 後，後端以 run state 為唯一終態來源註冊背景監看，不要求瀏覽器或原 SSE 連線持續存在。
+- `analysis_run` 固定包含 `run_id`、`run_dir`、`state_path` 與 `log_path`。state 到達 `completed`、`failed` 或 `blocked` 時，後端確定性生成簡潔摘要，更新同一則 assistant message 的 `content`、`output` 與 `done=true`，再發送 socket completion。
+- 後端啟動時掃描 `BIOAGENT_RUN_ROOT`，恢復帶有 assistant message 關聯的 run monitor；沒有可恢復 run 的舊 `done=false` assistant placeholder 會終態化為「响应已中断，请重试。」。
+- provider 非串流錯誤、串流錯誤及 task cancellation 均會把可見錯誤與 `done=true` 雙寫至 chat JSON 和 `chat_message`，避免輸入動畫永久停留。
+- 保留既有分析狀態面板與五秒輪詢，沒有增加新的前端元件；短命 runner 測試覆蓋「立即啟動回覆 → 背景終態 → 同一訊息自動更新」。
+
+### 歷史對話資料修復
+
+- 使用 SQLite online backup API 建立 `webui.db.backup-20260819-163325` 一致性備份後，精確修復最新三個空白 assistant placeholder，保留所有 chat、run 與 build 產物。
+- chat `97292566-0767-4f97-9399-af91f2dbd8c2` 的最後 assistant message 已依 `analysis-20260813-160906-0f9eda85` 完成 state 更新為確定性成功摘要及 `analysis_run=completed`。
+- 四則修復訊息均驗證 chat JSON 與 `chat_message` 的文字及 `done=true` 一致，資料庫 `integrity_check` 通過。
+
 ### 分支 commits
 
 - `dcfe31a57 :bug: prevent BioAgent chat submit during IME composition`
@@ -92,7 +106,7 @@
 - state v3 的 `execution_spec` 支援 `workflow1` 與 `virus_classification`；前者以 `entry_rule`、`exit_rule` 描述連續區段，後者以 typed input 與 `viral_type` 描述完整病毒分類。
 - run 輸入不再固定為 `read1/read2` 頂層欄位；每種 typed input 的 `data` 結構由 workflow adapter 驗證，因此後續可擴展 contigs、reference、表格等輸入。
 - `steps[].rules` 必須與 adapter 計算出的區段完全一致；缺少 `execution_spec`、未知 adapter、未知輸入型別、相對路徑、反向區段或不一致 rules 的方案不得執行。
-- plan revision 會完整保存新的 `execution_spec`；execute prompt 僅注入固定 runner 的單一命令。
+- plan revision 會完整保存新的 `execution_spec`；確認執行後由 runtime 直接消費已驗證方案，不再建立 Claude execute prompt。
 - `virus_classification` 接受 `raw_paired_reads` 或 `contigs_fasta`；未指定搜索範圍時固定為 RNA+DNA，明確要求時可選 RNA 或 DNA。
 
 ### Workflow adapter
@@ -109,7 +123,7 @@
 
 - `analysis_runner.py` CLI 僅接受 `--state <state_path>`；runner 從 state 選擇 adapter，自行複製 workflow、生成 samples/config、物化輸入並建立 targets。
 - 固定使用 Snakemake 9.23.1、8 cores、run-local source cache、`--printshellcmds` 與 `--benchmark-extended`。
-- agent 不再準備 workflow 檔案、不再直接拼接 Snakemake 命令，也不再手工更新終態 state；gatekeeper 僅允許原樣執行 runtime 注入的 runner 命令。
+- agent 不再準備 workflow 檔案、不再透過 Claude Bash 工具執行或直接拼接 Snakemake 命令，也不再手工更新 runner 終態 state；runtime 只負責原子建立初始 state 並啟動固定 runner subprocess。
 - runner 對 workflow 準備、輸入驗證、成功、失敗、取消與部分輸出統一寫入終態 state、execution log、telemetry、benchmark JSONL、manifest 與報告可用狀態。
 - runner 依序執行 adapter 準備的 phase；每個 phase 使用獨立 workflow、results、log、benchmark 與 source cache，任一 phase 失敗或取消後不啟動後續 phase。
 - 每個 job 記錄 rule、wildcards、開始與結束時間、wall time、CPU time、平均有效核心、最大 RSS/VMS/USS/PSS、I/O、threads、輸入大小、資源、完整命令及軟體版本；敏感 token、密鑰與環境值會統一遮罩。
@@ -136,7 +150,15 @@
 - `auto` 在高置信時選擇路徑 A 快速預警，低置信時選擇路徑 B 完整分類；`standard` 固定進入 B；`emergency` 無論置信度均在初篩後直接產生報告，不自動升級完整流程；`deep` 本期不可執行。
 - 快速初篩為每個樣本保存三項 `confidence_checks`、門檻快照、實際值、通過狀態與失敗原因碼；`.bioagent/state.json`、`routing.json` 與 telemetry 同步記錄決策、資源、歷史、實際耗時、deadline 結果及終態，`accuracy` 與 `expert_feedback` 暫留空值。
 - UI 提供 routing 且模型產生 `virus_classification + raw_paired_reads` 時，runtime 確定性升級為 adaptive spec，補上快速初篩與路由決策步驟並以 UI routing 覆蓋模型設定；既有 adaptive 方案只更新 routing。
-- `analysis_mode=execute` 在同一請求內先切換模式再消費最新方案；run 建立前檢查同一方案是否已執行，重複確認不覆寫 state 或重跑。
+- `analysis_mode=execute` 在同一請求內直接消費最新方案，不建立或查詢 Claude session；run 建立前檢查同一方案是否已執行，重複確認只返回既有狀態，不覆寫 state 或重跑。
+
+### Runtime 直啟動與冪等執行
+
+- execute 請求驗證 `ready_to_execute`、`execution_spec` 與 `steps[].rules` 後，原子建立 state，保存 Open WebUI assistant message ID，並以獨立 session subprocess 啟動 `analysis_runner.py`；SSE 立即返回啟動文字與 `analysis_run` item。
+- runner 在進程入口自行寫入 PID，避免短命流程已完成後被父進程以舊 running state 覆寫；獨立 reaper 負責回收 subprocess，但後端關閉不會終止仍在執行的分析。
+- 同一方案的重複確認會讀取並返回既有 state；舊 state 若缺少 assistant message ID，可在不重啟 runner 的前提下補上當前關聯。
+- `Popen` 啟動錯誤會立即把 state 寫成 failed 並返回可見錯誤；runner 入口未預期例外亦會補寫 failed、return code、錯誤與完成時間，避免 state 永久停留在 running。
+- 移除不再使用的 Claude execute prompt、Bash tool trace recorder，以及「Claude 回合結束即把 runner 判定為失敗」的舊邏輯；方案模式與 Claude 對話 session 行為維持不變。
 
 ### 資源准入與時間 telemetry
 
@@ -170,10 +192,10 @@
 
 ## 驗證結果
 
-- Agent 完整單元測試共 100 項通過；新增覆蓋 Kraken2 解析、三項置信門檻邊界、多樣本聚合、模式矩陣、緊急低置信直接出報告、資源准入與阻斷、重複執行保護、adaptive spec 規範化、跨午夜時間排序及階段／Job 耗時語義。
-- Open WebUI analysis 後端相關單元測試共 34 項通過；新增覆蓋 analysis metadata 白名單轉發與持久化、blocked 與 report available 並存、三類確定性報告、路徑 B 低置信原因、既有 telemetry 跨日時間重算及非 adaptive 報告不顯示路由章節。
+- Agent 完整單元測試共 99 項通過；除既有 Kraken2、路由、資源、telemetry 與報告覆蓋外，新增驗證 execute 不呼叫 Claude、runner 僅啟動一次、重試冪等、PID 與 message ID 寫入、啟動錯誤終態化，以及短命 subprocess 的立即回覆與背景完成。
+- Open WebUI 相關單元測試共 46 項通過；除既有 analysis metadata、路由與報告覆蓋外，新增驗證 message-id header、completed／failed／blocked 摘要、同一訊息 output 更新與 socket 通知、後端重啟恢復及舊 placeholder 修復。
 - 前端 analysis 結構化 output Vitest 共 18 項通過，覆蓋模式選擇、緊急目標時限、最新方案 routing 恢復、設定失效與重新生成、單次原子確認、雙擊鎖及 adaptive 方案確認條件；相關 TypeScript/Svelte 檔案通過 Prettier check。
-- Agent 本次修改檔案及 Open WebUI 新增回歸測試的 Ruff format/check 通過；`main.py` 全檔檢查仍只有既有 lint 債務，所有 repo 的 `git diff --check` 通過。
+- Agent 本次修改檔案及 Open WebUI 新增模組與回歸測試的 Ruff check 通過；Open WebUI 大型既有檔案的全量 Ruff 仍有 163 項存量 lint 債務，所有 repo 的 `git diff --check` 通過。
 - Snakemake 9.23.1 已解析 instrumented workflow1；真實 `workflow2_virusid_2026db` 使用範例 contigs 與 RNA+DNA dry-run 成功解析 21 個 jobs，包含雙 HMM 搜索、聚類、CheckV、多資料庫比對及匯總，return code 為 0。
 - 使用失敗 run 的真實 ORF、RdRp HMM 與修正後的工具 `PATH` 完成 5 輪 iterative HMM smoke test，`seqkit`、HMMER 與 CD-HIT 均可解析，return code 為 0。
 - 使用 run `analysis-20260730-165639-db7516fd` 的真實 ORF 與 DNA marker HMM 重現零命中；修正後通道 return code 為 0、五輪 `domtblout` target 齊全，coverage 彙整器在 DNA-only 模式輸出零候選 CSV，並在 RNA+DNA 模式保留該 run 的一個 RNA 候選。
@@ -181,7 +203,7 @@
 - 真實 run `analysis-20260728-145014-792b62d7` 已驗證新交付報告顯示 `5.54 M reads`、`0.83 Gb`、fastp 保留率 `77.41%`、rRNA 比對率 `0.02%`，未執行的 merge/assembly 顯示占位說明。
 - 真實 adaptive run `analysis-20260813-160906-0f9eda85` 的既有 state/telemetry 未被改寫；動態分類報告已驗證顯示 `811 / ≥ 1,000`、`0.0746% / ≥ 1%`、`96.55% / ≥ 80%` 及選擇路徑 B 的原因，內部報告將「分類證據分析」修正為 `2026-08-13 16:45:01` 至 `2026-08-14 04:57:01`，並分列 43,920 秒階段歷時與 43,931.49 秒 Job 合計。
 - 隔離的新分析對話 smoke test 已驗證第一條訊息即可得到非空回覆，assistant 正常完成、持久 transcript 只包含一份 user request，標題在主回覆後更新；測試使用的 DB、Claude state 與 runs 均已刪除。
-- Node 22 前端 production build 成功；本次未啟動前端，隔離測試使用的後端與 agent 已停止，完成後不留下相關服務。
+- Node 22 高記憶體前端 production build 成功，完整輸出保存在 `/tmp/bioagent-open-webui-build-20260819.log`；本次未改動前端源碼，沒有新增 Prettier 或 Vitest 範圍，也未啟動前端、後端或 agent。
 
 ## 後續更新方式
 
