@@ -2,6 +2,8 @@
 
 本文檔記錄主 repo 的 `feat/internal-analysis-report` 分支中 `open-webui` 與 `agent` 兩個 submodule 的整體改動，作為後續開發、測試、審查與合併時的持續更新記錄。新增功能或調整既有設計時，應直接在相應章節追加或修訂內容，並同步更新 submodule commit 與驗證結果。
 
+> 2026-08-21 更新：Workflow 1–6 已統一為 `analysis_pipeline` v2。本文較早章節保留 `workflow1`、`virus_classification`、`adaptive_virus_analysis`、線性 steps 與 report schema v2 的演進背景；若與下方「Workflow 1–6 通用分析 Pipeline」章節衝突，以新版章節為準。新版不接受舊 adapter，也不保證舊 run state 可重新展示。
+
 ## Submodule 版本
 
 | Submodule    | 分支                            | 基準分支 | 目前 commit |
@@ -10,6 +12,16 @@
 | `agent`      | `feat/internal-analysis-report` | `main`   | `e126c7b`   |
 
 ## `open-webui` 改動
+
+### Workflow 1–6 通用分析 Pipeline
+
+- 後端分析狀態與報告白名單統一為 `workflow_id="analysis_pipeline"`、delivery report `kind="analysis_pipeline"` 與 schema v3；舊 adapter、舊 report kind 和不匹配 state 不再進入新版展示與下載流程。
+- `/analysis` 的結構化方案型別新增 `depends_on`、`produces` 與 `is_deliverable`。前端依 DAG 深度排列階段，同層並排顯示宿主、微生物譜、病毒定量等分支，不再把所有公開階段誤畫成單一直線，且可同時標示多個交付終點。
+- 路由資料改為明確保存 `requested_mode`、`effective_mode`、`adaptive`、適用性原因、deadline、抽樣比例、可用路徑與 `short_circuit_scope="pipeline"`。沒有可用雙端 reads 時，`auto`／`emergency` 在 UI 顯示「当前输入不适用快速初筛，直接执行」；`deep` 仍不可執行。
+- `standard` 不插入初篩；`auto` 高置信可跳過整個多分支 pipeline、低置信繼續完整流程；`emergency` 初篩後一律終止並由 run state 將全部規劃階段標記為 skipped。
+- 診斷報告 renderer 保留既有上游與病毒分類專用版面；其他單分支、中間結果或多分支方案使用通用 pipeline 報告，統一展示階段狀態、實際耗時、有效 CPU、峰值記憶體、各分析域指標與輸出 manifest。
+- 通用報告可遞迴展開宿主樣本／鑑定數、微生物各層級 taxa 數與每個樣本 top taxon、病毒定量樣本／reference／有效記錄／最高 RPM，以及病毒注釋序列數、策略分布、功能注釋數與一致性 warning 數；所有動態內容仍經 HTML escaping。
+- 前端方案解析不再接受缺少新版 routing metadata 的歷史方案直接確認，路由設定仍以最新結構化方案優先，修改模式或 deadline 後必須重新生成方案。
 
 ### 對話輸入與 IME
 
@@ -101,6 +113,19 @@
 
 ## `agent` 改動
 
+### Workflow 1–6 通用分析 Pipeline
+
+- 對外 execution spec 收斂為唯一的 `analysis_pipeline` v2；移除 `workflow1`、`virus_classification` 與 `adaptive_virus_analysis` 三種舊 adapter 的執行入口。模型只描述 typed `inputs`、`deliverables`、`options.viral_type` 與 `policy.mode`，不再手寫 `entry_rule`、`exit_rule`、`steps` 或精確 rules。
+- 新增靜態 workflow/artifact registry，集中定義 27 個公開生物學階段、artifact 必需檔案角色、記錄粒度、sample/run identity、階段輸入輸出、Snakemake rules 與源 workflow。所有外部檔案路徑必須為絕對路徑，重複 input ID、重複 artifact type、重複記錄、sample 集合不一致、缺失角色、未使用輸入與非法交付物均在建 run 前拒絕。
+- runtime 從外部 artifact 與一個或多個交付物確定性編譯最小依賴閉包，輸出規範化 `steps`，每步包含 `id`、`label`、`rules`、`depends_on`、產物型別與交付標記。共享上游只編譯一次，病毒 RNA、DNA、RNA+DNA 選擇只改變受控 catalog 中的搜索 rules。
+- 公開階段覆蓋上游 `read_qc` 至 `contig_filter`、病毒識別 `virus_sequence_prep` 至 `virus_summary`、宿主識別 `host_mapping` 至 `host_summary`、微生物譜 `microbe_classify` 至 `microbe_summary`、病毒定量 `virus_read_mapping` 至 `virus_rpm`，以及病毒注釋 `virus_quality` 至 `annotation_delivery`。
+- 每套源 workflow 最多建立一個 run-local phase；同一 workflow 的多個交付物合併 targets 聯集，跨 workflow 依 DAG 拓撲順序執行並直接引用上游產物。中間 artifact bundle 會物化至各 workflow 預期路徑，只為 Snakemake 必需但沒有生物學意義的伴隨檔建立 placeholder，不偽造核心分析資料。
+- 新增 workflow 3–6 的 source 設定、run-local config rewrite、輸入準備、顯式 target 選擇與 benchmark instrumentation；源 workflow 目錄保持唯讀且不被修改。Workflow 6 的 taxonomy TSV 始終是獨立 `virus_taxonomy` 輸入，不從 workflow 2 結果推測生成。
+- 主要跨流程連接包含 clean reads 至組裝、宿主 mapping、Kraken/Bracken 與病毒定量；filtered/direct contigs 至病毒識別或宿主 BLAST；病毒候選／識別序列至定量 reference 或注釋輸入。raw reads 可一次編譯病毒識別、宿主、微生物譜與病毒定量的多分支閉包。
+- 路由由規範化 spec 統一驅動：`standard` 直接執行；`auto`／`emergency` 僅在實際依賴閉包使用 paired-read artifact 時插入 5% Kraken2 初篩；沒有 paired reads 時 `effective_mode` 降級為 `standard`；自適應短路範圍固定為整個 pipeline。
+- 資源校準改用編譯後的階段簽名、各 workflow 資料庫簽名與多輸入規模；同一 run 的總時長按 phase 相加，峰值記憶體與 CPU 取各 phase 最大值，歷史不足時明確返回不可校準而不阻止有效方案。
+- delivery report 統一為 schema v3 `analysis_pipeline`，在保留上游與病毒分類既有結構的同時，新增宿主、微生物譜、病毒定量與病毒注釋的確定性結果解析。runtime、system prompt、README、architecture 與 workflow gatekeeper 均已切換至新版契約。
+
 ### 分析方案契約
 
 - state v3 的 `execution_spec` 支援 `workflow1` 與 `virus_classification`；前者以 `entry_rule`、`exit_rule` 描述連續區段，後者以 typed input 與 `viral_type` 描述完整病毒分類。
@@ -191,6 +216,14 @@
 - `e126c7b :sparkles: add deterministic workflow1 execution reporting`
 
 ## 驗證結果
+
+### 2026-08-21 Workflow 1–6 Pipeline 驗證
+
+- Agent 全量單元測試 96 項通過，涵蓋 artifact schema、絕對路徑、重複 ID、sample 對齊、每個公開階段的外部入口與終點、最小 DAG、多分支閉包、路由降級／短路、資源校準、runner、telemetry 與通用報告。
+- Workflow 1–6 均以真實源 workflow 建立臨時 run-local phase 並完成 Snakemake dry-run；涵蓋 raw reads 上游中間結果、direct contigs 病毒識別、clean reads 宿主＋微生物雙交付、reads＋virus reference 定量、workflow 2 候選＋reads 定量、病毒 FASTA＋taxonomy TSV 注釋，以及 raw reads 多分支閉包。
+- Open WebUI 後端 analysis／report 單元測試 35 項通過，包含通用、多分支、病毒分類、初篩、blocked、manifest、深層指標展開、資源欄位、HTML escaping 與報告下載邊界。
+- 前端 Vitest 全量 20 項通過，其中 analysis plan 19 項覆蓋 DAG 分支分層、路由時效性、舊方案失效、緊急 deadline、原子確認與 skipped／交付狀態；相關 TypeScript／Svelte 檔案通過 Prettier check。
+- Agent 與本次後端修改檔通過 Ruff，兩個 submodule 均通過 `git diff --check`。使用既有 Pyodide 靜態資源直接執行 Vite production build 成功；標準 `npm run build` 的 Pyodide 聯網預下載因沙箱代理不可達而未完成，與本次前端編譯無關，驗證副作用已還原且未清理 build 產物。
 
 - Agent 完整單元測試共 99 項通過；除既有 Kraken2、路由、資源、telemetry 與報告覆蓋外，新增驗證 execute 不呼叫 Claude、runner 僅啟動一次、重試冪等、PID 與 message ID 寫入、啟動錯誤終態化，以及短命 subprocess 的立即回覆與背景完成。
 - Open WebUI 相關單元測試共 46 項通過；除既有 analysis metadata、路由與報告覆蓋外，新增驗證 message-id header、completed／failed／blocked 摘要、同一訊息 output 更新與 socket 通知、後端重啟恢復及舊 placeholder 修復。
