@@ -34,6 +34,17 @@
 - 新增管理員限定的 `GET /analysis/runs/internal-report` endpoint，嚴格驗證 run root、state 中的 chat 關聯及 telemetry 版本，拒絕路徑逃逸、chat/run 不匹配與舊 state。
 - 保持既有診斷意見書 endpoint 與一般使用者流程不變，原始 telemetry JSON 僅保存在 run 的 `.bioagent/` 目錄。
 
+### Benchmark 背景執行入口
+
+- 新增管理員限定的非同步 Benchmark API：`POST /api/v1/analysis/benchmark/runs` 建立 case，`GET /api/v1/analysis/benchmark/runs/{id}` 輪詢狀態，`GET /api/v1/analysis/benchmark/runs/{id}/result` 取得終態結構化結果。Benchmark ID 直接使用持久化 chat ID，不建立獨立 job 或報告資料庫。
+- 建立 case 時接受自然語言 `prompt`、`input_paths`、`case_id`、BioAgent model 與既有 `auto`／`emergency`／`standard`／`deep` routing。相對路徑以分析檔案根目錄解析；絕對路徑、相對路徑及 symlink 解析後均必須留在 `ANALYSIS_FILE_ROOT`／`BIOAGENT_RUN_ROOT` 內且真實存在。
+- 輸入路徑以與 `/analysis` 檔案選擇器一致的文字區塊加入 prompt，並以 `server_path` metadata 保存大小、修改時間與 `benchmark_api` 來源，使 AI 規劃、內部報告與 benchmark request 可以對照同一批輸入。
+- 背景 orchestration 完整復用 Open WebUI `CHAT_COMPLETION_HANDLER`、chat/message 雙寫與既有 `analysis_run` monitor：先以 plan mode 取得 `analysis_plan`，只有 assistant 回合已完整結束且 `ready_to_execute=true` 時才新增可稽核的固定確認回合並切換 execute mode。
+- 同一 chat 的 execute 交接使用 per-chat lock、確認訊息查重及狀態輪詢修復；重複 GET 不會重複啟動 pipeline，structured plan 尚在串流時也不會提早執行。缺少 execution spec、必要輸入或尚未開放的 deep 路徑會以 `blocked` 終止並保留原始對話，不強行降級或補造方案。
+- 狀態接口統一輸出 `planning`、`starting`、`running`、`completed`、`blocked`、`failed`，並附 run ID、run directory、步驟進度、錯誤與兩份報告的可用狀態；結果接口在非終態固定回傳 HTTP 409。
+- 終態 JSON bundle 為 schema v1，包含原始 benchmark request、完整 user/assistant transcript、structured output、usage、最新 plan、execution state、routing、delivery report、telemetry、agent trace、summarized thinking、結論、證據及兩份既有 HTML 報告的相對下載 URL，不讀取或嵌入 FASTQ 與大型分析產物內容。
+- 診斷資料會在結果輸出時執行與 HTML 下載相同的證據重算；校驗失敗仍以結構化 `validation` 錯誤供 robustness 評測，但不提供無效診斷 HTML URL。內部資料忠實保留現有 `routing.accuracy=null`、`routing.expert_feedback=null` 等缺失值，不宣稱已實作 AI 準確性標註、專家回饋或模型進化閉環。
+
 ### 內部技術報告
 
 - 後端以 DB 對話、run state 與 telemetry 確定性組合自包含 HTML 報告，不使用 agent 撰寫結果；新 run 會快照 run-local `.bioagent/agent-trace.jsonl`，但其中的 summarized thinking 只解釋方案形成，不能作為結果結論的證據。
@@ -229,6 +240,12 @@
 - `e126c7b :sparkles: add deterministic workflow1 execution reporting`
 
 ## 驗證結果
+
+### 2026-08-21 Benchmark 背景執行入口驗證
+
+- 新增 12 項 Open WebUI benchmark 單元測試，涵蓋管理員依賴、輸入路徑解析與逃逸、缺失路徑、空 prompt、request/chat metadata、plan→execute 自動交接、確認查重、未完成 plan 串流競態、blocked plan、非終態 HTTP 409、成功結果 bundle 與證據竄改的結構化失敗。
+- Benchmark 測試與既有 analysis/report 回歸測試合計 49 項通過；既有 completed、failed、blocked、adaptive preliminary report、內部報告、診斷報告、路徑與證據校驗行為保持不變。
+- 新增 orchestration、router 與測試檔通過 Ruff format、Ruff check 及 `git diff --check`。本輪只修改 Open WebUI 後端，未改動 agent 或前端，亦未啟動或保留任何服務進程。
 
 ### 2026-08-21 可追溯證據鏈驗證
 
