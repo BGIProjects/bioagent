@@ -2,7 +2,7 @@
 
 本文檔記錄主 repo 的 `feat/internal-analysis-report` 分支中 `open-webui` 與 `agent` 兩個 submodule 的整體改動，作為後續開發、測試、審查與合併時的持續更新記錄。新增功能或調整既有設計時，應直接在相應章節追加或修訂內容，並同步更新 submodule commit 與驗證結果。
 
-> 2026-08-21 更新：Workflow 1–6 已統一為 `analysis_pipeline` v2。本文較早章節保留 `workflow1`、`virus_classification`、`adaptive_virus_analysis`、線性 steps 與 report schema v2 的演進背景；若與下方「Workflow 1–6 通用分析 Pipeline」章節衝突，以新版章節為準。新版不接受舊 adapter，也不保證舊 run state 可重新展示。
+> 2026-08-21 更新：Workflow 1–6 已統一為 `analysis_pipeline` v2，交付報告與 state report 的現行版本為 schema v4。本文較早章節保留 `workflow1`、`virus_classification`、`adaptive_virus_analysis`、線性 steps 與 report schema v2/v3 的演進背景；若與下方「Workflow 1–6 通用分析 Pipeline」或「可追溯診斷結論與證據鏈」章節衝突，以新版章節為準。新版不接受舊 adapter，也不保證舊 run state 可重新展示或下載報告。
 
 ## Submodule 版本
 
@@ -15,7 +15,7 @@
 
 ### Workflow 1–6 通用分析 Pipeline
 
-- 後端分析狀態與報告白名單統一為 `workflow_id="analysis_pipeline"`、delivery report `kind="analysis_pipeline"` 與 schema v3；舊 adapter、舊 report kind 和不匹配 state 不再進入新版展示與下載流程。
+- 後端分析狀態與報告白名單統一為 `workflow_id="analysis_pipeline"`、delivery report `kind="analysis_pipeline"` 與 schema v4；舊 adapter、舊 report kind 和不匹配 state 不再進入新版展示與下載流程。
 - `/analysis` 的結構化方案型別新增 `depends_on`、`produces` 與 `is_deliverable`。前端依 DAG 深度排列階段，同層並排顯示宿主、微生物譜、病毒定量等分支，不再把所有公開階段誤畫成單一直線，且可同時標示多個交付終點。
 - 路由資料改為明確保存 `requested_mode`、`effective_mode`、`adaptive`、適用性原因、deadline、抽樣比例、可用路徑與 `short_circuit_scope="pipeline"`。沒有可用雙端 reads 時，`auto`／`emergency` 在 UI 顯示「当前输入不适用快速初筛，直接执行」；`deep` 仍不可執行。
 - `standard` 不插入初篩；`auto` 高置信可跳過整個多分支 pipeline、低置信繼續完整流程；`emergency` 初篩後一律終止並由 run state 將全部規劃階段標記為 skipped。
@@ -36,8 +36,10 @@
 
 ### 內部技術報告
 
-- 後端以 DB 對話、run state 與 telemetry 確定性組合自包含 HTML 報告，不使用 agent 撰寫報告；舊 run 若已有 agent trace 仍可作為歷史資料讀取，新 run 不再產生該檔案。
-- 報告包含檔案管理、使用者與 AI 交互時間線、方案 revision 差異、執行階段、job 級時間與資源、軟體命令與版本、輸入輸出 manifest、Fastp、去 rRNA、組裝及最終過濾指標。
+- 後端以 DB 對話、run state 與 telemetry 確定性組合自包含 HTML 報告，不使用 agent 撰寫結果；新 run 會快照 run-local `.bioagent/agent-trace.jsonl`，但其中的 summarized thinking 只解釋方案形成，不能作為結果結論的證據。
+- 報告包含檔案管理、使用者與 AI 交互時間線、方案 revision 差異、執行階段、job 級時間與資源、軟體命令與版本、輸入輸出 manifest、Fastp、去 rRNA、組裝及最終過濾指標；所有分析數值均附 `E-*` 證據編號。
+- 新增「證據蒐集與重算紀錄」，保留未四捨五入值、來源 locator、直接擷取值、允許清單內的衍生公式、父證據與後端重算校驗結果。
+- 新增「AI 方案推理摘要」，按時間與訊息識別碼展示 SDK `ThinkingBlock.thinking`；摘要思考與脫敏後的工具呼叫分表呈現，不保存 thinking signature，也不向一般使用者的診斷意見書公開。
 - 長度分布以內嵌 SVG 箱線圖呈現 Q1、中位數與 Q3；缺少或未完成的產物顯示「未產生」，不推測數值。
 - job 資源明細表使用專屬 `job-table`，資源欄最小寬度為 `360px`，資源內容以縮排 JSON 顯示並保留水平滾動。
 - 使用者與 AI 交互表使用專屬 `conversation-table`，狀態欄最小寬度為 `72px`、置中且禁止字內換行，不影響其他報告表格。
@@ -48,12 +50,20 @@
 - 交付報告不再由 AI 撰寫 HTML；後端根據成功 run 的 state 與版本化 workflow1 telemetry 即時確定性生成自包含 HTML。
 - 報告固定包含摘要、分析範圍、樣本輸入、S0–S4 結果、四個內嵌 SVG 圖位、結果邊界、真實產物及科研用途聲明；未執行與未產生資料均明確標示，不以 0 代替。
 - reads 統一以單條序列計數並顯示為 `M reads`，雙端資料另列 `M pairs`；測序 bases 顯示為 `Gb`，比例保留兩位小數，整數使用千分位。
-- 報告僅陳述客觀質控與組裝結果，不套用 portable 的批次綜合評分，也不從上游結果推導病原分類或病因學結論。
+- 報告僅陳述有數值證據的客觀質控、組裝與分類結果，不套用 portable 的批次綜合評分，也不從上游結果推導病因學結論；沒有既定門檻時不輸出「良好」「較差」「高品質」等定性判斷。
 - 診斷意見書 endpoint 不再讀取 run 內由模型生成的 HTML 檔，而是驗證成功終態、workflow、report schema 與 telemetry 後即時渲染。
 - 圖表為條形軌道與右側數值保留固定獨立欄位，滿值、近滿值、短值及較長單位文字不再互相遮擋。
-- 交付接口擴展為統一分析報告 renderer；state v3、telemetry v3 與 report schema v2 的 workflow1-only run 仍生成既有質控/組裝報告。
+- 交付接口擴展為統一分析報告 renderer；新下載接口只接受 state report 與 delivery report schema v4，舊 schema v2/v3 run 不再相容渲染。
 - 病毒分類 run 生成確定性的分類報告，包含適用的 reads 預處理摘要、候選數、聚類代表數、脊椎動物病毒候選數、代表性 contig 分類證據及真實 CSV/XLSX/FASTA 產物。
 - 無候選結果時明確顯示「未檢出符合流程判定條件的候選」；分類欄位缺失時保留空值，不從其他證據推測，也不產生病因或臨床結論。
+
+### 可追溯診斷結論與證據鏈
+
+- delivery report schema v4 新增 `evidence[]` 與 `conclusions[]`。每條 `C-*` 結論至少引用一項 `E-*` 數值證據，並以模板參數保存實際值、單位、運算符與既定門檻；分類名稱等類別欄位只有在同時引用可用的支持率、一致性或完整度數值時才形成分類結論。
+- 診斷意見書新增「證據化結論」與「證據索引」，展示證據值、單位、run-relative 來源路徑、JSON Pointer、表格行列或日誌匹配位置，以及衍生公式；「未檢出候選」由候選表資料行數為 0 支撐。
+- 後端在下載時從 run 目錄內的 JSON、CSV/TSV、seqkit 統計表、FASTA、XLSX、執行日誌或檔案 stat 重新讀取葉節點，並只允許 sum、count、distinct count、ratio/percent、max 與 weighted mean 衍生運算，不直接信任 telemetry 內的衍生值。
+- 校驗採 fail-closed：路徑逃逸、symlink、缺失來源、非有限數值、值不一致、未知公式、循環引用或沒有數值證據的結論都會使診斷意見書與含結果結論的內部報告下載回傳 HTTP 409。
+- 已完成 run 必須通過完整證據校驗；失敗或 blocked run 若未形成結果結論，管理員仍可下載原始技術紀錄，並明確標示「未形成結果結論」。政策聲明、適用邊界、run ID 與時間戳屬中繼資料，不當作分析結論。
 
 ### 前端
 
@@ -124,7 +134,7 @@
 - 主要跨流程連接包含 clean reads 至組裝、宿主 mapping、Kraken/Bracken 與病毒定量；filtered/direct contigs 至病毒識別或宿主 BLAST；病毒候選／識別序列至定量 reference 或注釋輸入。raw reads 可一次編譯病毒識別、宿主、微生物譜與病毒定量的多分支閉包。
 - 路由由規範化 spec 統一驅動：`standard` 直接執行；`auto`／`emergency` 僅在實際依賴閉包使用 paired-read artifact 時插入 5% Kraken2 初篩；沒有 paired reads 時 `effective_mode` 降級為 `standard`；自適應短路範圍固定為整個 pipeline。
 - 資源校準改用編譯後的階段簽名、各 workflow 資料庫簽名與多輸入規模；同一 run 的總時長按 phase 相加，峰值記憶體與 CPU 取各 phase 最大值，歷史不足時明確返回不可校準而不阻止有效方案。
-- delivery report 統一為 schema v3 `analysis_pipeline`，在保留上游與病毒分類既有結構的同時，新增宿主、微生物譜、病毒定量與病毒注釋的確定性結果解析。runtime、system prompt、README、architecture 與 workflow gatekeeper 均已切換至新版契約。
+- delivery report 統一為 schema v4 `analysis_pipeline`，在保留上游與病毒分類既有結構的同時，新增宿主、微生物譜、病毒定量與病毒注釋的確定性結果解析，以及跨分支一致的 `evidence[]`／`conclusions[]`。runtime、system prompt、README、architecture 與 workflow gatekeeper 均已切換至新版契約。
 
 ### 分析方案契約
 
@@ -153,6 +163,8 @@
 - runner 依序執行 adapter 準備的 phase；每個 phase 使用獨立 workflow、results、log、benchmark 與 source cache，任一 phase 失敗或取消後不啟動後續 phase。
 - 每個 job 記錄 rule、wildcards、開始與結束時間、wall time、CPU time、平均有效核心、最大 RSS/VMS/USS/PSS、I/O、threads、輸入大小、資源、完整命令及軟體版本；敏感 token、密鑰與環境值會統一遮罩。
 - 自動收集原始輸入與各階段 seqkit extended stats，解析 Fastp JSON、去 rRNA 比對率、組裝與最終過濾指標，並按方案 rules 聚合為 step，同時保留 job 級明細。
+- runner 為上游質控、病毒分類、快速初篩與多流程 pipeline 產生 schema v4 證據鏈；直接證據指向 run-local 產物或執行紀錄，比例、加總、最大值與加權平均則保存父證據與受限公式，供下載端重新計算。
+- Fastp、seqkit、Bowtie2、benchmark、資源與軟體呼叫等技術數值同樣建立證據項，使內部報告中的分析數值可定位至原始執行材料。
 - 新增 workflow1 交付資料 schema，按 sample 聚合多個 run/lane，保存 S0–S4 結構化指標、外部中途輸入語義與各階段狀態；Bowtie2 摘要按 run 獨立保存。
 - runner 在成功終態標記交付報告可用，失敗或取消終態標記不可用；runtime 不再接收 AI `diagnostic_report` 控制塊，也不發送報告 output item，下載完全由 Open WebUI 的 run 狀態驅動。
 - workflow2 的 run-local 副本為全部 rules 注入 extended benchmark，並讓既有 pandas 匯總步驟額外輸出候選、聚類代表及脊椎動物候選 CSV；runner 以標準庫解析後寫入分類 telemetry。
@@ -183,7 +195,8 @@
 - runner 在進程入口自行寫入 PID，避免短命流程已完成後被父進程以舊 running state 覆寫；獨立 reaper 負責回收 subprocess，但後端關閉不會終止仍在執行的分析。
 - 同一方案的重複確認會讀取並返回既有 state；舊 state 若缺少 assistant message ID，可在不重啟 runner 的前提下補上當前關聯。
 - `Popen` 啟動錯誤會立即把 state 寫成 failed 並返回可見錯誤；runner 入口未預期例外亦會補寫 failed、return code、錯誤與完成時間，避免 state 永久停留在 running。
-- 移除不再使用的 Claude execute prompt、Bash tool trace recorder，以及「Claude 回合結束即把 runner 判定為失敗」的舊邏輯；方案模式與 Claude 對話 session 行為維持不變。
+- 移除不再使用的 Claude execute prompt、無限制 Bash tool trace recorder，以及「Claude 回合結束即把 runner 判定為失敗」的舊邏輯；方案模式啟用 20,000 token、`display="summarized"` 的 SDK thinking，並從 `AssistantMessage.content` 分別擷取 `ThinkingBlock` 與 `ToolUseBlock`，不從可見文字的 `StreamEvent` 重複記錄或洩漏 thinking。
+- 每個 chat 保存版本化、去重且脫敏的審計 JSONL，建立 run 時快照到 `.bioagent/agent-trace.jsonl` 並在 `technical_report.agent_trace` 記錄位置；session resume 延續相同 chat trace，空 thinking 正常降級為「未返回摘要」。
 
 ### 資源准入與時間 telemetry
 
@@ -216,6 +229,13 @@
 - `e126c7b :sparkles: add deterministic workflow1 execution reporting`
 
 ## 驗證結果
+
+### 2026-08-21 可追溯證據鏈驗證
+
+- Agent 針對 runtime 與 runner 的 69 項單元測試通過，覆蓋 thinking options、`AssistantMessage` 擷取、JSONL 去重、session resume、空 thinking、工具輸入脫敏、run-local 快照，以及四種報告分支的 schema v4 證據與結論生成。
+- Open WebUI 後端 45 項相關測試通過，覆蓋直接來源、受限衍生公式、零資料行結論、路徑逃逸與 symlink、來源刪除或竄改、數值不一致、未知公式、循環引用、HTTP 409、一般使用者 thinking 隔離與管理員內部報告渲染。
+- Agent 與 Open WebUI 本次修改檔均通過 Ruff，兩個 submodule 及主 repo 均通過 `git diff --check`；本輪沒有啟動或保留前端、後端與 agent 進程。
+- 本機 `claude-agent-sdk 0.2.103` 的 `thinking.display` 與 `ThinkingBlock` 路徑已接入；因環境未提供 `MINIMAX_API_KEY`，未執行 `MiniMax-M3` 真實相容介面呼叫，空 thinking 降級已由單元測試驗證且不影響證據報告。
 
 ### 2026-08-21 Workflow 1–6 Pipeline 驗證
 
