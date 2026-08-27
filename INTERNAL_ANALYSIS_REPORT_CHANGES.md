@@ -4,6 +4,8 @@
 
 > 2026-08-21 更新：Workflow 1–6 已統一為 `analysis_pipeline` v2，交付報告與 state report 的現行版本為 schema v4。本文較早章節保留 `workflow1`、`virus_classification`、`adaptive_virus_analysis`、線性 steps 與 report schema v2/v3 的演進背景；若與下方「Workflow 1–6 通用分析 Pipeline」或「可追溯診斷結論與證據鏈」章節衝突，以新版章節為準。新版不接受舊 adapter，也不保證舊 run state 可重新展示或下載報告。
 
+> 2026-08-27 更新：分析輸入已切換為 owner-isolated Dataset revision。本文較早章節中的 `server_path`、prompt 內文字路徑、Benchmark `input_paths` 與重複 execute 回傳既有 state 僅保留演進背景；新 plan/run 必須引用已驗證 Dataset，路徑由後端與 runtime 權威解析，重複 execute fail closed。
+
 ## Submodule 版本
 
 | Submodule    | 分支                            | 基準分支 | 目前 commit |
@@ -12,6 +14,16 @@
 | `agent`      | `feat/internal-analysis-report` | `main`   | `e126c7b`   |
 
 ## `open-webui` 改動
+
+### Dataset、配對與 FASTQ 預檢
+
+- 新增持久化 `analysis_dataset`、不可改寫定義的 `analysis_dataset_revision` 與 fingerprint/check-version 預檢快取；revision 以 `base_revision` 樂觀鎖建立，owner 以外的使用者無法讀取或引用。
+- 新增 catalog、建立、精確 revision 讀取與修訂 API。路徑必須是分析 root 內可讀的絕對 file/directory，拒絕逃逸、broken symlink、kind 錯誤及解析後重複路徑。
+- FASTQ 建立流程確定性辨識同目錄 `R1/R2` 或後備 `1/2` token；多 pair、lane、缺 mate、重複/含混 token、跨目錄候選一律要求 review，不自動合併 biological sample。
+- 同步快檢限制為每側 1,000 records／8 MiB 解壓內容；背景單 worker 鎖步全檢至 EOF，驗證 gzip、四行結構、mate ID、record count、CRC 與掃描前後 fingerprint，並保存 pair/record/bytes 計數而不保存序列。
+- `/analysis` 檔案樹改為建立 Dataset，不再修改聊天文字或附加 `server_path`；Dataset 卡顯示 revision、狀態、issue、record/grouping 與預檢進度，並提供完整 artifact catalog 的角色與 identity review 編輯器。
+- 每次 BioAgent 請求由 Open WebUI 按當前使用者重新讀取精確 revision，只向模型側提供不含路徑的安全摘要；adapter 取得的完整 artifacts 與 fingerprints 均來自後端 canonical snapshot。
+- Benchmark 改為接受 `{id, revision}` Dataset reference，prompt 不再拼接輸入路徑；終態 bundle 與內部技術報告新增 Dataset revision、artifact/record、sample/run、預檢、fingerprint、計數與 issues 稽核資料。
 
 ### Workflow 1–6 通用分析 Pipeline
 
@@ -134,6 +146,13 @@
 
 ## `agent` 改動
 
+### Dataset 權威輸入邊界
+
+- MiniMax 規劃 prompt 只包含 Dataset artifact ID/type、record identity、狀態、checks 與 issues；模型 execution inputs 僅能選擇已存在的 artifact ID/type，模型生成的 records、關係與路徑會被忽略。
+- runtime 以 canonical Dataset records、角色與路徑重建 execution spec；缺 Dataset、未知 artifact、非 ready revision 或 deep mode 只能形成不可執行 provisional plan。
+- execute 再次驗證 plan 與 request 的 Dataset ID/revision、ready 狀態、artifact snapshot、root containment 及每個 device/inode/size/mtime_ns fingerprint，任一不一致都不建立 state。
+- 新 state 保存完整 Dataset 稽核快照；舊文字路徑方案與重複 execute 均 fail closed，不覆寫或重啟既有 run。
+
 ### Workflow 1–6 通用分析 Pipeline
 
 - 對外 execution spec 收斂為唯一的 `analysis_pipeline` v2；移除 `workflow1`、`virus_classification` 與 `adaptive_virus_analysis` 三種舊 adapter 的執行入口。模型只描述 typed `inputs`、`deliverables`、`options.viral_type` 與 `policy.mode`，不再手寫 `entry_rule`、`exit_rule`、`steps` 或精確 rules。
@@ -240,6 +259,14 @@
 - `e126c7b :sparkles: add deterministic workflow1 execution reporting`
 
 ## 驗證結果
+
+### 2026-08-28 Dataset、配對與預檢驗證
+
+- Open WebUI Dataset／FASTQ 測試曾完整通過 10 項，覆蓋 catalog parity、R1/R2 與 1/2 配對、lane/grouping、缺失/重複/含混/cross-directory mate、plain/gzip FASTQ、截斷、header/plus/length/mate ID/record count/CRC、非 FASTQ revision 與 fingerprint 變更；其後新增 root、broken symlink 與 canonical-path 重複測試，最終檔案通過 Ruff 與 `py_compile`。後續重跑受本機 Python import 偶發超過 3–5 分鐘的環境延遲而 timeout，尚未進入測試 body。
+- Agent adapter/runtime 共 58 項測試中，57 項通過；Dataset forwarding、安全 prompt、模型 path/record 覆寫、未知 artifact、checking provisional plan、fingerprint 變更拒絕、state snapshot 與重複 execute fail-closed 均通過。唯一失敗為既有短命 subprocess 在 2 秒等待窗內仍顯示 running，已將測試等待窗調整為 10 秒；單項重跑同樣在環境 import 延遲後觸及命令 timeout。
+- Open WebUI 與 Agent 修改檔通過 Ruff（既有高複雜度 router/report 以既有 C901 邊界排除）、Python `py_compile` 與 `git diff --check`；受影響前端檔通過 Node 22 Prettier check。
+- 完整 `npm run build` 的 Pyodide 下載/鎖檔步驟成功；獨立 Vite 驗證完成 6,345 個模組並回報 `✓ built in 10m 54s`。其後 `adapter-static` 複製既有大型 static/Pyodide 資源超過 30 分鐘命令上限而被 timeout；未清理既有或本輪 build 產物，log 保存在 `/tmp/bioagent-open-webui-build.log` 與 `/tmp/bioagent-open-webui-vite-build.log`。
+- Alembic migration 已實際由現有 SQLite 從 `42e2978c7933` 升級至 `5d6e7f8091a2`，靜態 revision graph 驗證僅有一個 head。全程未啟動或保留前端、後端與 agent 服務。
 
 ### 2026-08-21 Benchmark 背景執行入口驗證
 
