@@ -305,3 +305,19 @@
 ## 後續更新方式
 
 後續在此分支增加功能時，應更新上方 submodule commit、在相應 submodule 章節補充設計與行為變更、更新測試數量及實際驗證結果，並在需要時新增「後續邊界」說明。本文檔只記錄本分支相對各 submodule 基準分支的有效改動，不複製完整程式碼或逐檔案羅列機械性修改。
+
+# 阶段二：目标卡片与确定性 Planner
+
+- 新增六类结构化分析目标、RNA/DNA/RNA+DNA 控制和仅 Standard/Emergency 的 authoritative routing；新资料集不预选目标。
+- 新增 Open WebUI `analysis_plan`、immutable `analysis_plan_revision` 与每 revision 唯一 execution reservation，使用 `base_plan_revision` 乐观锁并隐藏 private execution spec。
+- BioAgent 新增无状态 compile/start API；planner 从 canonical dataset 选择最小输入闭包，执行前重新编译、检查 fingerprint，并由固定 run ID 幂等启动 runner。
+- 方案卡与确认入口脱离聊天消息；纯结构化选择、规划、确认和 runner 启动不会调用 MiniMax，也不会生成隐藏确认消息。
+- Benchmark API 改为 dataset、goals、options、routing 的结构化契约，保存 `model_calls=0`，复用同一 plan/execution gate。
+- Run state 和内部技术报告保存 plan ID/revision、goals、options、planner version 与 deterministic decision trace；报告的方案变更记录改读持久化 revisions。
+
+## 阶段二验证记录
+
+- Deterministic planner 与 pipeline compiler 17 项 unittest 通过，覆盖六类 goals、共享上游、三种 viral type、最短输入、额外 artifact 过滤、routing normalization、确定性输出和执行前篡改拒绝。
+- Agent 变更文件 Ruff 通过；Open WebUI 新文件完整 Ruff 通过，既有复杂函数按项目现状仅执行 E/F/I 检查并通过。
+- 前端变更文件通过 Node 22 Prettier check。Vitest 已进入 runner，但本机 worker 在收集测试前因 Vite SSR fetch timeout 退出；后端 unittest 也在 FastAPI module import 阶段超时，均未产生 test case failure。
+- `npm run build` 的 Pyodide 下载在授权后完成；Vite 已扫描到全站 Svelte 组件且只输出既有 warning，但受本机 I/O 影响在 20 分钟 timeout 内未完成 bundle，未出现本次变更文件的编译错误。
