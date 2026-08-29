@@ -385,3 +385,14 @@ Only the browser-facing frontend and backend ports are forwarded. The BioAgent r
 The backend starts at http://localhost:8080. API docs are available at http://localhost:8080/docs.
 
 Refresh the frontend at http://localhost:5173 and you should see the full application.
+
+### 7. Deterministic Analysis Planner API
+
+The AI analysis page creates immutable plans without sending chat completions:
+
+- `POST /api/v1/analysis/plans` compiles a dataset revision, goals, `viral_type`, and Standard/Emergency routing. Pass `base_plan_revision` when revising an existing chat.
+- `GET /api/v1/analysis/plans/{chat_id}/latest` returns the owner-visible plan card. Private execution specs and absolute input paths are never returned.
+- `POST /api/v1/analysis/plans/{plan_id}/revisions/{revision}/execute` is the only run confirmation endpoint. It accepts only the latest ready revision and reserves at most one run.
+- `POST /api/v1/analysis/benchmark/runs` uses the same structured contract and planner/execution gate; it does not accept a prompt or model.
+
+Set `BIOAGENT_INTERNAL_API_BASE_URL` to the BioAgent internal `/v1` base URL when it differs from `OPENAI_API_BASE_URL`.
