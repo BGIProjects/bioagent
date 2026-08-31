@@ -355,3 +355,19 @@
 - Agent 变更文件 Ruff 通过；Open WebUI 新文件完整 Ruff 通过，既有复杂函数按项目现状仅执行 E/F/I 检查并通过。
 - 前端变更文件通过 Node 22 Prettier check。Vitest 已进入 runner，但本机 worker 在收集测试前因 Vite SSR fetch timeout 退出；后端 unittest 也在 FastAPI module import 阶段超时，均未产生 test case failure。
 - `npm run build` 的 Pyodide 下载在授权后完成；Vite 已扫描到全站 Svelte 组件且只输出既有 warning，但受本机 I/O 影响在 20 分钟 timeout 内未完成 bundle，未出现本次变更文件的编译错误。
+
+# 2026-08-31 智能路由、病毒注释与报告可用性
+
+- Routing 公共契约统一为 `auto | standard | emergency`，新对话默认智能；智能模式仅在全部样本均满足三项固定门槛时走快速路径，紧急模式在初筛后直接形成报告。移除 `deep`、`deadline_seconds` 及其 UI、runner state 和报告字段，旧契约方案必须重新编译。
+- Workflow 2 汇总按最终脊椎动物病毒候选确定性生成 `taxonomy.tsv`，分类字段依次采用 `nr_vote_vfamily`、`nr_svfamily`、`vhdb_svfamily`、`nr_svgenus`、`rdrpscan_svorder`，缺失时写入 `Unclassified_viral_contig`。`virus_summary_bundle` 直接供 Workflow 6 使用；独立病毒 FASTA 仍要求外部 taxonomy，空候选则记录跳过注释流程。
+- 分析对话由 health 固定返回 `BioAgent` 模型 ID，不再依赖一般模型列表；仅已登录 analysis 对话可绕过 raw-provider ACL。MiniMax 对话契约明确六个固定目标，并拒绝把“只做质控”误映射为同时包含组装的目标。
+- Benchmark 建立、状态、结果与内部技术报告对所有已登录用户开放，同时以 Dataset、chat、run owner 隔离；一般用户可在自己的 run status 看见内部报告可用性。
+- 诊断意见书按实际执行域条件式显示质控／组装、初筛、病毒候选、宿主、微生物 taxa、RPM 与注释 review 信息；只在 adaptive 固定门槛报告高／低置信。所有报告加入未勾选人工审核清单。
+- 公开证据索引只显示结论直接或递归引用的证据，内部完整采集与重算记录改为可折叠；表格缩小 padding，路径／来源可换行，数值列保持紧凑，宽 job 表使用固定最小宽度与水平滚动。
+
+## 本轮验证记录
+
+- Agent routing、planner、runner、conversation contract、Workflow 2→6 编译与空候选检测等非 Snakemake dry-run 测试通过；另有 23 项 runtime／conversation contract 测试通过。整批 61 项测试中 57 项完成，4 项真实 workflow dry-run 因本机 I/O 在各自 60 秒限制内超时，未出现断言失败；两项旧 deadline／慢机启动断言修正后单独重测通过。
+- Open WebUI 初轮 analysis／benchmark／plan router 共 52 项中 51 项通过，唯一失败为测试缺少新增 owner mock；修正后报告、owner isolation、一般用户内部报告、benchmark 跨用户拒绝及 BioAgent 专用 ACL 等 26 项针对性回归测试通过。公开／内部证据闭包 5 项测试及前端 routing／API Vitest 27 项均通过。
+- Agent 与 Open WebUI 修改 Python 文件通过 Ruff 与 `py_compile`，前端与 README 通过 Node 22 Prettier，三层 `git diff --check` 通过。`npm run build` 在授权网络环境完成 Pyodide、client、server 与 adapter-static 全流程，exit code 为 0。
+- 8002 health 回传固定 `BioAgent` ID、MiniMax-M3 ready 与 TaxonAgent configured；真实 MiniMax 对“只做质控”明确拒绝误映射并列出六个固定目标。首次 smoke test 因 production build 后 250 MB Claude CLI 冷载入超过 SDK initialize 时限，预热后二次请求成功。最终 5174、8081、8002 均以当前代码运行且 HTTP health／首页 smoke test 为 200。
