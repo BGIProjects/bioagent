@@ -6,6 +6,40 @@
 
 > 2026-08-27 更新：分析輸入已切換為 owner-isolated Dataset revision。本文較早章節中的 `server_path`、prompt 內文字路徑、Benchmark `input_paths` 與重複 execute 回傳既有 state 僅保留演進背景；新 plan/run 必須引用已驗證 Dataset，路徑由後端與 runtime 權威解析，重複 execute fail closed。
 
+> 2026-08-30 更新：完成小模型與知識庫之前的階段 2.5。本文較早章節中的 model-authored plan、`analysis_mode`、Claude Code preset／檔案工具、模型 title/tag、模型驅動 benchmark，以及把 summarized thinking 視為方案證據的描述均只保留演進背景；新控制面以 Dataset、deterministic plan revision、受控 proposal 與持久化 decision event 為準。
+
+## 階段 2.5：模型退出控制面
+
+### Open WebUI
+
+- deterministic planner client 與聊天統一使用持久化的 `openai.api_base_urls`／`openai.api_configs` runtime 設定，不再匯入啟動時可能被重設的單值 `OPENAI_API_BASE_URL`。唯一明確標記的 BioAgent 連線優先；只有一個未標記有效連線時可直接使用，空值、停用、多個含混候選及 OpenAI 公網 URL 均 fail closed。
+- 新增 `analysis_plan_proposal` 狀態機與嚴格 patch schema。模型只能提出 `goals`／`viral_type`，每個 chat 最多一個 pending proposal；接受後才重編 deterministic plan，拒絕不改方案，pending proposal 會阻止 execution admission。
+- 新增 `analysis_event` decision trace，保存 Dataset 建立／修訂／預檢、控制器變更、plan 編譯、proposal 決定、確認、admission 拒絕與 run 啟動；內部報告以此為主要稽核來源，歷史 thinking／tool trace 降為非權威附錄。
+- 分析對話在前後端均停用 title/tag 模型任務，標題沿用 deterministic planner 模板，tag 固定由 goals、artifact types 與 routing mode 生成。
+- 新增分離健康狀態與 typed control-plane errors；對話模型不可用只停用輸入框，不阻止 Dataset、方案、執行與報告操作。UI 依 error code 顯示固定修復指引。
+- Benchmark 改為純結構化、provider-neutral 路徑，固定 `model_calls=0`；另保存 action schema-valid rate、越權拒絕、patch acceptance、provider latency 與 decision-event 數量。
+- Dataset preflight 使用 DB lease claim、續租與失敗接管，避免多 process 重複全掃；runner 使用期間暫停，並覆蓋空 FASTQ、掃描期間換檔及啟動恢復。
+
+### Agent
+
+- `start.sh` 在啟動 uvicorn 前載入 git-ignored `.env`；提供不含密鑰的 `.env.example`，本機可由 `MINIMAX_API_KEY` 啟用暫代的 `MiniMax-M3` 對話 provider。
+- `DeterministicRuntime` 與模型 session 完全拆分；adapter 啟動與 plan/run API 不載入 Claude runtime，conversation client 只在聊天請求到達時延遲建立。
+- 移除 model-authored plan parser、舊 plan reservation、plan/execute mode、`set_mode`／`start_execution` 與 project Skill；MiniMax 不再取得 Claude Code preset、Read／Glob／Grep、額外目錄或 thinking budget，只保留只讀 TaxonAgent MCP。
+- 新增 provider-neutral `ConversationAction` schema、安全 context builder 與固定 timeout/error。模型只能 `respond`、`clarify` 或提出受控 patch；非法 JSON、越權欄位、timeout 與 provider unavailable 都不改控制狀態。
+- 新增 `Corpus`、`Citation`、`RetrievalResult`、retrieval adapter、固定資料不足錯誤及 TaxonAgent citation wrapper；缺少 `source_version`／`locator` 時只標記 citation quality incomplete，暫不建立 corpus、embedding、ingestion 或向量索引。
+- 新增 provider-neutral golden cases 與 action trace，讓 MiniMax 和後續自研小模型可以在相同 schema、延遲、越權與 patch 指標下比較。
+
+### 2026-08-31 planner 與 MiniMax-M3 修復
+
+- 資料庫中的聊天 runtime 連線為 `openai.api_base_urls=["http://127.0.0.1:8002/v1"]`，但舊 planner client 匯入的單值 `OPENAI_API_BASE_URL` 會在 Open WebUI 設定初始化時重設為 `https://api.openai.com/v1`；修正該漂移後又確認 `httpx` 會把 localhost 請求送入主機 HTTP proxy，造成 connection drop。health、compile 與 run start 現在共用同一個持久化連線 resolver，並以 `trust_env=False` 直連，永不回退至 OpenAI 公網。
+- MiniMax 官方 Anthropic 相容文檔已明確列出 `MiniMax-M3`，並支持 messages、stream、tools 與 `tool_choice`。目前仍由 Claude Agent SDK／本機 CLI 管理 MCP；SDK subprocess 同時取得官方使用的 `ANTHROPIC_API_KEY` 與 CLI 支持的 `ANTHROPIC_AUTH_TOKEN`，兩者都只來自 git-ignored `.env`。
+- persistent 對話使用 `ConversationAction.model_json_schema()` 設定 Claude Agent SDK structured output，並以 Pydantic 二次驗證；只有 SDK 未提供 structured output 時才接受精確 `conversation_action` fence。`patch` 別名及 mode、dataset、路徑、sample/run、steps、resources、execution 等越權欄位仍 fail closed。
+- runtime 會依最新 user message 確定性辨識 ICTV、病毒分類學、科／屬界定、marker gene、genome type 與 `-viridae` 等知識意圖，並核對 TaxonAgent tool-use ID 與對應的非錯誤 tool result。缺少成功結果時丟棄模型文字與 proposal，只回傳固定 `KNOWLEDGE_UNAVAILABLE`；成功知識回合若夾帶 patch 仍以 `KNOWLEDGE_PATCH_FORBIDDEN` 拒絕。非 ICTV 的一般說明仍可由 MiniMax-M3 完成。
+- UI 在 plan compile 成功後立即把 deterministic health 更新為 ready，`PLANNER_UNAVAILABLE` 時更新為 unavailable；同一故障只保留一份啟動提示，不再同時顯示卡片錯誤與 banner。
+- 本機 `.env` 權限已收緊為 `0600`；git-ignored Claude session transcript 內符合 MiniMax key 格式的字串已原地替換為 `[REDACTED]`，未刪除聊天 mapping。此本機清理不能使可能已複製至其他位置的憑證失效，完整處置仍需未來輪換。
+- 重啟後 8002 health 與 8081 authenticated analysis health 均回報 deterministic／MiniMax-M3 ready；保留中的 `BJ-2024-615_1/2.fastq.gz` Dataset 經 8081 建立「質控與組裝」方案，得到五個固定 stages、`ready_to_execute=true` 與 HTTP 200。該結構化規劃直接使用 deterministic compile，沒有 conversation model call。
+- live 一般方案說明由 MiniMax-M3 成功回應；ICTV 意圖在沒有相符成功 tool result 時只回傳 typed `KNOWLEDGE_UNAVAILABLE`，沒有輸出模型文字或 proposal。Agent 全量 96 項 unittest、相關 Open WebUI backend 36 項 unittest 及前端 7 項 Vitest 均通過；Ruff、Prettier、shell syntax 與三個 repo 的 `git diff --check` 亦通過。
+
 ## Submodule 版本
 
 | Submodule    | 分支                            | 基準分支 | 目前 commit |
