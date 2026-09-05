@@ -1,398 +1,281 @@
-# BioAgent 项目架构与改动记录
+# BioAgent 本机开发
 
-本文档描述 cyclone 上 `/data/bioagent` 项目的整体架构、目录组织、服务关系，以及当前版本已经完成的主要改动。
+本仓库在 macOS 运行 Open WebUI Frontend、Backend 与 BioAgent；固定的 Workflow 1–6、FASTQ 预检、资源采集和分析产物全部留在 Cyclone。浏览器只需访问 <http://127.0.0.1:5173>，不需要 SSH port forwarding。
 
-## 1. 项目整体架构
-
-### 1.1 请求链路
+## 架构
 
 ```text
-本机浏览器
-  │  SSH 端口转发，访问 http://127.0.0.1:5173
-  ▼
-Open WebUI Frontend（SvelteKit/Vite，127.0.0.1:5173）
-  ▼
-Open WebUI Backend（FastAPI，127.0.0.1:8080）
-  │  OpenAI-compatible HTTP + X-OpenWebUI-Chat-Id
-  ▼
-BioAgent Adapter（FastAPI，127.0.0.1:8001）
-  │  OpenAI 协议与 Claude Agent SDK 协议转换
-  ▼
-Claude Agent SDK Runtime
-  ├── 项目级 Skills、Claude Code 内置工具、本地 session transcript
-  ├── ICTV 查询 → MCP Streamable HTTP → TaxonAgent MCP Server（5090:8765）
-  └── MiniMax Anthropic-compatible API
-
-固定工作流执行路径：Claude Agent SDK -> Bash -> Snakemake -> workflow1-workflow6
+Chrome :5173 → Open WebUI Backend :8080 → BioAgent :8001
+                                              │
+                                              └─ SSH alias Cyclone
+                                                 ├─ remote worker / private tmux
+                                                 ├─ /data/user/liufangzhou/datasets
+                                                 ├─ /data/user/liufangzhou/runs
+                                                 └─ Workflow 1–6
 ```
 
-### 1.2 组件职责
-
-#### Open WebUI Frontend
-
-- 提供登录、Dashboard、聊天、历史会话和用户交互界面。
-- 前端源码位于 `/data/bioagent/open-webui/src`。
-- 使用 Vite 开发模式运行，修改源码后支持热更新。
-
-#### Open WebUI Backend
-
-- 负责用户、权限、聊天记录和 OpenAI-compatible 模型连接。
-- 数据保存在 `/data/bioagent/data/open-webui`。
-- 通过 `X-OpenWebUI-Chat-Id` 将当前 chat UUID 转发给 adapter。
-
-#### BioAgent Adapter 与 Runtime
-
-- 源码位于 `/data/bioagent/agent`。
-- adapter 暴露 `/v1/models` 和 `/v1/chat/completions`，只负责协议转换。
-- runtime 负责 Claude SDK 配置、session 创建与恢复、Skill 和工具加载。
-- runtime 在 ICTV 分类问题中通过 MCP 调用 5090 上的 TaxonAgent。
-- runtime 不访问 Open WebUI 数据库，不保存额外 chat/session 映射。
-
-#### TaxonAgent MCP Server
-
-- 运行于 5090，监听 `0.0.0.0:8765`，MCP endpoint 为 `/mcp`。
-- 暴露 `ictv_family_info(family_name)`，用于查询 ICTV 分类规则、划界标准、marker gene 与 genome type。
-- Server 源码位于 5090 的独立 `~/projects/taxonagent` 项目，不属于本 repo 的 `agent/` submodule。
-- BioAgent 使用内网地址 `http://172.24.202.246:8765/mcp` 访问该服务。
-
-#### Snakemake Workflows
-
-- 固定分析逻辑位于 `/data/user/guojindan/Projects/Workflows`。
-- Agent 负责需求识别、workflow 推荐、两次确认、run 目录准备和结果解释。
-- Snakemake 负责 DAG、规则调度和真实分析执行。
-- 每次分析使用 `/data/runs/<run_id>` 独立运行目录，不修改源 workflow。
-
-### 1.3 目录结构
+BioAgent 使用 `ssh -o ClearAllForwardings=yes`，因此不会启用 SSH config 中已有的转发。连接通过 ControlMaster/ControlPersist 复用。远端 worker 只同步运行所需 Python 模块，按内容哈希发布到：
 
 ```text
-/data/bioagent/
-├── agent/
-│   ├── adapter.py
-│   ├── runtime.py
-│   ├── config.py
-│   ├── tests/
-│   └── .claude/
-│       ├── skills/
-│       └── sessions/
-├── open-webui/
-├── conda/
-│   ├── envs/adapter/
-│   ├── envs/open-webui/
-│   └── pkgs/
-├── env/open-webui.env
-├── systemd-user/
-├── cache/
-└── data/open-webui/
+/data/user/liufangzhou/.bioagent/worker/releases/<sha256>
 ```
 
-### 1.4 服务与端口
+RPC 控制进程、私有 tmux supervisor 与 analysis runner 共用 Cyclone 本机 NVMe 上的 `/home/liufangzhou/.pixi/envs/snakemake/bin/python`；Snakemake 与 SeqKit 分别使用 `/home/liufangzhou/.pixi/bin/snakemake`、`/home/liufangzhou/.pixi/bin/seqkit`。当前验证版本为 Python 3.12.14、Snakemake 9.26.1 与 SeqKit 2.13.0，不需要另建或迁移 adapter 环境，也不会回退 `/data` 上的旧环境。
 
-| 服务 | systemd unit | 地址 | 工作目录 |
-| --- | --- | --- | --- |
-| BioAgent adapter | `bioagent-adapter.service` | `127.0.0.1:8001` | `/data/bioagent/agent` |
-| Open WebUI backend | `open-webui-backend.service` | `127.0.0.1:8080` | `/data/bioagent/open-webui/backend` |
-| Open WebUI frontend | `open-webui-frontend.service` | `127.0.0.1:5173` | `/data/bioagent/open-webui` |
+Workflow 1 的源配置仍可保留原工具路径；worker 复制到 run root 后会只在 run-local `config.yaml` 中把 `software.seqkit` 改为 Pixi 入口，不修改 Cyclone 上的 Workflow 源码。
 
-TaxonAgent MCP Server 位于 5090，当前需在 `taxonagent` conda 环境中手动启动，不由 cyclone 的用户级 systemd 管理。
+## Developer Guide
+
+本节是从一台新 macOS 开发机恢复本项目的唯一部署指南。默认继续使用现有 Cyclone 账号、数据与 Workflow；完成一次依赖安装后，日常操作请直接跳到[启停服务](#启停服务)。
+
+### 1. 准备本机工具
+
+需要 Git、OpenSSH、rsync、tmux、Conda、Node.js 22、npm、OpenSSL、curl 与 lsof。macOS 可先安装 Xcode Command Line Tools 与 Homebrew，再安装命令行依赖；Conda 建议使用 Miniconda，Node 建议由 nvm 管理：
 
 ```bash
-systemctl --user status bioagent-adapter open-webui-backend open-webui-frontend
-systemctl --user restart bioagent-adapter open-webui-backend open-webui-frontend
-
-ssh -N \
-  -L 5173:127.0.0.1:5173 \
-  -L 8080:127.0.0.1:8080 \
-  cyclone
+xcode-select --install
+brew install git rsync tmux openssl curl lsof
+nvm install 22
+nvm use 22
+node --version
+conda --version
 ```
 
-## 2. 本次改动
+`xcode-select --install` 已执行过时会提示工具已经存在。Miniconda 与 nvm 请按各自安装程序初始化 zsh 后再继续。
 
-### 2.1 Adapter 职责收敛
+Linux 可用发行版的包管理器安装同名工具；另外需安装 zsh，并确认 login zsh 能读取密钥。`lsof`、tmux 和浏览器命令的包名或路径可能不同，打开页面可使用 `xdg-open` 而非 macOS 的 `open`。本脚本以 macOS 为主要目标，不承诺覆盖所有 Linux 发行版差异。
 
-修改文件：`/data/bioagent/agent/adapter.py`
-
-- 现在只负责 FastAPI 路由、OpenAI-compatible 数据结构和 SSE 流式输出。
-- 从请求头读取 `X-OpenWebUI-Chat-Id`，把消息和 chat ID 交给 `SessionManager`。
-- 同时支持流式与非流式 completion。
-- 移除 Skill 文件读取、阶段切换、prompt 拼接和工具权限业务逻辑。
-- 删除 `/plan`、`/execute` 命令和 plan/execute 两种运行模式。
-
-### 2.2 Runtime 与 SessionManager
-
-新增文件：`/data/bioagent/agent/runtime.py`
-
-- 新增 `SessionManager`，负责 SDK options、session 创建、恢复和结果校验。
-- 不持有长期运行的 `ClaudeSDKClient`；每个 HTTP 请求使用独立 `query()` subprocess。
-- 不访问 `webui.db`，不维护额外数据库映射。
-- 校验 chat ID 必须是规范 UUID。
-- 校验 transcript 是合法 JSONL，损坏时明确拒绝恢复。
-- 校验 SDK 返回 session ID 与 Open WebUI chat ID 一致。
-
-删除文件：`/data/bioagent/agent/phases.py`
-
-### 2.3 多轮对话与 Session 持久化
-
-涉及文件：`runtime.py`、`.gitignore`
-
-```text
-Open WebUI chat_id
-  ├── transcript 不存在：ClaudeAgentOptions(session_id=chat_id)
-  │                        首次发送当前 Open WebUI 历史进行引导
-  └── transcript 已存在：ClaudeAgentOptions(resume=chat_id)
-                           只发送最新用户消息
-```
-
-Transcript 位置：
-
-```text
-/data/bioagent/agent/.claude/sessions/projects/-data-bioagent-agent/<chat_id>.jsonl
-```
-
-- `.claude/sessions/` 已加入 `.gitignore`。
-- `local:` 和 `channel:` 类型 chat ID 使用临时单次会话。
-
-### 2.4 集中配置
-
-新增文件：`/data/bioagent/agent/config.py`
-
-- 模型、API 地址、API 密钥、项目路径、额外目录和系统提示词集中定义于该文件。
-- runtime 不从 shell 环境读取这些配置。
-- `ClaudeAgentOptions.env` 只负责把 Python 常量传给 SDK subprocess。
-- `bioagent-adapter.service` 已移除对 `/data/bioagent/env/adapter.env` 的依赖。
-
-注意：`config.py` 当前包含密钥，不应在未清理密钥时公开源码或日志。
-
-### 2.5 Skill 与工具权限
-
-涉及文件：`runtime.py`、`.claude/skills/bioinformatics-workflow-gatekeeper/SKILL.md`
-
-- 使用 `setting_sources=["project"]` 和 `skills="all"` 加载项目级 Skills。
-- 不再由 adapter 手工读取 Skill 并拼接系统提示词。
-- 使用 Claude Code 工具 preset，Agent 在所有对话阶段都拥有全部内置工具权限。
-- 使用 `permission_mode="bypassPermissions"`，工具调用不经过 adapter 人工审批。
-
-### 2.6 Snakemake Workflow Gatekeeper Skill
-
-新增文件：
-
-```text
-/data/bioagent/agent/.claude/skills/bioinformatics-workflow-gatekeeper/SKILL.md
-```
-
-- 支持识别 workflow1-workflow6，不推荐 workflow7。
-- 第一次确认前不得创建 run 目录或执行 dry-run。
-- 第一次确认后才能复制 workflow、准备配置并执行 dry-run。
-- dry-run 后必须总结执行计划并进行第二次确认。
-- 第二次确认后才能通过 Bash 启动真实 Snakemake 执行。
-- 不使用 MCP custom tool，不修改源 workflow。
-- workflow1 已完成最小 dry-run，成功生成 `fastp -> bowtie2 -> merge -> megahit -> rename_filter -> all` DAG。
-
-### 2.7 Open WebUI Chat ID Header
-
-涉及位置：
-
-```text
-/data/bioagent/env/open-webui.env
-/data/bioagent/open-webui/backend/open_webui/routers/openai.py
-/data/bioagent/agent/adapter.py
-```
-
-当前启用：
-
-```text
-ENABLE_FORWARD_USER_INFO_HEADERS=True
-```
-
-- Open WebUI 通过 `X-OpenWebUI-Chat-Id` 转发当前 chat UUID。
-- adapter 使用该 UUID 创建或恢复 Claude session。
-- 未修改 Open WebUI 数据库结构，没有增加 `claude_session_id` 列。
-- 当前没有 `X-OpenWebUI-Task` 逻辑。此前增加的后台 task Header 和临时会话隔离已经回退，runtime 不对标题、标签等后台请求做专门分类。
-
-### 2.8 Dashboard 页面
-
-涉及文件：
-
-```text
-/data/bioagent/open-webui/src/routes/(app)/dashboard/+page.svelte
-/data/bioagent/open-webui/src/routes/auth/+page.svelte
-```
-
-- 新增 `/dashboard` 路由，并作为没有明确 redirect 时的登录后默认页面。
-- 顶部统计项为 `Samples tracked`、`Reads Analyzed`、`High-risk findings`、`Species Identified`。
-- 主区域预留 `Geospatial Virus Spread` 地图。
-- 右侧预留 `AI Assistant`。
-- 删除 `Recent Analysis Projects` 和 `Dashboard Data Plan`。
-- 桌面端跟随左侧 Sidebar 缩宽并向右让位。
-- 统计、地图和 AI Assistant 目前仍为静态占位。
-
-### 2.9 Chat System Status 面板
-
-涉及文件：
-
-```text
-/data/bioagent/open-webui/src/lib/components/chat/Chat.svelte
-/data/bioagent/open-webui/src/lib/components/chat/SystemStatusPanel.svelte
-```
-
-- 聊天界面增加右侧 `System Status` 面板。
-- 桌面端通过右侧窄栏图标展开或关闭。
-- 收起后聊天区域自动扩展；移动端隐藏面板和 toggle。
-- Open WebUI 原生 Controls 打开时不同时显示 System Status。
-- 当前任务、CPU、内存和存储数据仍为静态占位。
-
-### 2.10 systemd 源码部署
-
-涉及目录：`/data/bioagent/systemd-user/`、`~/.config/systemd/user/`
-
-- adapter、Open WebUI backend 和 frontend 均由用户级 systemd 管理。
-- unit 使用绝对 conda 环境路径，不依赖交互式 `conda activate`。
-- 源码、环境、缓存、数据库和运行数据均位于 `/data/bioagent`。
-
-### 2.11 测试
-
-新增文件：`/data/bioagent/agent/tests/test_runtime.py`
-
-当前 6 个测试覆盖：
-
-- 新 chat 使用 `session_id=chat_id`。
-- 已有 transcript 使用 `resume=chat_id`。
-- 恢复后只发送最新用户消息。
-- 缺失或非法 chat ID 被拒绝。
-- 损坏 transcript 被拒绝。
-- `local:` chat 使用临时会话。
-- SDK 加载全部 Skills 和 Claude Code 工具 preset。
-
-所有测试均已通过。真实两轮调用也已验证第一轮创建 transcript、第二轮恢复并保留上下文。
-
-## 3. 当前状态与限制
-
-- Dashboard 的统计、地图和 AI Assistant 尚未连接真实数据。
-- System Status 尚未连接服务器资源 API。
-- workflow2-workflow6 尚未逐个进行真实数据端到端验证。
-- Snakemake 两次确认是 Skill 行为规则，不是底层强制权限闸门。
-- runtime 当前按单个 uvicorn worker 设计，同一 chat 不应并发写入。
-- Open WebUI backend 最近一次重启受到 cyclone `/data` 系统级磁盘 I/O 阻塞影响；这不是 Python 语法或 Header 回退错误。
-
-## 4. Developer Guide
-
-This guide is nearly identical to the [Open WebUI official document](https://docs.openwebui.com/getting-started/advanced-topics/development), with slight changes.
-
-### 1. Clone the Repository
+### 2. 克隆仓库与 submodule
 
 ```bash
 git clone --recurse-submodules git@github.com:BGIProjects/bioagent.git
 cd bioagent
+git submodule update --init --recursive
+git submodule status --recursive
 ```
 
-### 2. TaxonAgent MCP Server Setup
+最后一条命令应列出 `agent` 与 `open-webui`，且行首不应出现表示未初始化的 `-`。
 
-In your **first terminal**, connect to 5090 and start the MCP server:
+### 3. 创建本机环境并安装依赖
+
+以下命令均从仓库根目录执行：
 
 ```bash
-ssh 5090
-conda activate taxonagent
-python ~/projects/taxonagent/mcp/taxonagent_mcp.py
+conda create -n adapter python=3.11 -y
+conda run -n adapter python -m pip install \
+  claude-agent-sdk fastapi uvicorn pytest
+
+conda create -n open-webui python=3.11 -y
+conda run -n open-webui python -m pip install -U \
+  -r open-webui/backend/requirements.txt
+
+npm --prefix open-webui install
 ```
 
-The server listens on `0.0.0.0:8765` and exposes the Streamable HTTP endpoint at `/mcp`. BioAgent connects to it over the internal network, so browser SSH port forwarding for port 8765 is not required.
+启动脚本不会自动 install 或 build。前端完整 build 只用于最终验收，见[验证](#验证)。
 
-### 3. Agent Setup
+### 4. 配置并核对 Cyclone
 
-In your **second terminal**:
+在 `~/.ssh/config` 中准备 `Cyclone` alias；将主机地址替换为研究院实际地址：
+
+```sshconfig
+Host Cyclone
+    HostName <Cyclone hostname or IP>
+    User liufangzhou
+    ServerAliveInterval 30
+    ServerAliveCountMax 3
+    ControlMaster auto
+    ControlPath ~/.ssh/control-%C
+    ControlPersist 10m
+```
+
+BioAgent 每次都会追加 `ClearAllForwardings=yes`，无需配置 5173/8080/8001 的 SSH port forwarding。先验证连接、私有 tmux、目录和 Workflow 1–6：
 
 ```bash
-cd agent
+ssh -o ClearAllForwardings=yes Cyclone 'printf "SSH OK\n"'
+ssh -o ClearAllForwardings=yes Cyclone \
+  '/data/user/liufangzhou/bin/tmux -V'
+ssh -o ClearAllForwardings=yes Cyclone '
+  set -eu
+  test -d /data/user/liufangzhou/datasets
+  test -d /data/user/liufangzhou/runs
+  for workflow in \
+    workflow1_upstream workflow2_virusid_2026db workflow3_hostid \
+    workflow4_kraken_bracken workflow5_virus_quantification \
+    workflow6_virus_annotation; do
+      test -d "/data/user/guojindan/Projects/Workflows/$workflow"
+  done
+  printf "Cyclone paths OK\n"
+'
 ```
 
-Create and activate a virtual environment:
+远端 worker 固定使用 `/data/user/liufangzhou/bin/tmux -L bioagent-worker`，不要改为全局 tmux server。data root 可包含 symlink；准入规则见[数据路径与 symlink](#数据路径与-symlink)。
+
+### 5. 在 Cyclone 准备 Home Pixi 工具
+
+先按 Pixi 官方方式为远端用户安装 Pixi，再在 Cyclone 执行：
 
 ```bash
-conda create --name adapter python=3.11
-conda activate adapter
+ssh -o ClearAllForwardings=yes Cyclone
+pixi global install -c conda-forge -c bioconda snakemake
+pixi global install -c bioconda seqkit
+/home/liufangzhou/.pixi/envs/snakemake/bin/python --version
+/home/liufangzhou/.pixi/bin/snakemake --version
+/home/liufangzhou/.pixi/bin/seqkit version
+exit
 ```
 
-Install dependencies and start the server:
+基础环境只要求 Snakemake 与 SeqKit；Bowtie2、MEGAHIT、Kraken2 等 Workflow 软件继续使用各 Workflow 当前配置，待对应路径正式支持后再迁移，不要在部署阶段批量安装。
+
+### 6. 创建本机配置
+
+tracked example 是配置的唯一模板，实际 `.env` 会被 Git 忽略：
 
 ```bash
-pip install claude-agent-sdk fastapi uvicorn
-cp -RPp start.sh start-custom.sh
-# set the port and BioAgent run root in start-custom.sh
-bash start-custom.sh
+cp agent/.env.example agent/.env
+cp open-webui/.env.example open-webui/.env
 ```
 
-### 4. Frontend Setup
+默认模板已经对应当前 Cyclone。若更换远端账号或存储位置，至少同步修改下列变量：
 
-In your **third terminal**:
+- SSH 与 worker：`BIOAGENT_SSH_HOST`、`BIOAGENT_REMOTE_PYTHON`、`BIOAGENT_REMOTE_CONTROL_PYTHON`、`BIOAGENT_REMOTE_TMUX`、`BIOAGENT_REMOTE_WORKER_ROOT`
+- 数据与产物：`BIOAGENT_DATA_ROOT`、`BIOAGENT_DATA_ALLOWED_ROOTS`、`BIOAGENT_RUN_ROOT`
+- 工具：`BIOAGENT_SNAKEMAKE`、`BIOAGENT_SEQKIT`
+- Workflow：`BIOAGENT_WORKFLOW1_SOURCE` 至 `BIOAGENT_WORKFLOW6_SOURCE`
+- Open WebUI：`BIOAGENT_DATA_ROOT`、`BIOAGENT_RUN_ROOT` 与需要时的 `PORT`
+
+`TAXONAGENT_MCP_URL` 默认留空；不要恢复旧的 5090 步骤。Backend 启动时由 tracked `open-webui/backend/dev.sh` 自动创建 `open-webui/backend/.webui_secret_key`，不需要也不应在 `.env` 手工设置 WebUI secret。
+
+### 7. 配置 MiniMax 密钥
+
+只在本机 `~/.zshrc` 中加入密钥，不要写入仓库、`.env`、命令输出或日志：
 
 ```bash
-cd open-webui
-cp -RPp .env.example .env
-# change OPENAI_API_BASE_URL if needed
-# if the backend port is not 8080,
-# uncomment VITE_WEBUI_PORT and set the correct port in .env
-npm install
-NODE_OPTIONS=--max-old-space-size=8192 npm run build
-npm run dev -- --port 5173
-# you can use dev:fast afterwards
+export MINIMAX_API_KEY='<your key>'
 ```
 
-`npm run build` compiles the frontend, catches build-time errors early, and prepares several static resources. `npm run dev` then starts the dev server at http://localhost:5173. It will show a waiting screen until the backend is running.
-
-> [!TIP]  
-> If `npm install` falls with compatibility warnings, run `npm install --force`.
-
-### 5. Backend Setup
-
-In your **fourth terminal**:
+重新打开终端，或执行 `source ~/.zshrc`。仅验证变量存在：
 
 ```bash
-cd open-webui/backend
+/bin/zsh -lic 'test -n "$MINIMAX_API_KEY" && echo "MINIMAX_API_KEY is set"'
 ```
 
-Create and activate a virtual environment (Conda or venv):
+### 8. 启动服务
+
+`dev-services.sh` 会自动从当前 PATH 或 login zsh 查找 Conda 与 Node，并依 Agent → Backend → Frontend 启动：
 
 ```bash
-# Option A: Conda
-conda create --name open-webui python=3.11
-conda activate open-webui
-
-# Option B: venv
-python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+./dev-services.sh start
+./dev-services.sh status
+open http://127.0.0.1:5173
 ```
 
-Install dependencies and start the server:
+若工具不在 shell PATH，可显式覆盖；`BIOAGENT_NODE_BIN` 可传 node 可执行文件，也可传同时包含 `node`/`npm` 的目录：
 
 ```bash
-pip install -r requirements.txt -U
-cp -RPp dev.sh dev-custom.sh
-# set the correct ports, BioAgent run root,
-# and WebUI secret key in dev-custom.sh
-bash dev-custom.sh
+BIOAGENT_CONDA_BIN=/path/to/conda \
+BIOAGENT_NODE_BIN=/path/to/node/bin \
+TMUX_BIN=/path/to/tmux \
+  ./dev-services.sh start
 ```
 
-### 6. Connect to CycloneSeq Server
+启动入口只使用 tracked `agent/start.sh` 与 `open-webui/backend/dev.sh`；Backend 直接运行轻量 uvicorn，不调用 `start.sh`。重复执行 `start` 不会创建重复 session。
+
+### 9. 迁移后的快速验收
 
 ```bash
-ssh -N \
-  -L 5173:127.0.0.1:5173 \
-  -L 8080:127.0.0.1:8080 \
-  cyclone  # <name>@172.24.195.66
+curl -fsS http://127.0.0.1:8001/v1/models
+curl -fsS http://127.0.0.1:8001/v1/analysis/health
+curl -fsS http://127.0.0.1:8080/health
+curl -fsS http://127.0.0.1:5173/ >/dev/null
+ssh -o ClearAllForwardings=yes -o ConnectTimeout=5 Cyclone true
+./dev-services.sh status
 ```
 
-Only the browser-facing frontend and backend ports are forwarded. The BioAgent runtime reaches TaxonAgent MCP directly over the internal network.
+然后在 WebUI 中选择 `BJ-2024-615_1.fastq.gz` 与 `BJ-2024-615_2.fastq.gz`，新建 dataset revision 并执行 quick preflight；应保持 `ready`，且智能模式能够生成 Workflow 1 方案。这里只做预检和 DAG dry-run，不执行重型 Workflow。`status` 还会显示三个日志大小、`/tmp` 可用空间和 Cyclone 连接摘要。
 
-The backend starts at http://localhost:8080. API docs are available at http://localhost:8080/docs.
+## 启停服务
 
-Refresh the frontend at http://localhost:5173 and you should see the full application.
+依赖已经安装后，在仓库根目录运行：
 
-### 7. Deterministic Analysis Planner API
+```bash
+./dev-services.sh start
+./dev-services.sh status
+./dev-services.sh stop
+./dev-services.sh restart
+```
 
-The AI analysis page creates immutable plans without sending chat completions:
+`start` 依次启动 Agent、Backend、Frontend 并等待 health；`stop` 逆序终止且只操作本机的三个命名 session。停止本机服务不会终止 Cyclone 上的分析。
 
-- `POST /api/v1/analysis/plans` compiles a dataset revision, goals, `viral_type`, and Standard/Emergency routing. Pass `base_plan_revision` when revising an existing chat.
-- `GET /api/v1/analysis/plans/{chat_id}/latest` returns the owner-visible plan card. Private execution specs and absolute input paths are never returned.
-- `POST /api/v1/analysis/plans/{plan_id}/revisions/{revision}/execute` is the only run confirmation endpoint. It accepts only the latest ready revision and reserves at most one run.
-- `POST /api/v1/analysis/benchmark/runs` uses the same structured contract and planner/execution gate; it does not accept a prompt or model.
+| 服务     | 本机 tmux           | 地址             | 日志                         |
+| -------- | ------------------- | ---------------- | ---------------------------- |
+| Agent    | `bioagent-agent`    | `127.0.0.1:8001` | `/tmp/bioagent-agent.log`    |
+| Backend  | `bioagent-backend`  | `127.0.0.1:8080` | `/tmp/bioagent-backend.log`  |
+| Frontend | `bioagent-frontend` | `127.0.0.1:5173` | `/tmp/bioagent-frontend.log` |
 
-Set `BIOAGENT_INTERNAL_API_BASE_URL` to the BioAgent internal `/v1` base URL when it differs from `OPENAI_API_BASE_URL`.
+日志在同一个 tmux session 内持续追加，仅在创建新 session（包括 `restart`）时截断，不自动 rotation。`status` 会显示每个日志的大小和 `/tmp` 可用空间；单个日志达到 100 MiB 时只告警、不自动删除，因此极长的单次运行仍存在填满磁盘的理论风险。
+
+Agent 由 login zsh 启动并继承 `~/.zshrc` 中的 `MINIMAX_API_KEY`；脚本只检查变量是否存在，不输出值。TaxonAgent 当前关闭。Backend 使用 tracked 轻量入口 `backend/dev.sh`，首次启动通过 `openssl rand` 创建 `backend/.webui_secret_key`，之后复用；密钥文件权限受 `umask 077` 保护且被 Git 忽略。
+
+本机私有配置只有 `agent/.env`、`open-webui/.env` 与自动生成的 `open-webui/backend/.webui_secret_key`，均不提交 Git。
+
+## 远端任务与恢复
+
+每个 run 使用 `/data/user/liufangzhou/bin/tmux -L bioagent-worker` 创建 `bioagent-<run_id>`。所有 session 先等待 `/data/user/liufangzhou/runs/.bioagent/analysis.lock`，所以同一时间最多一个分析进入 `running`，其余显示为 `queued`。
+
+查看远端 session：
+
+```bash
+ssh -o ClearAllForwardings=yes Cyclone \
+  /data/user/liufangzhou/bin/tmux -L bioagent-worker list-sessions
+
+ssh -o ClearAllForwardings=yes -t Cyclone \
+  /data/user/liufangzhou/bin/tmux -L bioagent-worker attach-session -t bioagent-<run_id>
+```
+
+SSH 暂时失联只会显示缓存状态和「连接暂时不可用」，不会把任务标记为失败。重连后以远端 state、tmux、PID、boot ID 为准：仍存活则继续；消失的 queued session 会安全重建；已进入 running 但进程消失或主机重启则标记 `interrupted`，保留产物且不自动重跑。
+
+Dataset fingerprint 也遵循同样语义：Cyclone 暂时不可用时返回可重试错误并保持当前 dataset 状态；只有远端确认 logical link 或 canonical target 的指纹改变时才标记为 `stale`。历史上已标记 stale 的 revision 不会被自动改写，应重新选择文件建立新 revision。
+
+## 数据路径与 symlink
+
+- Data root：`/data/user/liufangzhou/datasets`
+- Run root：`/data/user/liufangzhou/runs`
+- 额外允许的 symlink target：`/data/user/guojindan/Projects/flu_tgs_ngs/rawdata/NGS`
+
+文件与目录 symlink 都可使用。UI 和数据集保存 data root 下的 logical path；worker 在 Cyclone 解析 canonical target，并同时记录目标 stat 与路径中每个 symlink 的 lstat/target stat。broken link、循环、不可读目标、目录逃逸和 allowlist 外目标会被拒绝。其他共享资料根需加入 `BIOAGENT_DATA_ALLOWED_ROOTS`。
+
+Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原始 FASTQ 或 symlink target。目前测试对为：
+
+```text
+/data/user/liufangzhou/datasets/BJ-2024-615_1.fastq.gz
+/data/user/liufangzhou/datasets/BJ-2024-615_2.fastq.gz
+```
+
+## 验证
+
+```bash
+# Agent（adapter 环境没有单独安装 pytest 时，可借用 open-webui 的 pytest 包）
+PYTHONPATH=/Users/lfz/miniconda3/envs/open-webui/lib/python3.11/site-packages \
+  /Users/lfz/miniconda3/envs/adapter/bin/python -m pytest -q
+
+# Backend
+BIOAGENT_REMOTE_DATA=false WEBUI_SECRET_KEY=test-only-key PYTHONPATH=. \
+  /Users/lfz/miniconda3/envs/open-webui/bin/python -m unittest \
+  open_webui.utils.test_analysis_datasets \
+  open_webui.routers.test_analysis \
+  open_webui.routers.test_analysis_plans_api \
+  open_webui.utils.test_analysis_run_delivery \
+  open_webui.utils.test_report_evidence
+
+# Frontend
+npm run test:frontend -- --run src/lib/utils/analysisRun.test.ts \
+  src/lib/utils/systemResources.test.ts src/lib/utils/singleFlight.test.ts \
+  src/lib/apis/analysis/index.test.ts
+```
+
+最后才执行一次前端 build：
+
+```bash
+NODE_OPTIONS=--max-old-space-size=8192 npm run build >/tmp/bioagent-frontend-build.log 2>&1
+```
