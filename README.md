@@ -256,6 +256,8 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 
 ## 验证
 
+M1 开发检查入口为 `m1-check.py assets|offline|evaluate`，复现命令、固定输入、评测结果与未来专家审核流程见 [M1 实施记录](docs/m1-implementation-record.md)。不新增配置或数据库；模型评测只有传入 `--allow-cloud` 才调用 MiniMax，输出仅写入 run root 下新的 `m1-*` 目录。
+
 M0 的隔离回放入口为根目录 `m0-replay.py`，复现命令、产物位置和未完成项见 [M0 实施记录](docs/m0-implementation-record.md)。回放只读取现有初筛的小型结果文件，输出写入 run root 下新的 `m0-*` 目录，不启动计算或覆盖正式报告。
 
 ```bash

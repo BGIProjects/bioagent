@@ -54,6 +54,8 @@ def small_read(path):
         raise ValueError("source changed while reading")
     return raw.decode("utf-8")
 action = request["action"]
+prefix = request.get("output_prefix", "m0-")
+if prefix not in {"m0-", "m1-"}: raise ValueError("unsupported output prefix")
 if action == "freeze":
     run = checked(request["source_run"])
     state = json.loads(small_read(checked(str(run / ".bioagent/state.json"))))
@@ -101,12 +103,12 @@ elif action == "read":
     print(small_read(checked(request["path"])),end="")
 elif action == "check_output":
     output = checked(request["output"])
-    if output.parent != root or not output.name.startswith("m0-") or output.exists():
-        raise ValueError("output must be a new m0-* child of run root")
+    if output.parent != root or not output.name.startswith(prefix) or output.exists():
+        raise ValueError("output must be a new " + prefix + "* child of run root")
     print("ready")
 elif action == "write":
     output = checked(request["output"])
-    if output.parent != root or not output.name.startswith("m0-"): raise ValueError("output must be a new m0-* child of run root")
+    if output.parent != root or not output.name.startswith(prefix): raise ValueError("output must be a new " + prefix + "* child of run root")
     payload = sys.stdin.read(50*1024*1024 + 1)
     if len(payload.encode()) > 50*1024*1024: raise ValueError("output exceeds budget")
     files = json.loads(payload)
