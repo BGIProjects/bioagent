@@ -63,7 +63,7 @@ git submodule status --recursive
 ```bash
 conda create -n adapter python=3.11 -y
 conda run -n adapter python -m pip install \
-  claude-agent-sdk fastapi uvicorn pytest
+  claude-agent-sdk fastapi uvicorn pytest jsonschema typer
 
 conda create -n open-webui python=3.11 -y
 conda run -n open-webui python -m pip install -U \
@@ -146,7 +146,9 @@ cp open-webui/.env.example open-webui/.env
 
 `TAXONAGENT_MCP_URL` 默认留空；不要恢复旧的 5090 步骤。Backend 启动时由 tracked `open-webui/backend/dev.sh` 自动创建 `open-webui/backend/.webui_secret_key`，不需要也不应在 `.env` 手工设置 WebUI secret。
 
-### 7. 配置 MiniMax 密钥
+### 7. 可选启用 MiniMax
+
+默认 `BIOAGENT_MODEL_POLICY=local_only`，未配置本地模型时对话不可用，表单、方案编译和执行仍可使用。当前 M0 开发实例已获显式云端授权，在忽略提交的 `agent/.env` 中设置 `BIOAGENT_MODEL_POLICY=minimax_explicit` 后使用 MiniMax；没有自动云端回退。仅启用确定性功能时可跳过本节。
 
 只在本机 `~/.zshrc` 中加入密钥，不要写入仓库、`.env`、命令输出或日志：
 
@@ -253,6 +255,8 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 ```
 
 ## 验证
+
+M0 的隔离回放入口为根目录 `m0-replay.py`，复现命令、产物位置和未完成项见 [M0 实施记录](docs/m0-implementation-record.md)。回放只读取现有初筛的小型结果文件，输出写入 run root 下新的 `m0-*` 目录，不启动计算或覆盖正式报告。
 
 ```bash
 # Agent（adapter 环境没有单独安装 pytest 时，可借用 open-webui 的 pytest 包）

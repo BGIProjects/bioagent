@@ -175,10 +175,6 @@ start_service() {
 start_all() {
     resolve_tmux
     resolve_runtime_tools
-    if ! /bin/zsh -lic '[[ -n "${MINIMAX_API_KEY:-}" ]]' >/dev/null 2>&1; then
-        echo "MINIMAX_API_KEY 未由 login zsh 环境提供。" >&2
-        return 1
-    fi
     local agent_cmd backend_cmd frontend_cmd
     agent_cmd="cd $(printf '%q' "$ROOT/agent") && exec /bin/zsh -lic 'exec $(printf '%q' "$CONDA") run --no-capture-output -n adapter ./start.sh'"
     backend_cmd="cd $(printf '%q' "$ROOT/open-webui/backend") && exec $(printf '%q' "$CONDA") run --no-capture-output -n open-webui ./dev.sh"
