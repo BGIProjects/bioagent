@@ -178,7 +178,7 @@ start_all() {
     local agent_cmd backend_cmd frontend_cmd
     agent_cmd="cd $(printf '%q' "$ROOT/agent") && exec /bin/zsh -lic 'exec $(printf '%q' "$CONDA") run --no-capture-output -n adapter ./start.sh'"
     backend_cmd="cd $(printf '%q' "$ROOT/open-webui/backend") && exec $(printf '%q' "$CONDA") run --no-capture-output -n open-webui ./dev.sh"
-    frontend_cmd="cd $(printf '%q' "$ROOT/open-webui") && export PATH=$(printf '%q' "$NODE_BIN"):\$PATH && exec npm run dev -- --host 127.0.0.1 --port 5173"
+    frontend_cmd="cd $(printf '%q' "$ROOT/open-webui") && export PATH=$(printf '%q' "$NODE_BIN"):\$PATH && exec npm run dev -- --host 127.0.0.1 --port 5173 --force"
     start_service Agent "$AGENT_SESSION" 8001 "$agent_cmd" "$AGENT_LOG" http://127.0.0.1:8001/v1/models
     start_service Backend "$BACKEND_SESSION" 8080 "$backend_cmd" "$BACKEND_LOG" http://127.0.0.1:8080/health
     start_service Frontend "$FRONTEND_SESSION" 5173 "$frontend_cmd" "$FRONTEND_LOG" http://127.0.0.1:5173/

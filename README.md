@@ -181,7 +181,9 @@ TMUX_BIN=/path/to/tmux \
   ./dev-services.sh start
 ```
 
-启动入口只使用 tracked `agent/start.sh` 与 `open-webui/backend/dev.sh`；Backend 直接运行轻量 uvicorn，不调用 `start.sh`。重复执行 `start` 不会创建重复 session。
+启动入口只使用 tracked `agent/start.sh` 与 `open-webui/backend/dev.sh`；Backend 直接运行轻量 uvicorn，不调用 `start.sh`。Frontend 创建新 session 时会强制重建 Vite 依赖缓存，因此首次启动或 `restart` 可能稍慢；重复执行 `start` 不会创建重复 session，也不会重建正在运行的 Frontend。
+
+若浏览器在 Frontend 重启后显示 `500: Internal Error`，并且前端日志提示 `node_modules/.vite/deps` 中的 chunk 不存在，请先按 `Command+Shift+R` 强制刷新。若仍未恢复，清除 `127.0.0.1:5173` 的站点数据后重新登录；这类错误来自已打开页面保留的旧 Vite 模块地址，不表示 Backend 或 Agent 健康检查失败。
 
 ### 9. 迁移后的快速验收
 
