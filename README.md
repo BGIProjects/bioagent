@@ -256,9 +256,9 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 
 ## 项目分析
 
-管理员在 `/dashboard` 的“项目设置”创建项目、登记既有数据路径并设置成员；创建项目不会自动加入，需明确勾选“将自己加入并授予分析权限”或另行加入成员。成员在 `/analysis` 选择项目，查看共享历史，在自己的会话中分析。审核权限目前只登记，优先级不影响排序。
+管理员在 `/dashboard` 页首的“项目设置”对话框创建项目、登记既有数据路径并设置成员；创建项目不会自动加入，需明确勾选“将自己加入并授予分析权限”或另行加入成员。成员在两页原页首选择项目，通过“进入分析”／“项目看板”保留选择并切换页面，查看共享历史，在自己的会话中分析。审核权限目前只登记，优先级不影响排序。
 
-继续使用 SQLite；首次升级前先做一致性备份。迁移、权限操作与回退见 [M1 第二轮记录](docs/m1-02-projects-implementation-record.md)。无需新增环境变量；沿用 `BIOAGENT_DATA_ROOT`、`BIOAGENT_REMOTE_DATA` 和原有 Cyclone 连接配置。
+继续使用 SQLite；首次升级前先做一致性备份。迁移、权限操作与回退见 [M1 第二轮记录](docs/m1-02-projects-implementation-record.md)。本轮页首整合、浏览器验证与仅前端回退见 [M1 第三轮记录](docs/m1-03-project-ui-implementation-record.md)。无需新增环境变量；沿用 `BIOAGENT_DATA_ROOT`、`BIOAGENT_REMOTE_DATA` 和原有 Cyclone 连接配置。
 
 ## 验证
 
