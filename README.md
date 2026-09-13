@@ -254,9 +254,15 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 /data/user/liufangzhou/datasets/BJ-2024-615_2.fastq.gz
 ```
 
+## 项目分析
+
+管理员在 `/dashboard` 的“项目设置”创建项目、登记既有数据路径并设置成员；创建项目不会自动加入，需明确勾选“将自己加入并授予分析权限”或另行加入成员。成员在 `/analysis` 选择项目，查看共享历史，在自己的会话中分析。审核权限目前只登记，优先级不影响排序。
+
+继续使用 SQLite；首次升级前先做一致性备份。迁移、权限操作与回退见 [M1 第二轮记录](docs/m1-02-projects-implementation-record.md)。无需新增环境变量；沿用 `BIOAGENT_DATA_ROOT`、`BIOAGENT_REMOTE_DATA` 和原有 Cyclone 连接配置。
+
 ## 验证
 
-M1 开发检查入口为 `m1-check.py assets|offline|evaluate`，复现命令、固定输入、评测结果与未来专家审核流程见 [M1 实施记录](docs/m1-implementation-record.md)。不新增配置或数据库；模型评测只有传入 `--allow-cloud` 才调用 MiniMax，输出仅写入 run root 下新的 `m1-*` 目录。
+M1 第一轮开发检查入口为 `m1-check.py assets|offline|evaluate`，复现命令、固定输入、评测结果与未来专家审核流程见 [M1 实施记录](docs/m1-01-assets-evaluation-implementation-record.md)。该开发工具不新增配置或数据库；模型评测只有传入 `--allow-cloud` 才调用 MiniMax，输出仅写入 run root 下新的 `m1-*` 目录。
 
 M0 的隔离回放入口为根目录 `m0-replay.py`，复现命令、产物位置和未完成项见 [M0 实施记录](docs/m0-implementation-record.md)。回放只读取现有初筛的小型结果文件，输出写入 run root 下新的 `m0-*` 目录，不启动计算或覆盖正式报告。
 
