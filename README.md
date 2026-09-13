@@ -262,6 +262,8 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 
 在 `/analysis` 选取已有数据集后，打开数据集卡片的“样本背景”查看或编辑元信息；窄屏入口位于内容区“数据集与背景”。背景独立版本化，保存不触发计算；新编译方案才冻结当前背景，旧方案／报告不回填。操作、迁移备份与回退见 [M1 第四轮记录](docs/m1-04-dataset-metadata-implementation-record.md)，无需新增配置。
 
+数据集建立者可在“修订配对与角色”检查样本分组并逐项确认技术重复，保存新数据版本后另行生成方案；新版本背景不自动继承。见 [M1 第五轮记录](docs/m1-05-sample-grouping-implementation-record.md)，无需新增配置。
+
 ## 验证
 
 M1 第一轮开发检查入口为 `m1-check.py assets|offline|evaluate`，复现命令、固定输入、评测结果与未来专家审核流程见 [M1 实施记录](docs/m1-01-assets-evaluation-implementation-record.md)。该开发工具不新增配置或数据库；模型评测只有传入 `--allow-cloud` 才调用 MiniMax，输出仅写入 run root 下新的 `m1-*` 目录。
