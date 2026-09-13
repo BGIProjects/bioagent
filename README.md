@@ -264,6 +264,8 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 
 数据集建立者可在“修订配对与角色”检查样本分组并逐项确认技术重复，保存新数据版本后另行生成方案；新版本背景不自动继承。见 [M1 第五轮记录](docs/m1-05-sample-grouping-implementation-record.md)，无需新增配置。
 
+`/analysis` 提供智能、标准、紧急三种模式：智能模式先生成 5% 初筛快报，再继续已确认完整流程；标准模式直接执行完整流程；紧急模式只完成 5% 初筛。没有成对 reads 时智能／紧急会明确降为标准。任务区按状态分别提供初筛报告与诊断意见书下载，详见 [M1 第六轮记录](docs/m1-06-adaptive-routing-implementation-record.md)。本轮没有新增配置。
+
 ## 验证
 
 M1 第一轮开发检查入口为 `m1-check.py assets|offline|evaluate`，复现命令、固定输入、评测结果与未来专家审核流程见 [M1 实施记录](docs/m1-01-assets-evaluation-implementation-record.md)。该开发工具不新增配置或数据库；模型评测只有传入 `--allow-cloud` 才调用 MiniMax，输出仅写入 run root 下新的 `m1-*` 目录。

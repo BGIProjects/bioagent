@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.7；修订日期：2026-09-13；原始源码基线：2026-09-09。
+> 版本：1.8；修订日期：2026-09-13；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> M1 第一轮推进资产检查、离线验证与开发评测；第二轮推进最小项目与权限，第三轮完成项目入口和页面体验收尾，第四轮推进 A2 元信息与背景版本，第五轮补技术重复确认，见第 1.3、1.5–1.8 节及五轮实施记录。完整 M0／M1 均不勾选验收。
+> M1 第一轮推进资产检查、离线验证与开发评测；第二轮推进最小项目与权限，第三轮完成项目入口和页面体验收尾，第四轮推进 A2 元信息与背景版本，第五轮补技术重复确认，第六轮推进 A3 三模式、智能续跑与阶段报告，见第 1.3、1.5–1.9 节及六轮实施记录。完整 M0／M1 均不勾选验收。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -113,30 +113,43 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 - 本机只读：健康、项目及数据集列表 200；详情因数据授权暂不可验证返回 retryable 503（本机 Agent 8001 无监听），未列为远端验证成功。Ruff／Prettier 与一次 8 GiB build 通过；归档约 1.71 MiB，无业务迁移或真实修订。
 - 延期：上传、fastp 预设、完整资产绑定、A3、专家审核及前几轮缺口。**完整 A2、M0／M1 不勾选验收**。
 
+### 1.9 M1 第六轮范围与实际状态（2026-09-13，用户确认）
+
+本轮只推进 **A3 前三项**，不扩展上传、持久化优先级队列、`waiting_resources`、恢复操作或大型知识库。execution spec 保持 v2，planner 与 routing policy 升至 v2；没有新增数据库表、迁移、模型或环境变量。
+
+- 已完成：`auto` 对高／低信号均先原子发布不可变初筛快报，再检查完整流程资源并继续已确认 DAG；A／B 只表达初筛判断。完整资源不足时 execution 为 `blocked`，快报仍可下载。
+- 已完成：`emergency` 只做 5% 初筛并结束，`standard` 不初筛并直接执行完整流程；auto／emergency 没有成对 reads 时统一降为 standard。新方案用 `routing_policy_version=2` 与 `completion_behavior` 表达语义，旧 policy 启动时返回 `PLAN_ROUTING_OBSOLETE`。
+- 已完成：state v3 使用轻量 `reports` 登记 preliminary／final；初筛写入 `.bioagent/preliminary-telemetry.json`，固定生成时间、证据路径和 SHA-256，完整流程不得覆盖。旧 state 的单一 `report` 读取时按 `report_kind` 映射。
+- 已完成：`/analysis` tab 直接建立对 `routingMode` 的响应式依赖；连续切换以请求序号隔离迟到回应，历史对话恢复已保存模式。任务区按状态分别展示“下载初筛报告”和“下载诊断意见书”。
+- 验证：Agent 68 项（2 skip）、Backend 66 项、相关 Vitest 34 项及新增 Cypress 2 项通过；Cyclone 只完成 health、两条 logical source 解析、1,000 对 reads quick preflight 与 Workflow 1 单一 fastp DAG dry-run。未执行初筛、workflow shell command、完整分析或模型调用。
+- 容量与限制：远端新 dry-run 目录 13 文件、224,759 bytes；资源历史 SQLite 仅只读核对且无迁移。持久化队列、重新排队／恢复、多样本真实运行、完整 A3 与前几轮缺口继续延期，**完整 M0／M1 仍不勾选验收**。
+
+接口、测试命令、容量、限制与回退见[第六轮记录](m1-06-adaptive-routing-implementation-record.md)。
+
 ## 2. 当前基线、职责与契约
 
 ### 2.1 源码与运行验证边界
 
 | 仓库            | Commit      | 核对范围                                                       |
 | --------------- | ----------- | -------------------------------------------------------------- |
-| bioagent 根仓库 | `3909ed5`   | AGENTS.md、README、原始 design.md 与部署约定                   |
-| agent           | `3ba16a0`   | 动作契约、编译、Workflow 1–6 适配、初筛、worker、runner 和证据 |
-| open-webui      | `548238bfa` | Dashboard、AnalysisPage、业务模型、报告与数值校验              |
+| bioagent 根仓库 | `24019dc`   | AGENTS.md、README、roadmap 与部署约定                          |
+| agent           | `13956ba`   | 动作契约、编译、Workflow 1–6 适配、初筛、worker、runner 和证据 |
+| open-webui      | `fdea57fcb` | Dashboard、AnalysisPage、业务模型、报告与数值校验              |
 
-| 当前代码基础                                                | 待补能力或限制                                                                    |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Dashboard 静态项目数组；分析对象已有 user／chat 关联        | 真实项目、成员、权限与统计                                                        |
-| 远端文件、typed artifact、预检、revision、symlink 双重指纹  | 浏览器到计算节点的专用大文件上传闭环、完整样本／批次元信息                        |
-| ConversationAction 支持回答、追问、goals／viral_type 提议   | 受控参数预设；模型不得直接启动计算                                                |
-| Workflow 1–6 的目录、DAG 与执行适配                         | 逐项真实数据验证、可交付插件与参考库快照；代码存在不证明所有库可用                |
-| auto／emergency／standard；初筛 route A 可结束整个 pipeline | 智能模式快报后继续；阶段报告与执行状态分离                                        |
-| Workflow 1 去 rRNA；Workflow 3 宿主识别                     | 宿主序列去除为独立能力，不能与前两者混用                                          |
-| 私有 tmux、flock 串行准入、reconciliation、资源历史         | 显式优先级队列和受控续跑；锁竞争不保证业务排序                                    |
-| schema v4 数值证据、复算和模板报告                          | 候选级规则、知识引用、研判及审核                                                  |
-| Citation／RetrievalResult／RetrievalAdapter 已定义          | 本地语料、索引和可信引用闭环；ConversationAction 当前会清空 citations             |
-| MiniMax-M3 经 Claude Agent SDK；本机 TaxonAgent 关闭        | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
+| 当前代码基础                                               | 待补能力或限制                                                                    |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Dashboard 静态项目数组；分析对象已有 user／chat 关联       | 真实项目、成员、权限与统计                                                        |
+| 远端文件、typed artifact、预检、revision、symlink 双重指纹 | 浏览器到计算节点的专用大文件上传闭环、完整样本／批次元信息                        |
+| ConversationAction 支持回答、追问、goals／viral_type 提议  | 受控参数预设；模型不得直接启动计算                                                |
+| Workflow 1–6 的目录、DAG 与执行适配                        | 逐项真实数据验证、可交付插件与参考库快照；代码存在不证明所有库可用                |
+| auto／emergency／standard；智能模式初筛后续跑完整 DAG      | 持久队列、waiting_resources 与受控恢复；真实多样本及完整流程仍待验证              |
+| Workflow 1 去 rRNA；Workflow 3 宿主识别                    | 宿主序列去除为独立能力，不能与前两者混用                                          |
+| 私有 tmux、flock 串行准入、reconciliation、资源历史        | 显式优先级队列和受控续跑；锁竞争不保证业务排序                                    |
+| schema v4 数值证据、复算和模板报告                         | 候选级规则、知识引用、研判及审核                                                  |
+| Citation／RetrievalResult／RetrievalAdapter 已定义         | 本地语料、索引和可信引用闭环；ConversationAction 当前会清空 citations             |
+| MiniMax-M3 经 Claude Agent SDK；本机 TaxonAgent 关闭       | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-本轮仅复核文档和相关代码边界，未重新运行生信流程、模型评测或远端参考库检查。任务完成状态分别记录：代码存在、自动测试通过、demo 通过、真实分析验证通过、可私有化交付；对用户开放范围另行记录。
+本轮复核相关代码、自动测试和受限 Cyclone DAG dry-run；未执行生信 shell command、模型评测或远端参考库检查。任务完成状态分别记录：代码存在、自动测试通过、demo 通过、真实分析验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 
@@ -278,9 +291,9 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 
 **负责人：**执行工程。**依赖：**A1、B1；可先用现有合法数据集开发，不等待上传页面。**代码落点：**`adaptive_routing.py`、`adaptive_screening.py`、`analysis_runner.py`、`remote_worker.py`、`remote_client.py`、`deterministic_runtime.py`、`resource_calibration.py` 及 WebUI snapshot／报告接口。
 
-- [ ] auto 初筛后继续已确认目标，不因门槛通过将剩余步骤置为 skipped。保留 5% 抽样及采样种子为现有待验证基线，记录实际 read pairs、过滤过程和 Kraken2 库；门槛只用于初筛提示。
-- [ ] emergency 明确为首期“5% 抽样＋质控＋去 rRNA＋Kraken2”范围；成对 reads 不可用时拒绝。auto 在不适用初筛时明确展示标准流程，并在执行前确认；standard 继续执行目标依赖闭包。
-- [ ] 初筛复核后发布不可变 preliminary 报告，与 execution status 分离。完整分析失败或等待资源时仍可下载原范围快报；初筛子集不能替代完整流程的全量输入。
+- [x] auto 初筛后继续已确认目标，不因门槛通过将剩余步骤置为 skipped。保留 5% 抽样及采样种子为现有待验证基线，记录实际 read pairs、过滤过程和 Kraken2 库；门槛只用于初筛提示。
+- [x] emergency 明确为首期“5% 抽样＋质控＋去 rRNA＋Kraken2”范围；auto／emergency 成对 reads 不可用时明确降为 standard。auto 在不适用初筛时明确展示标准流程；standard 继续执行目标依赖闭包。
+- [x] 初筛复核后发布不可变 preliminary 报告，与 execution status 分离。完整分析失败或资源不足时仍可下载原范围快报；初筛子集不能替代完整流程的全量输入。
 - [ ] 建立远端持久化队列和单一调度者，默认一个重型任务准入。flock 保留作最终互斥，不以多个 supervisor 竞争锁来决定顺序。
 - [ ] 按项目优先级、项目内紧急级、入队时间排序；工程初始采用可配置的 24 小时等待提升，超过阈值的可准入任务按入队时间优先选择。策略版本可追溯，运行中 job 不抢占。
 - [ ] 阶段边界核查 CPU、内存、磁盘空间与负载。资源不足进入 waiting_resources，保留目标与快报并释放准入资格；其他具备资源条件的任务可以运行。
