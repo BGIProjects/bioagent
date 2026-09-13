@@ -96,3 +96,17 @@ NODE_OPTIONS=--max-old-space-size=8192 npm run build > /tmp/bioagent-m1-metadata
 前述 `/tmp/bioagent-m1-metadata-*` 为本轮小型临时文件，业务备份不上传。README 只补入口，没有新环境变量；`AGENTS.md`、agent 和原始数据均无变更。上传、计算分组、审核预设、资产发布、队列与专家审核留待后续。本机 `/Users/lfz/Documents/Project/NGS` 的 FASTQ 保留作未来上传验收资料。
 
 未自动提交。建议根仓库 `docs(m1): record dataset metadata and background versioning`；open-webui `feat(analysis): version dataset metadata and freeze plan context`；agent 无需提交。
+
+## 第四轮补修：背景表单滚动（2026-09-13）
+
+用户反馈背景字段被裁切且不能向下滚动。定位到 `.files-scroll` 使用 `overflow: hidden`，长卡片超出文件区时没有可供使用者操作的滚动容器；此前 `scrollIntoView()` 会程序化移动被隐藏的内容，不足以证明滚轮可用。
+
+本次只在桌面数据集卡片外增加命名为“数据集与背景”的可聚焦滚动区域，高度上限为文件区的 60%，使用局部细滚动条；文件树保留剩余空间及自身滚动。窄屏继续使用单栏内容区的自然滚动。不改全局样式、API、数据库、README、AGENTS.md 或 agent，不重做迁移。
+
+验证为 Vitest **34 项通过**、Cypress **27 项通过**。新增 Chrome CDP `Input.dispatchMouseEvent` 原生滚轮测试，按 Cypress iframe 实际缩放换算坐标，检查 `scrollTop` 确实变化及末尾字段／按钮可见；覆盖 1440×900、1280×720、1024×768、390×844、单／多样本、长背景与展开历史。截图已人工检视。所有业务写入仍使用 API 桩。
+
+复现沿用上文临时 5175 前端及 Cypress 配置，Vitest 运行 `src/lib/apis/analysis/index.test.ts src/lib/utils/analysisRun.test.ts src/lib/utils/projectNavigation.test.ts`；Cypress 命令仅将截图目录改为 `/tmp/bioagent-m1-scroll-screenshots`，完整日志分别写入 `/tmp/bioagent-m1-scroll-{vitest,cypress}.log`。Python／Ruff 不适用；本次修改文件执行 Prettier check，最后仅执行一次 `NODE_OPTIONS=--max-old-space-size=8192 npm run build`，日志为 `/tmp/bioagent-m1-scroll-build.log`，未运行 `npm run check`。
+
+Prettier 与本次唯一一次前端构建均通过（退出码 0，保留既有 Svelte／CSS／打包提示）。产物位于 `Cyclone:/data/user/liufangzhou/runs/m1-background-scroll-20260913-1645/`，本地暂存 `/tmp/bioagent-m1-scroll-20260913-1645/`；共 8 个文件、1,731,542 字节（约 1.65 MiB），含两张原生滚轮抵达表单底部的截图、测试／构建日志及源码哈希。`SHA256SUMS` 的 SHA-256 为 `ae639e1838064f2b01603db5c272dc81e710ef73681912adf77701c72ec3cb23`，远端逐项校验通过；不覆盖第四轮原归档。
+
+回退仅恢复此次补修前的前端版本 `9d85c8bcd`（根仓库基线 `b9840e7`），保留第四轮背景功能与数据库，无需恢复数据库备份。建议补修 commit：根仓库 `docs(m1): record dataset background scrolling fix`；open-webui `fix(analysis): make dataset background forms scrollable`；agent 无变更。未自动提交。
