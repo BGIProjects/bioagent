@@ -126,6 +126,17 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 
 接口、测试命令、容量、限制与回退见[第六轮记录](m1-06-adaptive-routing-implementation-record.md)。
 
+### 1.10 M1 第七轮范围与实际状态（2026-09-17，用户确认）
+
+本轮新增 W1–W6 标准交付报告，不合并现有诊断意见书：后者保留证据索引、结果边界及人工审核清单；用户不关心的一般文件清单移至改名后的“运行审计报告”。
+
+- 已完成：run-local 提取、样本主表、低深度标记、分组非参数统计、R/ggplot2 图、自包含 HTML、同源 A4 横向 PDF、manifest 与 state `standard_delivery` 登记；只覆盖 W1–W6，使用确定性模板。
+- 已完成：Agent／WebUI 经鉴权与 SHA-256 校验下载 HTML/PDF；状态接口公开可用格式，UI 分别显示交付报告、诊断意见书及运行审计报告。
+- 已完成：方案冻结的样本背景传入远端 state；报告失败不改写计算结果，CLI 可独立 report-only 重建。
+- 已完成：Cyclone 以既有 W1+W2 run 验证，W3–W6 正确跳过；报告未出现绝对路径、一般文件清单或 checklist，诊断意见书 checklist 回归保留。
+
+实际命令、产物、测试结果、限制与回退见[第七轮记录](m1-07-standard-delivery-report-implementation-record.md)。
+
 ## 2. 当前基线、职责与契约
 
 ### 2.1 源码与运行验证边界

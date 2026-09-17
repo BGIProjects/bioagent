@@ -119,13 +119,26 @@ ssh -o ClearAllForwardings=yes Cyclone '
 ssh -o ClearAllForwardings=yes Cyclone
 pixi global install -c conda-forge -c bioconda snakemake
 pixi global install -c bioconda seqkit
+pixi global install \
+  --environment bioagent-report \
+  --channel conda-forge \
+  --pinning-strategy exact-version \
+  --expose bioagent-report-python=python \
+  --expose bioagent-rscript=Rscript \
+  --expose bioagent-weasyprint=weasyprint \
+  python=3.12 pandas scipy openpyxl weasyprint \
+  r-base r-ggplot2 r-dplyr r-tidyr r-readr r-scales \
+  r-patchwork r-ggbeeswarm r-stringr
 /home/liufangzhou/.pixi/envs/snakemake/bin/python --version
 /home/liufangzhou/.pixi/bin/snakemake --version
 /home/liufangzhou/.pixi/bin/seqkit version
+/home/liufangzhou/.pixi/bin/bioagent-report-python -c 'import pandas, scipy, openpyxl'
+/home/liufangzhou/.pixi/bin/bioagent-rscript --version
+/home/liufangzhou/.pixi/bin/bioagent-weasyprint --version
 exit
 ```
 
-基础环境只要求 Snakemake 与 SeqKit；Bowtie2、MEGAHIT、Kraken2 等 Workflow 软件继续使用各 Workflow 当前配置，待对应路径正式支持后再迁移，不要在部署阶段批量安装。
+Snakemake runner 与报告环境彼此隔离；Bowtie2、MEGAHIT、Kraken2 等 Workflow 软件继续使用各 Workflow 当前配置，待对应路径正式支持后再迁移，不要在部署阶段批量安装。
 
 ### 6. 创建本机配置
 
@@ -266,7 +279,7 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 
 数据集建立者可在“修订配对与角色”检查样本分组并逐项确认技术重复，保存新数据版本后另行生成方案；新版本背景不自动继承。见 [M1 第五轮记录](docs/m1-05-sample-grouping-implementation-record.md)，无需新增配置。
 
-`/analysis` 提供智能、标准、紧急三种模式：智能模式先生成 5% 初筛快报，再继续已确认完整流程；标准模式直接执行完整流程；紧急模式只完成 5% 初筛。没有成对 reads 时智能／紧急会明确降为标准。任务区按状态分别提供初筛报告与诊断意见书下载，详见 [M1 第六轮记录](docs/m1-06-adaptive-routing-implementation-record.md)。本轮没有新增配置。
+`/analysis` 提供智能、标准、紧急三种模式：智能模式先生成 5% 初筛快报，再继续已确认完整流程；标准模式直接执行完整流程；紧急模式只完成 5% 初筛。没有成对 reads 时智能／紧急会明确降为标准。任务区按状态提供初筛报告、带人工审核清单的诊断意见书、标准交付报告 HTML/PDF 与运行审计报告。交付报告只覆盖 W1–W6，确定性生成并写入 run-local `reports/standard/`；配置入口为 `agent/.env.example` 中三个 `BIOAGENT_REPORT_*` 变量。详见 [M1 第六轮记录](docs/m1-06-adaptive-routing-implementation-record.md)与 [M1 第七轮记录](docs/m1-07-standard-delivery-report-implementation-record.md)。
 
 ## 验证
 

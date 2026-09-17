@@ -28,6 +28,8 @@
 - `BIOAGENT_DATA_ROOT=/data/user/liufangzhou/datasets`，额外 symlink allowlist 为 `/data/user/guojindan/Projects/flu_tgs_ngs/rawdata/NGS`。
 - `BIOAGENT_RUN_ROOT=/data/user/liufangzhou/runs`。
 - Cyclone control worker、tmux supervisor 与 runner 共用 `/home/liufangzhou/.pixi/envs/snakemake/bin/python`，Snakemake 与 SeqKit 分别使用 `/home/liufangzhou/.pixi/bin/snakemake`、`/home/liufangzhou/.pixi/bin/seqkit`；不回退 `/data` 上的旧环境。
+- W1–W6 标准交付报告固定使用 `/home/liufangzhou/.pixi/bin/bioagent-report-python`、`/home/liufangzhou/.pixi/bin/bioagent-rscript` 与 `/home/liufangzhou/.pixi/bin/bioagent-weasyprint`；报告只能写入 run root 的 `reports/standard/`。
+- 报告运行时不得依赖 XvirMind/XvirBench；共用提取 helper、确定性模板与绘图脚本必须随 Agent worker 版本部署。
 - 远端 Python、Snakemake 与 SeqKit 位于 Cyclone 本机 NVMe；命令行工具使用 `pixi global install -c bioconda <tool>` 管理，无需迁移或维护第二套 adapter 环境。私有 tmux 仍使用 `/data/user/liufangzhou/bin/tmux -L bioagent-worker`。
 - Workflow 1 只在 run-local 副本覆写 `software.seqkit` 为 Home Pixi 入口，不修改 Cyclone 上的 Workflow 源码。
 - 本机忽略提交的配置为 `agent/.env`、`open-webui/.env` 和 `open-webui/backend/.webui_secret_key`；WebUI secret 由 tracked `open-webui/backend/dev.sh` 首次启动时生成，不要提交或输出。
