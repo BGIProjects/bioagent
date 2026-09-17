@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Open WebUI 分析页执行计划 · W1–W4+W6 · 2026-09-11</title>
+<style>
+:root { --ink:#16324f; --text:#2e4355; --muted:#5b6778; --teal:#087f83; --line:#dce5ec; --ok:#157a45; --warn:#b45309; --bad:#b42318; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font:15px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; color:var(--text); max-width:960px; margin:0 auto; padding:40px 28px 80px; }
+h1 { font-size:24px; color:var(--ink); margin-bottom:8px; }
+h2 { font-size:19px; color:var(--ink); margin:32px 0 12px; padding-bottom:6px; border-bottom:2px solid var(--teal); }
+p, li { margin-bottom:8px; }
+ul, ol { margin:8px 0 14px 22px; }
+.meta { color:var(--muted); font-size:13px; margin-bottom:18px; }
+.banner { background:#e6f4f4; border-left:4px solid var(--teal); padding:14px 16px; margin:14px 0 22px; }
+table { width:100%; border-collapse:collapse; font-size:13px; margin:12px 0 18px; border:1px solid var(--line); }
+th { background:#ecf3f4; text-align:left; padding:8px 10px; color:var(--ink); }
+td { padding:8px 10px; border-top:1px solid var(--line); vertical-align:top; }
+.tag { display:inline-block; font-size:12px; font-weight:600; padding:1px 8px; border-radius:999px; }
+.in { background:#dcfce7; color:var(--ok); }
+.out { background:#fee2e2; color:var(--bad); }
+.later { background:#fef3c7; color:var(--warn); }
+code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:13px; }
+.foot { margin-top:28px; padding-top:12px; border-top:1px solid var(--line); font-size:12px; color:var(--muted); }
+pre { background:#f1f5f9; padding:12px; border-radius:8px; overflow:auto; font-size:12px; line-height:1.5; }
+</style>
+</head>
+<body>
+<h1>执行计划：cyclone Open WebUI 走通选测试文件 → W1–W4+W6 → RVA/定种 → 报告</h1>
+<p class="meta">日期：2026-09-11　|　状态：已按确认意见开工第一波　|　不做本地化模型、不上官方 DeepSeek Harness</p>
+<div class="banner">
+  <strong>已确认。</strong>
+  前端继续 cyclone Open WebUI（5173/8080/8001），从 liufangzhou 拷贝最新分析页再改。W2 用 <code>workflow2_virusid</code>。测试覆盖 1 个文件与多个文件。注释用 RVA，定种用 virus_taxonomy，并纳入 W6。权限/上传/审核放第二波，写进报告。
+</div>
+<h2>1. 用户路径</h2>
+<ol>
+  <li>分析页从 testdata 选 <strong>一对</strong> FASTQ，或 <strong>同时勾选多对</strong>（以及 1 条 / 多条 contig）。</li>
+  <li>自动配对、预检；多样本确认 sample 分组后冻结 dataset。</li>
+  <li>确认方案后：W1 → W2（virusid）→ W3 → W4，可选 W6。</li>
+  <li>侧栏只读查询 ICTV kb.jsonl 与 RVA 科覆盖；候选或测试 contig 确认后才跑定种 / RVA。</li>
+  <li>报告：计算指标 + W6/RVA 摘要 + 定种结论 + 本地知识引用。无本地模型时模板仍出报告。</li>
+</ol>
+<h2>2. 范围</h2>
+<table>
+<thead><tr><th>类别</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><span class="tag in">第一波</span></td><td>拷贝并修改最新分析页；W2=<code>workflow2_virusid</code>；W1–W4+W6；RVA/定种只读+确认后专项；单/多文件测试包；cyclone 同步脚本。</td></tr>
+<tr><td><span class="tag later">第二波（报告登记，本轮不挡）</span></td><td>项目权限、浏览器上传、队列恢复、知识包发布、专家审核、由有写权限同事把 overlay 合入 <code>/data/bioagent</code> 并重启 5173。</td></tr>
+<tr><td><span class="tag out">不做</span></td><td>本地量化模型；DeepSeek Harness 换前端；W5/W8/W9；RL。</td></tr>
+</tbody>
+</table>
+<h2>3. 落点</h2>
+<table>
+<thead><tr><th>角色</th><th>决定</th></tr></thead>
+<tbody>
+<tr><td>前端</td><td>继续 cyclone Open WebUI。可写副本 <code>deploy/openwebui_firstwave/</code>；<code>sync_to_cyclone.sh</code> 合入 <code>/data/bioagent</code>。</td></tr>
+<tr><td>计算</td><td>W1 upstream；W2 virusid（非 2026db）；W3 hostid；W4 kraken_bracken；W6 virus_annotation。</td></tr>
+<tr><td>知识</td><td>定种 virus_taxonomy MCP :8766；RVA MCP :8767。查询不确认；计算必须确认。</td></tr>
+</tbody>
+</table>
+<h2>4. 测试包</h2>
+<p>目录 <code>/data/user/guojindan/Projects/XvirMind/testdata/</code>。单样本 <code>reads/single/</code> 一对；多样本 <code>reads/multi/</code> 两对；contig <code>KP641127.fna</code> 与 <code>KP325401.fna</code>。</p>
+<pre>单样本：选 demoA_R1 + demoA_R2
+多样本：同时选 demoA_* 与 demoB_* 共 4 个文件
+contig：1 条或 2 条 FASTA → 知识/专项 dry-run</pre>
+<h2>5. 合入 cyclone</h2>
+<p>当前账号对 <code>/data/bioagent</code> 无写权限。live 5173 在 lihuyang 执行同步脚本并重启前仍是旧分析页。</p>
+<pre>bash /data/user/guojindan/Projects/XvirMind/deploy/openwebui_firstwave/sync_to_cyclone.sh
+# 然后重启 5173 / 8080 / 8001，保持 MCP 8766/8767</pre>
+<div class="foot">依据：继续 cyclone Open WebUI；W2=workflow2_virusid；1 个与多个文件；RVA + virus_taxonomy + W6；第一波先做，其余进报告。</div>
+</body>
+</html>

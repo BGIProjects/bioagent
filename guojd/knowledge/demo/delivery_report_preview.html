@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"/><title>交付报告预览 · 定种/RVA/引用</title>
+<style>body{font:15px/1.6 sans-serif;max-width:900px;margin:32px auto;padding:0 16px;color:#243} table{border-collapse:collapse;width:100%;margin:8px 0 18px} th,td{border:1px solid #dce5ec;padding:6px 8px;text-align:left} th{background:#ecf3f4}</style>
+</head><body>
+<h1>分析交付报告预览（demo）</h1>
+<p>测试包 testdata/reads/single 与 contig KP641127。W1–W4+W6 进入优先级队列；RVA 使用 rnavirus 实跑。</p>
+
+<section id="specialist">
+  <h2>定种结论（virus_taxonomy）</h2>
+  <table><tr><th>状态</th><td>ok</td></tr><tr><th>科</th><td>Flaviviridae</td></tr><tr><th>属/种</th><td>Flaviviridae</td></tr><tr><th>模式</th><td>kb-query</td></tr><tr><th>知识发布</th><td>knowledge/releases/20260911-demo/kb.jsonl</td></tr></table>
+  <h2>RVA 摘要</h2>
+  <table><tr><th>状态</th><td>completed</td></tr><tr><th>科</th><td>Flaviviridae</td></tr><tr><th>特征数</th><td>3</td></tr><tr><th>产物</th><td>/data/user/guojindan/Projects/XvirMind/xvirmind/runs/rva/kp641127/event_graph.json</td></tr><tr><th>GPU</th><td>GPU 0: NVIDIA GeForce RTX 4090 D (UUID: GPU-fe0570a7-60ce-d4d9-4336-f797517a46df), GPU 1: NVIDIA T1000 8GB (UUID: GPU-964fa887-9e49-b954-e54b-d894a93e1617)</td></tr></table>
+  <h2>kb.jsonl 引用</h2>
+  <table><thead><tr><th>语料</th><th>发布</th><th>定位</th><th>内容</th></tr></thead><tbody><tr><td>ictv</td><td>knowledge/releases/20260911-demo/kb.jsonl</td><td>taxon.family=Flaviviridae</td><td>本地 kb.jsonl 科级规则；未跑 classify_sequence 时不定种到种。</td></tr></tbody></table>
+  <h2>候选矛盾 / 完整性</h2>
+  <p>完整性：blocked</p>
+  <table><thead><tr><th>候选</th><th>规则</th><th>级别</th><th>说明</th></tr></thead><tbody><tr><td>conflict-demo</td><td>FAMILY_CONFLICT</td><td>error</td><td>W2 科 Coronaviridae 与 RVA 科 Flaviviridae 不一致</td></tr><tr><td>conflict-demo</td><td>INCOMPLETE_EVIDENCE</td><td>warn</td><td>无 kb.jsonl locator，不能作为正式定种引用</td></tr><tr><td>conflict-demo</td><td>RVA_NOT_CONFIRMED</td><td>info</td><td>RVA 未确认实跑或未完成</td></tr><tr><td>conflict-demo</td><td>INCOMPLETE_EVIDENCE</td><td>warn</td><td>缺少证据条目</td></tr></tbody></table>
+  <h2>专家审核</h2>
+  <p>reject · wangdaxi · 冲突候选未消解，打回补齐 locator 后再审。</p>
+</section>
+</body></html>

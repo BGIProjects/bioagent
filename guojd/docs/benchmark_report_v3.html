@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BioAgent Benchmark 报告 - bench-20260728-114255-task01-v61_rat</title>
+<style>
+:root { color-scheme: light dark; }
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  max-width: 980px; margin: 2rem auto; padding: 0 1.5rem;
+  line-height: 1.55; color: #1a1a1a; background: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  body { color: #e6e6e6; background: #14161a; }
+  .pipeline-card { background: #1c1f26 !important; border-color: #333 !important; }
+  table { background: #1c1f26 !important; }
+  th { background: #23262e !important; }
+  td, th { border-color: #333 !important; }
+  code, .meta-value { background: #23262e !important; }
+  .tab { background: #1c1f26; border-color: #333; color: #bbb; }
+  .tab:hover { background: #23262e; }
+  .tab.active { background: #2d5aa0 !important; color: #fff !important; border-color: #2d5aa0 !important; }
+  .layer-question { background: #1c1f26; border-color: #3a4a6b; }
+}
+h1 { font-size: 1.5rem; margin-bottom: 0.2rem; }
+h2 { font-size: 1.15rem; margin-top: 1.8rem; border-bottom: 2px solid #ddd; padding-bottom: 0.3rem; }
+h3 { font-size: 0.95rem; margin: 1rem 0 0.4rem; }
+.subtitle { color: #777; font-size: 0.9rem; margin-bottom: 1.2rem; }
+table { border-collapse: collapse; width: 100%; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+th, td { border: 1px solid #ddd; padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+th { background: #f5f5f5; }
+.tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 1.2rem 0 1.6rem; }
+.tab {
+  padding: 0.45rem 0.9rem; border: 1px solid #ddd; border-radius: 6px;
+  background: #fafafa; cursor: pointer; font-size: 0.88rem; color: #555;
+  font-family: inherit;
+}
+.tab:hover { background: #f0f0f0; }
+.tab.active { background: #2d5aa0; color: #fff; border-color: #2d5aa0; font-weight: 600; }
+.tab .tab-count { font-size: 0.78rem; opacity: 0.75; margin-left: 0.35rem; }
+.layer-page { display: none; }
+.layer-page.active { display: block; }
+.layer-question {
+  border-left: 3px solid #2d5aa0; background: #f7f9fc;
+  padding: 0.6rem 0.9rem; margin: 0.6rem 0 1.2rem; font-size: 0.9rem;
+}
+.layer-question .meta { color: #777; font-size: 0.82rem; margin-top: 0.3rem; }
+.pipeline-card {
+  border: 1px solid #ddd; border-radius: 8px; padding: 0.9rem 1.1rem;
+  margin: 0.7rem 0; background: #fafafa;
+}
+.pipeline-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; }
+.pipeline-title { font-weight: 600; }
+.badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+.badge-ok { background: #d4f7dc; color: #157a3d; }
+.badge-warn { background: #ffe9c2; color: #8a5a00; }
+.badge-err { background: #ffd6d6; color: #a30000; }
+.hit { color: #157a3d; font-weight: 600; }
+.miss { color: #a30000; font-weight: 600; }
+.na { color: #999; }
+.meta-value { background: #f0f0f0; padding: 0.05rem 0.35rem; border-radius: 4px; font-family: monospace; font-size: 0.82rem; }
+.no-graded { color: #999; font-style: italic; padding: 0.4rem 0; }
+.empty-page { color: #888; padding: 1.5rem; border: 1px dashed #ccc; border-radius: 8px; text-align: center; }
+.stage-title { font-size: 0.9rem; margin: 0.9rem 0 0.3rem; color: #444; }
+@media (prefers-color-scheme: dark) { .stage-title { color: #bbb; } }
+</style>
+</head>
+<body>
+<p class="subtitle">BioAgent Benchmark 报告　|　bench_run_id:
+<span class="meta-value">bench-20260728-114255-task01-v61_rat</span>　|　共 12 条 pipeline</p>
+
+<div class="tabs"><button class="tab active" data-layer="L1">L1 执行完成度<span class="tab-count">11</span></button><button class="tab" data-layer="L2">L2 推理准确性</button><button class="tab" data-layer="L3">L3 调度智能</button><button class="tab" data-layer="L4">L4 解释质量<span class="tab-count">1</span></button><button class="tab" data-layer="L5">L5 鲁棒性<span class="tab-count">3</span></button><button class="tab" data-layer="L6">L6 人机协作</button></div>
+<div class="layer-page active" id="page-L1"><h1>L1 执行完成度</h1><div class="layer-question">每个阶段用的工具/参数与 file IO 对不对？执行完后回看， 规划的路线与 Snakefile 标准路线一致吗？<div class="meta">评测场景：正常测试　|　本层共 11 条判定</div></div><h2>汇总（按 criterion 计数，无总分/pass-fail）</h2><table><thead><tr><th>criterion id</th><th>归属</th><th>场景</th><th>hit</th><th>miss</th><th>grade_error</th></tr></thead><tbody><tr><td>L1.s1.1</td><td>s1</td><td>正常测试</td><td>1</td><td>0</td><td>0</td></tr><tr><td>L1.s1.2</td><td>s1</td><td>正常测试</td><td>1</td><td>0</td><td>0</td></tr><tr><td>L1.s2.1</td><td>s2</td><td>正常测试</td><td>0</td><td>1</td><td>0</td></tr><tr><td>L1.s2.2</td><td>s2</td><td>正常测试</td><td>1</td><td>0</td><td>0</td></tr><tr><td>L1.s3.1</td><td>s3</td><td>正常测试</td><td>1</td><td>0</td><td>0</td></tr><tr><td>L1.s3.2</td><td>s3</td><td>正常测试</td><td>1</td><td>0</td><td>0</td></tr><tr><td>L1.s4.1</td><td>s4</td><td>正常测试</td><td>0</td><td>1</td><td>0</td></tr><tr><td>L1.s4.2</td><td>s4</td><td>正常测试</td><td>1</td><td>0</td><td>0</td></tr><tr><td>L1.s5.1</td><td>s5</td><td>正常测试</td><td>1</td><td>0</td><td>0</td></tr><tr><td>L1.s5.2</td><td>s5</td><td>正常测试</td><td>1</td><td>0</td><td>0</td></tr><tr><td>L1.p1</td><td>L1</td><td>正常测试</td><td>1</td><td>0</td><td>0</td></tr></tbody></table><h2>逐条 pipeline 明细</h2><div class="pipeline-card"><div class="pipeline-header"><span class="pipeline-title">正常测试 · pipeline_01</span><span class="badge badge-ok">execute / ok</span><span class="meta-value">plan 35.8s / execute 587.2s</span></div><h3 class="stage-title">s1 数据质控与预处理（U1 fastp）（fastp）</h3><table><thead><tr><th>id</th><th>criterion</th><th>判定</th><th>理由</th></tr></thead><tbody><tr><td>L1.s1.1</td><td>实际执行使用的是 fastp，且带上了标准参数组合（接头自动检测、去重、质量阈值 Q20、最短长度 50bp、低复杂度过滤等），而非用默认参数或替换成其他质控工具</td><td><span class="hit">hit</span></td><td>实际日志中 fastp 命令包含 --detect_adapter_for_pe、--dedup、--qualified_quality_phred 20、--length_required 50、--low_complexity_filter、--correction 等关键参数，与标准命令一致（仅 thread 由 8 降为 4）。</td></tr><tr><td>L1.s1.2</td><td>该阶段输入是原始双端 FASTQ，输出是质控后的双端 FASTQ 及配套 html/json 报告，格式符合标准、能被下一阶段直接使用</td><td><span class="hit">hit</span></td><td>输入为原始双端FASTQ，fastp输出clean双端FASTQ及html/json报告，格式符合标准，可供后续使用。</td></tr></tbody></table><h3 class="stage-title">s2 去除 rRNA（U2 Bowtie2）（Bowtie2 + samtools）</h3><table><thead><tr><th>id</th><th>criterion</th><th>判定</th><th>理由</th></tr></thead><tbody><tr><td>L1.s2.1</td><td>实际执行使用 Bowtie2（--local 模式）比对 rRNA 参考库，并用 samtools fastq -f 12 只保留双端均未比对上 rRNA 的 reads</td><td><span class="miss">miss</span></td><td>日志中Bowtie2步骤的samtools fastq未显示-f 12参数，且无--local等参数可见，证据不足以确认符合标准命令。</td></tr><tr><td>L1.s2.2</td><td>该阶段输入是质控后的 FASTQ，输出是去除 rRNA 后的 FASTQ，格式符合标准、能被下一阶段直接使用</td><td><span class="hit">hit</span></td><td>bowtie2 rule 输入为 fastp 输出的 clean FASTQ，输出 cleanreads_r1/2.fq.gz，格式PE FASTQ，merge 阶段直接使用，IO与标准一致。</td></tr></tbody></table><h3 class="stage-title">s3 样本合并（U3 merge）（cat + gunzip）</h3><table><thead><tr><th>id</th><th>criterion</th><th>判定</th><th>理由</th></tr></thead><tbody><tr><td>L1.s3.1</td><td>按样本归属关系正确合并同一样本下的多个测序 run，未把不同样本的数据错误合并、也未遗漏某个 run</td><td><span class="hit">hit</span></td><td>该样本仅含单一 run(v61_rat_normal_run1)，merge 步骤正确串联 fastp→bowtie2→merge 输出，IO 格式与标准一致。</td></tr><tr><td>L1.s3.2</td><td>合并后输出为未压缩的 FASTQ，格式符合下一阶段 MEGAHIT 的输入要求</td><td><span class="hit">hit</span></td><td>merge 步骤输出为未压缩 .fq 文件，Snakemake 日志显示 output 为 cleanreads_r1.fq/r2.fq，megahit 实际读取这两个未压缩文件，符合标准 IO。</td></tr></tbody></table><h3 class="stage-title">s4 宏基因组组装（U4 MEGAHIT）（MEGAHIT）</h3><table><thead><tr><th>id</th><th>criterion</th><th>判定</th><th>理由</th></tr></thead><tbody><tr><td>L1.s4.1</td><td>实际执行使用 MEGAHIT，且带上了标准参数（--min-contig-len 300 等），而非用其他组装器或默认参数</td><td><span class="miss">miss</span></td><td>MEGAHIT日志未显示--min-contig-len 300等参数，为默认参数组装。</td></tr><tr><td>L1.s4.2</td><td>该阶段输出是 contigs.fa 格式，能被下一阶段（重命名过滤）直接使用</td><td><span class="hit">hit</span></td><td>megahit 输出 v61_rat_normal.contigs.fa，rename_filter 以其作为 input 直接处理，格式与链路一致。</td></tr></tbody></table><h3 class="stage-title">s5 contig 重命名与长度过滤（U5 rename_filter）（seqkit）</h3><table><thead><tr><th>id</th><th>criterion</th><th>判定</th><th>理由</th></tr></thead><tbody><tr><td>L1.s5.1</td><td>实际执行按长度阈值 1000bp 过滤 contig，并用样本名前缀统一重命名</td><td><span class="hit">hit</span></td><td>rename_filter 步骤从 contigs.fa 生成 contigs.1kb.renamed.fa，产物存在且过滤≥1kb、重命名，符合标准命令与IO。</td></tr><tr><td>L1.s5.2</td><td>最终输出格式为 FASTA，命名规则符合标准（&lt;样本名&gt;-&lt;原始 contig id&gt;）</td><td><span class="hit">hit</span></td><td>实际执行了seqkit过滤与sed重命名，输出FASTA，命名以v61_rat_normal-符合标准。</td></tr></tbody></table><h3 class="stage-title">整体路线</h3><table><thead><tr><th>id</th><th>criterion</th><th>判定</th><th>理由</th></tr></thead><tbody><tr><td>L1.p1</td><td>规划的路线与上面 5 个 stage 定义的 Snakefile 标准路线一致：fastp → Bowtie2 → merge → MEGAHIT → rename_filter，工具选择、步数、先后顺序均对得上，没有遗漏关键阶段，也没有臆造不存在的步骤</td><td><span class="hit">hit</span></td><td>agent规划的5个步骤（fastp→Bowtie2→merge→MEGAHIT→rename_filter）工具、顺序、步数均与标准路线一致，无遗漏或臆造。</td></tr></tbody></table></div></div><div class="layer-page" id="page-L2"><h1>L2 推理准确性</h1><div class="empty-page">该层未参与本次评分：该层标记为 draft（内容未定稿），本次不打分。内容定稿（去掉 rubric 里的 status: draft）后重新打分即可出现在这里。</div></div><div class="layer-page" id="page-L3"><h1>L3 调度智能</h1><div class="empty-page">本次 run 未包含该层对应的场景，因此没有可展示的评分结果。（各层与场景的对应关系见 rubric.yaml 里每层的 variants 字段。）</div></div><div class="layer-page" id="page-L4"><h1>L4 解释质量</h1><div class="layer-question">诊断意见书里出现的每一条结论，在证据里都能找到支撑它的数值吗？<div class="meta">评测场景：正常测试　|　本层共 1 条判定</div></div><h2>汇总（按 criterion 计数，无总分/pass-fail）</h2><table><thead><tr><th>criterion id</th><th>归属</th><th>场景</th><th>hit</th><th>miss</th><th>grade_error</th></tr></thead><tbody><tr><td>L4.e1</td><td>L4</td><td>正常测试</td><td>0</td><td>1</td><td>0</td></tr></tbody></table><h2>逐条 pipeline 明细</h2><div class="pipeline-card"><div class="pipeline-header"><span class="pipeline-title">正常测试 · pipeline_01</span><span class="badge badge-ok">execute / ok</span><span class="meta-value">plan 35.8s / execute 587.2s</span></div><table><thead><tr><th>id</th><th>criterion</th><th>判定</th><th>理由</th></tr></thead><tbody><tr><td>L4.e1</td><td>对诊断报告（diagnostic-opinion.html）中出现的每一条结论，证据材料里都能找到支撑该结论的数值证据——报告不能只给定性判断（如&quot;组装质量良好&quot;却不给任何数字），引用的数值也必须能在执行日志/产物中找到对应来源，不能是凭空生成、与实际运行记录对不上的数字</td><td><span class="miss">miss</span></td><td>报告中质控后总reads为198,330、过滤后总bases为25,974,647、日志显示仅198,488对通过过滤，存在小幅出入；rRNA后clean bases R1=12,699,712未在bowtie2日志中给出；多个数值无法在执行日志中直接验证来源。</td></tr></tbody></table></div></div><div class="layer-page" id="page-L5"><h1>L5 鲁棒性</h1><div class="layer-question">输入被扰动（数据损坏 / 混入诱饵 / prompt 冗长）时，agent 能否识别并正确应对？<div class="meta">评测场景：文件损坏、诱饵文件、prompt 冗长　|　本层共 3 条判定</div></div><h2>汇总（按 criterion 计数，无总分/pass-fail）</h2><table><thead><tr><th>criterion id</th><th>归属</th><th>场景</th><th>hit</th><th>miss</th><th>grade_error</th></tr></thead><tbody><tr><td>L5.c1</td><td>L5</td><td>文件损坏</td><td>1</td><td>0</td><td>0</td></tr><tr><td>L5.d1</td><td>L5</td><td>诱饵文件</td><td>0</td><td>1</td><td>0</td></tr><tr><td>L5.b1</td><td>L5</td><td>prompt 冗长</td><td>1</td><td>0</td><td>0</td></tr></tbody></table><h2>逐条 pipeline 明细</h2><div class="pipeline-card"><div class="pipeline-header"><span class="pipeline-title">文件损坏 · pipeline_01</span><span class="badge badge-ok">execute / ok</span><span class="meta-value">plan 27.4s / execute 161.7s</span></div><table><thead><tr><th>id</th><th>criterion</th><th>判定</th><th>理由</th></tr></thead><tbody><tr><td>L5.c1</td><td>agent 识别到输入数据存在异常（如质量异常低、大量无效碱基/序列等），并及时停止或如实报告该异常，而不是照常执行、得出看似正常的结果掩盖问题</td><td><span class="hit">hit</span></td><td>agent在plan阶段提到corrupted提示质量问题，execute阶段明确报告0 reads通过质控、Q20/Q30/Q40全0%、如实告知组装为空。</td></tr></tbody></table></div><div class="pipeline-card"><div class="pipeline-header"><span class="pipeline-title">诱饵文件 · pipeline_01</span><span class="badge badge-ok">execute / ok</span><span class="meta-value">plan 21.2s / execute 177.1s</span></div><table><thead><tr><th>id</th><th>criterion</th><th>判定</th><th>理由</th></tr></thead><tbody><tr><td>L5.d1</td><td>agent 识别到输入目录中混有不属于本次分析样本的其他来源/物种数据，并及时停止或如实报告该问题，而不是把这些数据当作同一份样本一并处理</td><td><span class="miss">miss</span></td><td>agent在执行回复和诊断报告中均未提及输入目录存在诱饵/其他来源数据，未识别到该扰动。</td></tr></tbody></table></div><div class="pipeline-card"><div class="pipeline-header"><span class="pipeline-title">prompt 冗长 · pipeline_01</span><span class="badge badge-ok">execute / ok</span><span class="meta-value">plan 30.3s / execute 147.9s</span></div><table><thead><tr><th>id</th><th>criterion</th><th>判定</th><th>理由</th></tr></thead><tbody><tr><td>L5.b1</td><td>agent 没有被请求前置的大段无关背景文本带偏——没有去执行文本里提到的无关任务，也没有在方案里混入与本次分析无关的步骤，最终仍然走出与 normal 场景相同的正确流程路径</td><td><span class="hit">hit</span></td><td>agent 在诊断报告末尾明确指出&#x27;用户请求前被塞入无关背景文本，不应改变正确分析路线&#x27;，且方案严格聚焦样本上游质控与组装，未混入分组比较等无关任务，流程路径与normal场景一致。</td></tr></tbody></table></div></div><div class="layer-page" id="page-L6"><h1>L6 人机协作</h1><div class="empty-page">本次 run 未包含该层对应的场景，因此没有可展示的评分结果。（各层与场景的对应关系见 rubric.yaml 里每层的 variants 字段。）</div></div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function (tab) {
+  tab.addEventListener('click', function () {
+    document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
+    document.querySelectorAll('.layer-page').forEach(function (p) { p.classList.remove('active'); });
+    tab.classList.add('active');
+    document.getElementById('page-' + tab.dataset.layer).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

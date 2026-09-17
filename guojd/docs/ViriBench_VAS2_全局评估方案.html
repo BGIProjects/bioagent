@@ -1,0 +1,225 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>ViriBench VAS-2.0 全局评估方案</title><style>
+:root { --bg:#fff; --fg:#1a1a2e; --muted:#555; --accent:#2563eb; --al:#dbeafe; --bd:#e2e8f0; --card:#f8fafc; --code:#f1f5f9; --green:#16a34a; --orange:#ea580c; --red:#dc2626; --purple:#7c3aed; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans CJK SC",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;font-size:14.5px;max-width:1000px;margin:0 auto;padding:36px 22px 90px}
+h1{font-size:24px;font-weight:700;margin-bottom:6px}
+h2{font-size:19px;font-weight:700;margin:34px 0 12px;padding-bottom:7px;border-bottom:2px solid var(--accent)}
+h3{font-size:15.5px;font-weight:600;margin:20px 0 8px;color:var(--accent)}
+p,li{margin-bottom:5px} ul,ol{margin:6px 0 12px 20px}
+code{background:var(--code);padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace;font-size:12px}
+pre{background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:8px;overflow-x:auto;font-size:12px;line-height:1.5;margin:10px 0}
+table{width:100%;border-collapse:collapse;margin:10px 0 14px;font-size:12px;border:1px solid var(--bd)}
+th{background:var(--accent);color:#fff;padding:7px 8px;text-align:left;font-weight:600}
+td{padding:6px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
+tr:nth-child(even){background:#f8fafc}
+.callout{background:var(--al);border-left:4px solid var(--accent);padding:12px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+.callout-warn{background:#fef3c7;border-left-color:var(--orange)}
+.callout-key{background:#ede9fe;border-left-color:var(--purple)}
+.callout-fail{background:#fee2e2;border-left-color:var(--red)}
+.callout-ok{background:#d1fae5;border-left-color:var(--green)}
+.meta{color:var(--muted);font-size:13px;margin-bottom:14px}
+.toc{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:14px 18px;margin:14px 0}
+.toc a{color:var(--accent);text-decoration:none}
+.badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600;margin-right:3px}
+.ref{background:#e0e7ff;color:#3730a3}.a{background:#dbeafe;color:#1e40af}.b{background:#ede9fe;color:#6b21a8}.c{background:#d1fae5;color:#065f46}
+.hit{color:#157a3d;font-weight:600}.miss{color:#a30000;font-weight:600}.zero{color:#a30000;font-weight:700}
+.kpi{display:inline-block;border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin:3px;min-width:100px;text-align:center;background:var(--card)}
+.kpi .n{font-size:20px;font-weight:700;color:var(--accent)}.kpi .l{font-size:10.5px;color:var(--muted)}
+.kpi.bad .n{color:var(--red)}
+.layer{border:2px solid;border-radius:10px;padding:12px 14px;margin:12px 0}
+.tabs{display:flex;gap:.35rem;flex-wrap:wrap;margin:1rem 0}
+.tab{padding:.4rem .75rem;border:1px solid #ddd;border-radius:6px;background:#fafafa;cursor:pointer;font-size:.84rem;font-family:inherit}
+.tab.active{background:#2d5aa0;color:#fff;border-color:#2d5aa0;font-weight:600}
+.page{display:none}.page.active{display:block}
+.foot{font-size:11.5px;color:var(--muted);margin-top:24px;border-top:1px solid var(--bd);padding-top:12px}
+</style></head><body>
+<h1>ViriBench VAS-2.0 — 全局 Agent 评估方案</h1>
+<p style="font-size:16px;color:var(--accent);font-weight:600">按 XvirMind 总体规划设计 · 共 93 条指标 · 每层绑定市面 Agent 评估模板 · 正式口径未测=0</p>
+<div class="meta">协议 <strong>VAS-2.0</strong>　|　2026-08-18　|　案例（不及格）：<a href="./Agent实评报告_v120_VAS2.html">v120 正式口径实评</a>　|　设计母本：<a href="./ViriBench_Benchmark_Design.html">ViriBench 设计</a></div>
+
+<div class="callout callout-key">
+<strong>核心原则：</strong>评估的是「规划中的完整 AI 协诊系统」，不是「某一个跑通的样本」。
+测试数据只作案例；W3–W6 未接、无研判引擎、无 L5 扰动套件、无 L6 反馈闭环——这些在正式口径下都必须记 0。
+因此当前局部成功的 Agent，全局 VAS 应为<strong>不及格</strong>，才能驱动按规划补齐能力，而不是被单次成功迷惑。
+</div>
+
+<div class="toc"><strong>目录</strong><ol>
+<li><a href="#s1">总体规划对齐</a></li>
+<li><a href="#s2">市面模板引用</a></li>
+<li><a href="#s3">总分公式与及格线</a></li>
+<li><a href="#s4">六层全量指标</a></li>
+<li><a href="#s5">机制与反虚高</a></li>
+<li><a href="#s6">案例用法</a></li>
+</ol></div>
+
+<h2 id="s1">1. 总体规划对齐</h2>
+<table>
+<tr><th>规划模块</th><th>评估层</th><th>规划验收（摘录）</th></tr>
+<tr><td>W1–W6 + MCP + 断点续跑</td><td>L1</td><td>端到端产物；标准≤16h；紧急≤25min；断点续跑 100%</td></tr>
+<tr><td>矛盾/阈值/EVE/四层结论</td><td>L2</td><td>检出≥95%；新种 F1≥0.85；假阳≤1%；矛盾召回≥90%</td></tr>
+<tr><td>自适应路径 A/B/C + 自优化</td><td>L3</td><td>紧急响应 100%；调度收益≥30%</td></tr>
+<tr><td>诊断意见书 + 推理链</td><td>L4</td><td>证据可审计；推理链完整；清单覆盖</td></tr>
+<tr><td>扰动与稳定性</td><td>L5</td><td>corrupted/decoy/bloat；Jaccard/Pearson；pass^k</td></tr>
+<tr><td>专家打回与进化</td><td>L6</td><td>接受率≥90%；迭代+5%；pitfall/optimization 日志</td></tr>
+</table>
+
+<h2 id="s2">2. 市面模板引用（每层一条主模板）</h2>
+<table>
+<tr><th>层</th><th>主引用</th><th>借用要点</th></tr>
+<tr><td>L1</td><td><span class="badge ref">ScienceAgentBench</span> + <span class="badge ref">BioAgent Bench</span></td><td>VER→SR 级联；completion rate；产物落盘检查</td></tr>
+<tr><td>L2</td><td><span class="badge ref">GeneBench-Pro</span></td><td>已知 GT、容差、decision cascade（上游错则下游不得虚高）</td></tr>
+<tr><td>L3</td><td><span class="badge ref">τ-Bench / τ²-Bench</span></td><td>状态匹配；pass^k 可靠性</td></tr>
+<tr><td>L4</td><td><span class="badge ref">LifeSciBench</span></td><td>专家 rubric；Grounding；原子化 checklist</td></tr>
+<tr><td>L5</td><td><span class="badge ref">BioAgent Bench 扰动</span> + <span class="badge ref">Agentic Benchmark Checklist</span></td><td>三类扰动；禁空答案/未测虚高</td></tr>
+<tr><td>L6</td><td><span class="badge ref">研究方案人机闭环</span> + LifeSciBench 专家验证</td><td>接受率、一致性 κ、结构化反馈、留存审计</td></tr>
+</table>
+<p>另参考：SWE-bench Verified、GAIA、MLAgentBench Cost、LLM Agents Evaluation Survey（过程+结果双轨）。</p>
+
+<h2 id="s3">3. 总分公式与及格线</h2>
+<pre>VAS = 0.18·L1 + 0.28·L2 + 0.10·L3 + 0.18·L4 + 0.16·L5 + 0.10·L6
+
+正式口径 official：
+  未实现 / 未跑套件 / 无 GT 无法算 → 指标分 = 0
+  禁止只对「已测层」重归一化后对外宣称 VAS
+
+及格线：VAS &lt; 60 不及格 | 60–74 及格 | 75–89 良好 | ≥90 优秀
+副指标（不进分）：Cost、Tokens、WallTime、ToolCalls、pass^k
+</pre>
+
+<h2 id="s4">4. 六层全量指标（共 93 条）</h2>
+<div class="layer" style="border-color:#dc2626">
+<h3 style="margin-top:0;color:#dc2626">L1 执行完成度</h3>
+<p><span class="badge ref">引用模板</span> ScienceAgentBench（VER）+ BioAgent Bench（completion rate）</p>
+<table><thead><tr><th>ID</th><th>指标</th><th>定义</th><th>目标</th><th>层内权重</th><th>机制</th></tr></thead>
+<tbody><tr><td><code>L1.VER</code></td><td><strong>可执行完成率 Valid Execution</strong></td><td>trial 无崩溃结束且 returncode=0；部分 phase 成功按完成比例计分</td><td>100%</td><td>0.080</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.SCR</code></td><td><strong>步骤完成率 Step Completion</strong></td><td>标准路径各 stage 的工具+IO criterion 命中均值（BioAgent Bench completion rate）</td><td>≥95%</td><td>0.080</td><td><span class='badge b'>B</span></td></tr>
+<tr><td><code>L1.PFR</code></td><td><strong>路径忠实度 Path Fidelity</strong></td><td>plan DAG 与金标 Snakefile 阶段集合/顺序一致，无臆造步骤</td><td>100%</td><td>0.070</td><td><span class='badge b'>B</span></td></tr>
+<tr><td><code>L1.FAR</code></td><td><strong>最终产物率 Final Artifact</strong></td><td>task 声明的必需产物全部存在且可解析（非空）</td><td>100%</td><td>0.070</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.TPF</code></td><td><strong>工具参数忠实度</strong></td><td>关键 shell 参数与标准 command 一致（需 printshellcmds）</td><td>≥95%</td><td>0.070</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.W1</code></td><td><strong>W1 上游流程覆盖</strong></td><td>Agent 已接入并跑通 workflow1</td><td>已接通</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.W2</code></td><td><strong>W2 病毒鉴定覆盖</strong></td><td>Agent 已接入并跑通 workflow2</td><td>已接通</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.W3</code></td><td><strong>W3 宿主鉴定覆盖</strong></td><td>Agent 已接入并跑通 workflow3</td><td>已接通</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.W4</code></td><td><strong>W4 Kraken/Bracken 覆盖</strong></td><td>Agent 已接入并跑通 workflow4</td><td>已接通</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.W5</code></td><td><strong>W5 病毒定量覆盖</strong></td><td>Agent 已接入并跑通 workflow5</td><td>已接通</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.W6</code></td><td><strong>W6 病毒注释覆盖</strong></td><td>Agent 已接入并跑通 workflow6</td><td>已接通</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.EVJ</code></td><td><strong>evidence.json 汇聚</strong></td><td>全流程结束后写出规范化 evidence.json</td><td>100%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.BPR</code></td><td><strong>断点续跑成功率</strong></td><td>中断后从 checkpoint 恢复并完成</td><td>100%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.MSL</code></td><td><strong>多样本并行正确性</strong></td><td>≥2 样本并行无串样、无覆盖</td><td>100%</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.SLA_S</code></td><td><strong>标准通道时限</strong></td><td>标准全链路墙钟 ≤16h</td><td>≤16h</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.SLA_E</code></td><td><strong>紧急通道时限</strong></td><td>紧急路径墙钟 ≤25min</td><td>≤25min</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.PSF</code></td><td><strong>失败即停</strong></td><td>phase 失败不启动后续，状态可审计</td><td>100%</td><td>0.030</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L1.AUD</code></td><td><strong>命令审计轨迹</strong></td><td>shell/benchmark/telemetry 可复核</td><td>100%</td><td>0.030</td><td><span class='badge a'>A</span></td></tr></tbody></table>
+<p style="font-size:12px;color:#555">层分 Li=Σ w·m，m∈[0,100]。未测/未建/无 GT → 正式口径 m=0。</p></div>
+<div class="layer" style="border-color:#2563eb">
+<h3 style="margin-top:0;color:#2563eb">L2 推理准确性</h3>
+<p><span class="badge ref">引用模板</span> GeneBench-Pro（GT + decision cascade）+ 研究方案验证表</p>
+<table><thead><tr><th>ID</th><th>指标</th><th>定义</th><th>目标</th><th>层内权重</th><th>机制</th></tr></thead>
+<tbody><tr><td><code>L2.REC</code></td><td><strong>已知病毒检出召回率</strong></td><td>TP/(TP+FN) vs virus_list.json</td><td>≥95%</td><td>0.070</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.PREC</code></td><td><strong>已知病毒检出精确率</strong></td><td>TP/(TP+FP)</td><td>≥90%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.F1</code></td><td><strong>检出 F1</strong></td><td>2PR/(P+R)</td><td>≥0.90</td><td>0.070</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.NOV</code></td><td><strong>属内新种判定 F1</strong></td><td>新种判定 F1（GeneBench-Pro）</td><td>≥0.85</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.FPR</code></td><td><strong>假阳性过滤率</strong></td><td>阴性样本 1−误报率</td><td>≥99%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.TAX_F</code></td><td><strong>科级分类准确率</strong></td><td>与 ICTV/金标一致</td><td>≥98%</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.TAX_G</code></td><td><strong>属级分类准确率</strong></td><td>与金标属一致</td><td>≥95%</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.TAX_S</code></td><td><strong>种级分类准确率</strong></td><td>与金标种一致</td><td>≥90%</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.CON_R</code></td><td><strong>矛盾模式召回率</strong></td><td>高同源低覆盖等被检出</td><td>≥90%</td><td>0.060</td><td><span class='badge b'>B</span></td></tr>
+<tr><td><code>L2.CON_P</code></td><td><strong>矛盾模式精确率</strong></td><td>矛盾报警真阳性率</td><td>≥85%</td><td>0.040</td><td><span class='badge b'>B</span></td></tr>
+<tr><td><code>L2.EVE</code></td><td><strong>EVE 排除率</strong></td><td>D4 样本正确排除</td><td>≥95%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.BND</code></td><td><strong>阈值边界处理正确率</strong></td><td>89–91% 区间非硬截断误判</td><td>≥85%</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.CHG</code></td><td><strong>嵌合体/分节段处理</strong></td><td>嵌合与分节段判读正确率</td><td>≥80%</td><td>0.040</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.GRD</code></td><td><strong>四层结论分级正确率</strong></td><td>确证/高置信/可疑/排除 vs reasoning_truth</td><td>≥90%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.CAL</code></td><td><strong>置信度校准 (1−ECE)</strong></td><td>置信度-正确率校准</td><td>ECE≤0.10</td><td>0.040</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.EVC</code></td><td><strong>evidence.json 字段完备率</strong></td><td>必填证据字段齐全</td><td>≥95%</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.OIR</code></td><td><strong>上游数值合理性</strong></td><td>QC/组装指标落在阈值表</td><td>≥90%</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L2.CNS</code></td><td><strong>多库证据一致性处理</strong></td><td>NR/NT/VHDB 冲突显式标记</td><td>≥90%</td><td>0.080</td><td><span class='badge b'>B</span></td></tr></tbody></table>
+<p style="font-size:12px;color:#555">层分 Li=Σ w·m，m∈[0,100]。未测/未建/无 GT → 正式口径 m=0。</p></div>
+<div class="layer" style="border-color:#7c3aed">
+<h3 style="margin-top:0;color:#7c3aed">L3 调度智能</h3>
+<p><span class="badge ref">引用模板</span> τ-Bench / τ²-Bench（state match + pass^k）</p>
+<table><thead><tr><th>ID</th><th>指标</th><th>定义</th><th>目标</th><th>层内权重</th><th>机制</th></tr></thead>
+<tbody><tr><td><code>L3.RAC</code></td><td><strong>路径选择正确率</strong></td><td>A/B/C vs 专家金标（τ-Bench state match）</td><td>≥90%</td><td>0.120</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L3.EHR</code></td><td><strong>紧急样本响应率</strong></td><td>紧急样本进快速通道</td><td>100%</td><td>0.100</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L3.DPR</code></td><td><strong>深度路径触发正确率</strong></td><td>孤儿/低置信进路径 C</td><td>≥85%</td><td>0.070</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L3.CR</code></td><td><strong>约束识别</strong></td><td>复述紧急度/资源/时限</td><td>100%</td><td>0.060</td><td><span class='badge b'>B</span></td></tr>
+<tr><td><code>L3.CA</code></td><td><strong>约束适应</strong></td><td>方案实质合法调整</td><td>100%</td><td>0.080</td><td><span class='badge b'>B</span></td></tr>
+<tr><td><code>L3.TC</code></td><td><strong>代价说明</strong></td><td>说明跳步/降精度代价</td><td>100%</td><td>0.050</td><td><span class='badge b'>B</span></td></tr>
+<tr><td><code>L3.TBR</code></td><td><strong>调度耗时收益</strong></td><td>相对固定流程降时，30% 满分</td><td>≥30%</td><td>0.080</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L3.RUT</code></td><td><strong>资源利用率</strong></td><td>有效 CPU/内存，无长期空转</td><td>≥70%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L3.ADM</code></td><td><strong>资源准入门控</strong></td><td>不足时拒绝/降级而非硬崩</td><td>100%</td><td>0.070</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L3.MRR</code></td><td><strong>误路由恢复率</strong></td><td>错路径自动纠正</td><td>≥80%</td><td>0.070</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L3.RCK</code></td><td><strong>路由一致性 pass^k</strong></td><td>同输入 k 次路由全一致</td><td>pass^3=1</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L3.DDL</code></td><td><strong>截止期达成率</strong></td><td>deadline 内交付</td><td>≥95%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L3.EST</code></td><td><strong>历史资源估计质量</strong></td><td>P50/P90 MAPE</td><td>≤30%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L3.RLB</code></td><td><strong>自优化调度就绪</strong></td><td>optimization_log + 可更新策略</td><td>已部署</td><td>0.060</td><td><span class='badge a'>A</span></td></tr></tbody></table>
+<p style="font-size:12px;color:#555">层分 Li=Σ w·m，m∈[0,100]。未测/未建/无 GT → 正式口径 m=0。</p></div>
+<div class="layer" style="border-color:#0d9488">
+<h3 style="margin-top:0;color:#0d9488">L4 解释质量</h3>
+<p><span class="badge ref">引用模板</span> LifeSciBench（rubric + grounding）</p>
+<table><thead><tr><th>ID</th><th>指标</th><th>定义</th><th>目标</th><th>层内权重</th><th>机制</th></tr></thead>
+<tbody><tr><td><code>L4.GRD</code></td><td><strong>证据锚定准确率</strong></td><td>报告数值可在产物定位（LifeSciBench Grounding）</td><td>≥98%</td><td>0.100</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L4.HAL</code></td><td><strong>反幻觉率</strong></td><td>1−幻觉断言比；空报告=0</td><td>≥98%</td><td>0.080</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L4.COT</code></td><td><strong>推理链完整性</strong></td><td>支持/反对证据+不确定性</td><td>100%</td><td>0.090</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L4.SUP</code></td><td><strong>多证据支撑率</strong></td><td>结论≥2 条独立证据</td><td>≥95%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L4.RUL</code></td><td><strong>规则/ICTV 引用率</strong></td><td>引用规则或 ICTV 条款</td><td>≥90%</td><td>0.050</td><td><span class='badge b'>B</span></td></tr>
+<tr><td><code>L4.GRD4</code></td><td><strong>报告内四层分级正确</strong></td><td>分级 vs 金标</td><td>≥90%</td><td>0.070</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L4.CHK</code></td><td><strong>审核清单覆盖率</strong></td><td>审核要点覆盖</td><td>≥95%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L4.RB_EV</code></td><td><strong>Rubric-证据呈现</strong></td><td>LifeSciBench 维度</td><td>≥0.80</td><td>0.060</td><td><span class='badge c'>C</span></td></tr>
+<tr><td><code>L4.RB_CN</code></td><td><strong>Rubric-矛盾检测</strong></td><td>量表维度</td><td>≥0.80</td><td>0.060</td><td><span class='badge c'>C</span></td></tr>
+<tr><td><code>L4.RB_TH</code></td><td><strong>Rubric-阈值处理</strong></td><td>量表维度</td><td>≥0.80</td><td>0.050</td><td><span class='badge c'>C</span></td></tr>
+<tr><td><code>L4.RB_CL</code></td><td><strong>Rubric-结论可操作性</strong></td><td>后续建议可执行</td><td>≥0.80</td><td>0.050</td><td><span class='badge c'>C</span></td></tr>
+<tr><td><code>L4.FMT</code></td><td><strong>多格式交付</strong></td><td>MD+JSON+PDF/HTML</td><td>100%</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L4.UNC</code></td><td><strong>不确定性显式标注</strong></td><td>缺基因/低覆盖等必标</td><td>≥95%</td><td>0.060</td><td><span class='badge b'>B</span></td></tr>
+<tr><td><code>L4.TRC</code></td><td><strong>审计可追溯</strong></td><td>报告→telemetry→command</td><td>100%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L4.AGG</code></td><td><strong>无错误聚合</strong></td><td>禁止跨 phase 同名指标误加</td><td>100%</td><td>0.100</td><td><span class='badge a'>A</span></td></tr></tbody></table>
+<p style="font-size:12px;color:#555">层分 Li=Σ w·m，m∈[0,100]。未测/未建/无 GT → 正式口径 m=0。</p></div>
+<div class="layer" style="border-color:#ea580c">
+<h3 style="margin-top:0;color:#ea580c">L5 鲁棒性</h3>
+<p><span class="badge ref">引用模板</span> BioAgent Bench 扰动 + Agentic Benchmark Checklist</p>
+<table><thead><tr><th>ID</th><th>指标</th><th>定义</th><th>目标</th><th>层内权重</th><th>机制</th></tr></thead>
+<tbody><tr><td><code>L5.COR</code></td><td><strong>损坏输入检出率</strong></td><td>corrupted 停止/报警（BioAgent Bench）</td><td>≥90%</td><td>0.100</td><td><span class='badge b'>B</span></td></tr>
+<tr><td><code>L5.DEC</code></td><td><strong>诱饵排除率</strong></td><td>decoy 不被当目标</td><td>≥95%</td><td>0.100</td><td><span class='badge b'>B</span></td></tr>
+<tr><td><code>L5.PBR</code></td><td><strong>抗 Prompt 膨胀</strong></td><td>bloat 后主路径保持，L1 降幅≤15%</td><td>下降≤15%</td><td>0.080</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L5.ADV_E</code></td><td><strong>对抗 EVE 诱饵</strong></td><td>近真 EVE 不报确证</td><td>≥90%</td><td>0.070</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L5.ADV_C</code></td><td><strong>对抗嵌合 contig</strong></td><td>识别或标注嵌合</td><td>≥80%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L5.TRUNC</code></td><td><strong>截断 reads 鲁棒</strong></td><td>异常短 reads 报警</td><td>≥90%</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L5.WDB</code></td><td><strong>错误库版本检测</strong></td><td>库指纹不匹配报警</td><td>≥85%</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L5.TOOL</code></td><td><strong>输入检查工具调用率</strong></td><td>扰动下确有 Read/Bash 检查</td><td>≥95%</td><td>0.080</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L5.SIL</code></td><td><strong>禁静默成功</strong></td><td>坏输入不得 ok+正常结论</td><td>100%</td><td>0.080</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L5.PASK</code></td><td><strong>可靠性 pass^k</strong></td><td>核心成功 k 次全过（τ-Bench）</td><td>任务占比≥0.85</td><td>0.080</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L5.JAC</code></td><td><strong>分类稳定性 Jaccard</strong></td><td>k 次物种集合 Jaccard</td><td>≥0.85</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L5.PEA</code></td><td><strong>数值稳定性 Pearson</strong></td><td>k 次定量相关</td><td>≥0.90</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L5.CONC</code></td><td><strong>并发压力正确性</strong></td><td>并行无串写 run</td><td>100%</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L5.SAFE</code></td><td><strong>危险操作门禁</strong></td><td>删库等需确认</td><td>100%</td><td>0.040</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L5.INJ</code></td><td><strong>提示注入抵抗</strong></td><td>无法诱使跳过 QC/伪造报告</td><td>≥90%</td><td>0.040</td><td><span class='badge b'>B</span></td></tr></tbody></table>
+<p style="font-size:12px;color:#555">层分 Li=Σ w·m，m∈[0,100]。未测/未建/无 GT → 正式口径 m=0。</p></div>
+<div class="layer" style="border-color:#3730a3">
+<h3 style="margin-top:0;color:#3730a3">L6 人机协作</h3>
+<p><span class="badge ref">引用模板</span> 方案反馈闭环 + 专家双盲验证</p>
+<table><thead><tr><th>ID</th><th>指标</th><th>定义</th><th>目标</th><th>层内权重</th><th>机制</th></tr></thead>
+<tbody><tr><td><code>L6.ACC</code></td><td><strong>专家直接接受率</strong></td><td>不修改即采纳（双盲）</td><td>≥90%</td><td>0.120</td><td><span class='badge c'>C</span></td></tr>
+<tr><td><code>L6.FIX</code></td><td><strong>反馈修复率</strong></td><td>次轮修正指出问题</td><td>≥85%</td><td>0.120</td><td><span class='badge b'>B</span></td></tr>
+<tr><td><code>L6.DLT</code></td><td><strong>反馈后准确率提升</strong></td><td>迭代后 L2/L4 提升</td><td>≥5pp</td><td>0.100</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L6.EFF</code></td><td><strong>修正轮次效率</strong></td><td>≤2 轮修好</td><td>≥80%</td><td>0.080</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L6.FRM</code></td><td><strong>反馈表单完整率</strong></td><td>结构化字段校验通过</td><td>≥95%</td><td>0.080</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L6.PIT</code></td><td><strong>pitfall_log 覆盖率</strong></td><td>打回写入陷阱日志</td><td>100%</td><td>0.080</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L6.OPT</code></td><td><strong>optimization_log 可追溯</strong></td><td>策略更新有日志</td><td>100%</td><td>0.080</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L6.KAP</code></td><td><strong>人机一致 κ</strong></td><td>分级 Cohen&#x27;s κ</td><td>≥0.70</td><td>0.080</td><td><span class='badge c'>C</span></td></tr>
+<tr><td><code>L6.OVR</code></td><td><strong>专家覆盖合理区间</strong></td><td>覆盖率落在合理区间（过高=过度依赖人工）</td><td>5–30%</td><td>0.050</td><td><span class='badge c'>C</span></td></tr>
+<tr><td><code>L6.TIM</code></td><td><strong>专家耗时节省</strong></td><td>相对纯人工</td><td>≥40%</td><td>0.050</td><td><span class='badge c'>C</span></td></tr>
+<tr><td><code>L6.RET</code></td><td><strong>反馈留存合规</strong></td><td>不可篡改≥2 年</td><td>100%</td><td>0.060</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L6.FSW</code></td><td><strong>提示进化有效</strong></td><td>hold-out 提升</td><td>≥3pp</td><td>0.050</td><td><span class='badge a'>A</span></td></tr>
+<tr><td><code>L6.UI</code></td><td><strong>打回重跑闭环 UI</strong></td><td>反对→理由→重跑</td><td>已上线</td><td>0.050</td><td><span class='badge a'>A</span></td></tr></tbody></table>
+<p style="font-size:12px;color:#555">层分 Li=Σ w·m，m∈[0,100]。未测/未建/无 GT → 正式口径 m=0。</p></div>
+
+<h2 id="s5">5. 机制与反虚高</h2>
+<ul>
+<li>A 自动 / B LLM grader（需 κ≥0.70 校准）/ C 专家。</li>
+<li>单样本成功 ≠ L5/L6 得分；缺扰动套件则 L5=0；缺打回闭环则 L6=0。</li>
+<li>L1.VER=0 ⇒ L2/L4 结果类指标强制 0（级联）。</li>
+<li>跨 Agent：统一 AUT 产物接口后用同一套指标卡；主排序 VAS，并列看 pass^k→Cost。</li>
+</ul>
+
+<h2 id="s6">6. 案例用法</h2>
+<p>见 <a href="./Agent实评报告_v120_VAS2.html">v120 正式口径实评</a>：对该 run 能证明的指标给分，其余一律 0，得到不及格总分。</p>
+<div class="foot">VAS-2.0 | 93 metrics | 2026-08-18 18:43</div>
+</body></html>

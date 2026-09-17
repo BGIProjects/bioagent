@@ -1,0 +1,16 @@
+# XvirMind v1.1 runtime — tracked template. Do not put secrets here.
+host:
+  bind: 127.0.0.1
+  port: 3080
+mcp:
+  taxonomy_port: 8766
+  annotation_port: 8767
+paths:
+  taxonomy_root: /data/user/wangdaxi/Projects/virus_taxonomy
+  annotation_root: /data/user/wangdaxi/rna_virus_annotation
+  run_root: /data/user/guojindan/Projects/XvirMind/xvirmind/runs
+policy:
+  local_only: true
+  allow_compute: false
+  compute_timeout_sec: 120
+  max_fasta_bytes: 5000000

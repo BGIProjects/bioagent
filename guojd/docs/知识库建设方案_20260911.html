@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>XvirMind 知识库建设方案 · 2026-09-11</title>
+<style>
+:root { --ink:#16324f; --text:#2e4355; --muted:#5b6778; --teal:#087f83; --line:#dce5ec; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font:15px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; color:var(--text); max-width:960px; margin:0 auto; padding:40px 28px 80px; }
+h1 { font-size:24px; color:var(--ink); margin-bottom:8px; }
+h2 { font-size:19px; color:var(--ink); margin:28px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--teal); }
+h3 { font-size:16px; color:var(--teal); margin:18px 0 8px; }
+p,li { margin-bottom:8px; }
+ul,ol { margin:8px 0 14px 22px; }
+.meta { color:var(--muted); font-size:13px; margin-bottom:16px; }
+.banner { background:#e6f4f4; border-left:4px solid var(--teal); padding:14px 16px; margin:14px 0 22px; }
+table { width:100%; border-collapse:collapse; font-size:13px; margin:12px 0 18px; border:1px solid var(--line); }
+th { background:#ecf3f4; text-align:left; padding:8px 10px; }
+td { padding:8px 10px; border-top:1px solid var(--line); vertical-align:top; }
+code { background:#f1f5f9; padding:1px 5px; border-radius:4px; }
+pre { background:#f1f5f9; padding:12px; border-radius:8px; overflow:auto; font-size:12px; }
+.foot { margin-top:28px; padding-top:12px; border-top:1px solid var(--line); font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<h1>知识库建设方案：本地可发布、可引用、可审核</h1>
+<p class="meta">2026-09-11　|　权威源在 wangdaxi；XvirMind 只做发布快照与引用，不改源仓</p>
+<div class="banner">
+  护城河是垂直知识，不是前端。知识库必须<strong>本地、可哈希、可回滚、可被报告引用</strong>。Agent 只检索已发布的 pack，不能把模型记忆当成 ICTV 规则。
+</div>
+
+<h2>1. 权威源与职责</h2>
+<table>
+<thead><tr><th>层</th><th>位置</th><th>职责</th></tr></thead>
+<tbody>
+<tr><td>分类真相源</td><td><code>wangdaxi/Projects/virus_taxonomy</code> · <code>data/kb/kb.jsonl</code> + <code>taxonomy.db</code></td><td>ICTV 科/属界分规则、MSL40 名录。唯一可被定种引用的规则文本。</td></tr>
+<tr><td>RNA 注释增量</td><td><code>wangdaxi/rna_virus_annotation</code> · intrafamily split + <code>rva_annotate.py</code></td><td>弱同源 RNA 病毒基因结构/结构域。不替代 W6 流程注释。</td></tr>
+<tr><td>发布快照</td><td><code>XvirMind/knowledge/releases/&lt;pack_id&gt;</code></td><td>子集 + sha256 + manifest。分析页和报告只引用 pack，不直读正在编辑的源文件。</td></tr>
+<tr><td>查询插件</td><td>MCP <code>:8766/:8767</code></td><td>只读检索；计算默认 dry-run。</td></tr>
+</tbody>
+</table>
+
+<h2>2. 发布流水线</h2>
+<pre>harvest 源仓 kb.jsonl / RVA split
+  → validate JSONL 与 family 白名单
+  → subset（本 demo：Flaviviridae, Coronaviridae, Adenoviridae）
+  → hash（源文件 + 产物）
+  → publish knowledge/releases/&lt;date-version&gt;/manifest.json
+  → latest 符号链接
+  → 分析页 / 报告 citation.knowledge_release = 该路径
+</pre>
+<p>命令：<code>python3 xvirmind/scripts/publish_knowledge_pack.py --version 20260911-demo</code></p>
+<p>规则：发布失败则继续使用上一成功 pack；禁止静默落到「模型记得的科名」。</p>
+
+<h2>3. 引用合同</h2>
+<ul>
+  <li>每条定种/科级规则必须带 <code>corpus=ictv</code>、<code>knowledge_release</code>、<code>locator</code>（如 <code>taxon.family=Flaviviridae</code>）。</li>
+  <li>缺 locator → 完整性规则 <code>INCOMPLETE_EVIDENCE</code>，报告写「未提供」，专家可打回。</li>
+  <li>W2 科与 RVA 科不一致 → <code>FAMILY_CONFLICT</code>，不能自动消解。</li>
+  <li>RVA 未确认实跑 → <code>RVA_NOT_CONFIRMED</code>，允许出报告但不得写成已注释完成。</li>
+</ul>
+
+<h2>4. Demo 怎么验</h2>
+<ol>
+  <li>打开 <code>http://127.0.0.1:3080/knowledge</code>（本机 XvirMind Host，不依赖 cyclone 写权限）。</li>
+  <li>看到 pack <code>20260911-demo</code>、成员表、W1–W4+W6 队列估计、RVA 实跑状态。</li>
+  <li>评估 demo 候选：Flaviviridae 完整；Coronaviridae vs Flaviviridae 冲突被打回。</li>
+  <li>交付预览含定种、RVA、kb.jsonl 引用。静态副本：<code>knowledge/demo/delivery_report_preview.html</code>。</li>
+</ol>
+
+<h2>5. 与 Open WebUI 的关系</h2>
+<p>同一套 OpsService 已拷进 overlay。cyclone 合入后，分析页右侧「治理」走 <code>/api/v1/analysis/ops/*</code>。现网 5173 仍须 lihuyang 跑 <code>sync_to_cyclone.sh</code>。</p>
+
+<h2>6. 后续（不阻塞 demo）</h2>
+<ul>
+  <li>全量 33 科 pack 与 taxonomy.db 一并哈希，而不是只做 3 科子集。</li>
+  <li>知识包签名与只读挂载到计算节点。</li>
+  <li>候选级规则接到 W2 产物表，而不是仅 demo JSON。</li>
+</ul>
+<div class="foot">依据：virus_taxonomy kb.jsonl README；RVA README；用户第二波要求：发布流水线、引用进报告、建设方案与 demo。</div>
+</body>
+</html>

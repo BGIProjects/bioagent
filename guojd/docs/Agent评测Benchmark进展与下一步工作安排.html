@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XvirMind Agent 评测 Benchmark 进展与下一步工作安排</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1a1a2e; --fg-muted: #555; --accent: #2563eb;
+  --accent-light: #dbeafe; --border: #e2e8f0; --card-bg: #f8fafc;
+  --code-bg: #f1f5f9; --red: #dc2626; --green: #16a34a; --orange: #ea580c;
+  --purple: #7c3aed; --teal: #0d9488; --table-stripe: #f8fafc;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  background: var(--bg); color: var(--fg); line-height: 1.8; font-size: 15px;
+  max-width: 960px; margin: 0 auto; padding: 40px 24px 80px;
+}
+h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.4px; }
+h2 { font-size: 20px; font-weight: 700; margin: 36px 0 14px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+h3 { font-size: 16px; font-weight: 600; margin: 22px 0 10px; color: var(--accent); }
+p { margin-bottom: 12px; }
+ul, ol { margin: 8px 0 16px 24px; }
+li { margin-bottom: 5px; }
+code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-family: "SF Mono", "Fira Code", monospace; font-size: 13px; }
+pre { background: var(--code-bg); padding: 14px; border-radius: 8px; overflow-x: auto; margin: 12px 0; font-size: 12px; line-height: 1.55; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; border: 1px solid var(--border); }
+th { background: var(--accent); color: #fff; padding: 9px 11px; text-align: left; font-weight: 600; }
+td { padding: 8px 11px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:nth-child(even) { background: var(--table-stripe); }
+tr:last-child td { border-bottom: none; }
+.callout { background: var(--accent-light); border-left: 4px solid var(--accent); padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+.callout-warn { background: #fef3c7; border-left-color: var(--orange); }
+.callout-key { background: #ede9fe; border-left-color: var(--purple); }
+.callout-success { background: #d1fae5; border-left-color: var(--green); }
+.badge { display: inline-block; padding: 1px 9px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-right: 4px; }
+.done { background: #d1fae5; color: #065f46; }
+.partial { background: #fef3c7; color: #92400e; }
+.todo { background: #fee2e2; color: #991b1b; }
+.draft { background: #e0e7ff; color: #3730a3; }
+.header-meta { color: var(--fg-muted); font-size: 14px; margin-bottom: 20px; }
+.toc { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin: 20px 0; }
+.toc h3 { margin-top: 0; color: var(--fg); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.toc ol { margin-left: 20px; }
+.toc a { color: var(--accent); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+.layer-box { border: 2px solid; border-radius: 10px; padding: 12px 16px; margin: 10px 0; }
+.layer-box h4 { margin: 0 0 6px; font-size: 14px; }
+.footnote { font-size: 12px; color: var(--fg-muted); margin-top: 28px; border-top: 1px solid var(--border); padding-top: 14px; }
+.metric { display: inline-block; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin: 4px; background: var(--card-bg); min-width: 140px; vertical-align: top; }
+.metric .n { font-size: 20px; font-weight: 700; color: var(--accent); }
+.metric .l { font-size: 12px; color: var(--fg-muted); }
+</style>
+</head>
+<body>
+
+<h1>XvirMind Agent 评测 Benchmark 进展与下一步工作安排</h1>
+<div class="callout callout-fail" style="margin:12px 0"><strong>已升级 VAS-2.0：</strong><a href="./ViriBench_VAS2_全局评估方案.html">全局评估方案（93 条指标）</a> · <a href="./Agent实评报告_v120_VAS2.html">v120 正式口径实评（不及格）</a>；旧粗指标/乐观高分仅历史参考。</div>
+<p style="font-size: 17px; color: var(--accent); font-weight: 600;">对照 ViriBench 六层评估体系：从「过程忠实度」到「分层可发布评测」</p>
+<div class="header-meta">
+  <strong>项目：</strong>ViriBench / bioagent-bench &nbsp;|&nbsp;
+  <strong>版本：</strong>进展快照 2026-08-18 &nbsp;|&nbsp;
+  <strong>实现仓：</strong><code>/data/bioagent/bioagent-bench</code> &nbsp;|&nbsp;
+  <strong>设计文档：</strong><a href="./ViriBench_Benchmark_Design.html">ViriBench 设计</a> · <a href="./ViriBench_VAS_百分制评分规范.html"><strong>VAS 百分制评分规范</strong></a> · <a href="./Agent实评报告_v120_analysis-20260813-160906.html"><strong>v120 实评报告</strong></a>
+</div>
+
+<div class="callout callout-key">
+  <strong>一句话结论：</strong>评估策略（六层架构、扰动、LLM grader、专家 rubric）已设计完成。工程上已有可跑 harness，且 <strong>task01 已升到 rubric v3（L1–L6）</strong>，并完成一次四场景 demo 打分。但 task02–06 仍停在 v2，L2/L3 为 draft，D1–D10 模拟数据集与 60 任务矩阵尚未开工；grader 可信度问题（G001/G002/H001）未修，尚不能当作正式基线发布。现已补齐 <strong>VAS-1.0 百分制评分规范</strong>（每层可打分、总分 100、支持版本对比与跨 Agent 排行），下一步是在 harness 中落地 <code>score.py</code>。
+</div>
+
+<div class="toc">
+<h3>目录</h3>
+<ol>
+  <li><a href="#s1">评测在整体规划中的位置</a></li>
+  <li><a href="#s2">ViriBench 目标架构（规划）</a></li>
+  <li><a href="#s3">bioagent-bench 已完成工作</a></li>
+  <li><a href="#s4">实测结果摘要</a></li>
+  <li><a href="#s5">已知问题（FINDINGS）</a></li>
+  <li><a href="#s6">规划 vs 现状差距</a></li>
+  <li><a href="#s7">百分制评分方案（VAS-1.0）</a></li>
+  <li><a href="#s8">下一步工作安排</a></li>
+</ol>
+</div>
+
+<h2 id="s1">1. 评测在整体规划中的位置</h2>
+<table>
+<tr><th>文档 / 仓库</th><th>评什么</th><th>不评什么</th></tr>
+<tr>
+  <td><strong>ViriBench</strong>（设计）</td>
+  <td>AI 驱动病毒鉴定系统的六层能力：完成度、推理、调度、解释、鲁棒性、人机协作</td>
+  <td>单一工具的生物学最优参数</td>
+</tr>
+<tr>
+  <td><strong>bioagent-bench</strong>（实现）</td>
+  <td>BioAgent 是否按标准路径 <strong>规划 / 执行 / 报告</strong>；扰动下能否识别异常</td>
+  <td>Snakemake 流程本身的组装质量、检出灵敏度（那是 XvirBench 的事）</td>
+</tr>
+<tr>
+  <td><strong>XvirBench</strong></td>
+  <td>跨批次比较生信流程产出</td>
+  <td>Agent 行为</td>
+</tr>
+</table>
+<p>研究方案中的验证指标（准确率 ≥95%、紧急通道 ≤25 min、专家接受率 ≥90% 等）对应 ViriBench 的 L2/L3/L6；当前 bioagent-bench 已能支撑的主要是 <strong>L1 + L5（部分）+ L4（初版）</strong>。</p>
+
+<h2 id="s2">2. ViriBench 目标架构（规划）</h2>
+
+<div class="layer-box" style="border-color:#dc2626;">
+  <h4><span class="badge done">L1</span> 流水线完成度</h4>
+  <p>工具/参数/IO 是否忠实于 Snakefile；规划路线是否与标准路径一致。</p>
+</div>
+<div class="layer-box" style="border-color:#2563eb;">
+  <h4><span class="badge draft">L2</span> AI 推理准确性</h4>
+  <p>矛盾检测、阈值边界、EVE、新种判定、分类准确率；需要模拟数据 + ground truth。</p>
+</div>
+<div class="layer-box" style="border-color:#7c3aed;">
+  <h4><span class="badge draft">L3</span> 调度智能</h4>
+  <p>紧急/标准/深度路径选择；时间与资源收益。</p>
+</div>
+<div class="layer-box" style="border-color:#0d9488;">
+  <h4><span class="badge partial">L4</span> 解释质量</h4>
+  <p>诊断意见书证据是否可追溯；专家 rubric。</p>
+</div>
+<div class="layer-box" style="border-color:#ea580c;">
+  <h4><span class="badge partial">L5</span> 鲁棒性</h4>
+  <p>corrupted / decoy / prompt bloat；稳定性（多次试验 Jaccard / Pearson）。</p>
+</div>
+<div class="layer-box" style="border-color:#3730a3;">
+  <h4><span class="badge todo">L6</span> 人机协作</h4>
+  <p>专家反馈后是否真正改进；迭代前后准确率提升。</p>
+</div>
+
+<p>规划中的规模：</p>
+<div>
+  <div class="metric"><div class="n">160</div><div class="l">样本（D1–D10）</div></div>
+  <div class="metric"><div class="n">60</div><div class="l">核心任务（W×领域）</div></div>
+  <div class="metric"><div class="n">6</div><div class="l">评估层级</div></div>
+  <div class="metric"><div class="n">16</div><div class="l">周路线图（P1–P7）</div></div>
+</div>
+
+<h2 id="s3">3. bioagent-bench 已完成工作</h2>
+
+<h3>3.1 Harness 与任务库</h3>
+<table>
+<tr><th>组件</th><th>状态</th><th>说明</th></tr>
+<tr>
+  <td><code>run_benchmark.sh</code> + harness 三脚本</td>
+  <td><span class="badge done">可用</span></td>
+  <td><code>run_pipeline.py</code>（plan→execute）、<code>grade.py</code>（LLM grader）、<code>render_report.py</code>（六层 HTML）</td>
+</tr>
+<tr>
+  <td>task01–task06</td>
+  <td><span class="badge done">L1 路径已核对</span></td>
+  <td>对照真实 Snakefile 写了 stage / command / io；task 状态 active</td>
+</tr>
+<tr>
+  <td>task01 rubric</td>
+  <td><span class="badge done">v3（L1–L6）</span></td>
+  <td>唯一升级到六层 schema 的任务；L2/L3 标 draft</td>
+</tr>
+<tr>
+  <td>task02–task06 rubric</td>
+  <td><span class="badge partial">仍为 v2</span></td>
+  <td>过程忠实度 + corrupted/decoy 单条；未迁到 layers[]</td>
+</tr>
+<tr>
+  <td>task07（TaxonAgent）</td>
+  <td><span class="badge todo">draft</span></td>
+  <td>旧占位，未按 ICTV 流水线重写</td>
+</tr>
+<tr>
+  <td>四种输入 variant</td>
+  <td><span class="badge done">已实现</span></td>
+  <td>normal / corrupted / decoy / prompt_bloat；另规划 scheduling、feedback</td>
+</tr>
+<tr>
+  <td>大体积输入数据</td>
+  <td><span class="badge partial">服务器本地</span></td>
+  <td>不入库；inputs 保留清单</td>
+</tr>
+</table>
+
+<h3>3.2 设计原则演变（重要）</h3>
+<table>
+<tr><th>时间</th><th>原则</th><th>含义</th></tr>
+<tr>
+  <td>早期</td>
+  <td>硬指标数值真假</td>
+  <td>需人工先跑真值；偏 GeneBench-Pro</td>
+</tr>
+<tr>
+  <td>2026-08-09</td>
+  <td>只评过程忠实度</td>
+  <td>砍掉 expected；stage 两条（命令/IO）+ pipeline 两条</td>
+</tr>
+<tr>
+  <td>2026-08 中下旬</td>
+  <td>rubric v3 = ViriBench 六层</td>
+  <td>L1 管过程；L2 重新引入阈值表（draft）；L4/L5/L6 独立场景</td>
+</tr>
+</table>
+<div class="callout">
+  v3 不是否定「过程忠实度」，而是把它收成 <strong>L1</strong>，并把 ViriBench 其余层显式挂上。L2 重新要阈值，是为评估「结果数值是否合理」，仍不替代完整病毒学金标准。
+</div>
+
+<h3>3.3 task01 v3 各层现状</h3>
+<table>
+<tr><th>层</th><th>状态</th><th>criteria 要点</th><th>variant</th></tr>
+<tr><td>L1 执行完成度</td><td><span class="badge done">可打分</span></td><td>5 stage ×2 + L1.p1</td><td>normal</td></tr>
+<tr><td>L2 推理准确性</td><td><span class="badge draft">draft</span></td><td>g1–g4 阈值区间（保留率、clean reads、contig 数、N50）</td><td>normal</td></tr>
+<tr><td>L3 调度智能</td><td><span class="badge draft">draft</span></td><td>识别约束 / 实质调整 / 说明代价</td><td>scheduling</td></tr>
+<tr><td>L4 解释质量</td><td><span class="badge done">可打分</span></td><td>报告结论均有数值证据支撑</td><td>normal</td></tr>
+<tr><td>L5 鲁棒性</td><td><span class="badge done">可打分</span></td><td>c1 / d1 / b1 各一条</td><td>corrupted, decoy, prompt_bloat</td></tr>
+<tr><td>L6 人机协作</td><td><span class="badge partial">条文有，场景未跑</span></td><td>针对上一轮反馈作出改进</td><td>feedback（两轮）</td></tr>
+</table>
+
+<h2 id="s4">4. 实测结果摘要</h2>
+<p>代表 run：<code>bench-20260728-114255-task01-v61_rat</code>（4 variant × 3 repeats = 12 pipeline）。后续用新 grader 对每类 variant 的 pipeline_01 做了 demo 打分；报告见 <a href="./benchmark_report_v3.html">benchmark_report_v3.html</a>。</p>
+
+<table>
+<tr><th>层 / 场景</th><th>结果</th><th>解读</th></tr>
+<tr>
+  <td>L1 · normal</td>
+  <td>11 条判定中多数 hit；s2.1、s4.1 miss</td>
+  <td>路线规划正确（L1.p1 hit）。参数类 miss 与日志不回显完整命令强相关（G002）；最新 runner 已开 <code>--printshellcmds</code>，需用新 agent 重跑验证。</td>
+</tr>
+<tr>
+  <td>L4 · normal</td>
+  <td>L4.e1 miss</td>
+  <td>报告数值与日志不完全对得上（旧模型写报告时代的问题）。新版确定性报告应显著改善，需重测。</td>
+</tr>
+<tr>
+  <td>L5 · corrupted</td>
+  <td>hit</td>
+  <td>识别质控全失败并如实报告。</td>
+</tr>
+<tr>
+  <td>L5 · decoy</td>
+  <td>miss</td>
+  <td>未识别混入诱饵样本（与 F002/H001 一致：看不到工具调用就难判「有没有真看过目录」）。</td>
+</tr>
+<tr>
+  <td>L5 · prompt_bloat</td>
+  <td>hit</td>
+  <td>未被冗长背景带偏，仍走标准路径。</td>
+</tr>
+<tr>
+  <td>L2 / L3 / L6</td>
+  <td>未评或空页</td>
+  <td>L2/L3 draft；本次 run 无 scheduling / feedback 场景。</td>
+</tr>
+</table>
+
+<div class="callout callout-warn">
+  <strong>注意：</strong>上述分数测的是 <strong>2026-07 末的旧 Agent 行为</strong>。liufangzhou 最新版已改为确定性 runner + 确定性报告，正式基线必须在同步部署后重跑，否则会低估当前系统。
+</div>
+
+<h2 id="s5">5. 已知问题（FINDINGS）</h2>
+<table>
+<tr><th>ID</th><th>类型</th><th>问题</th><th>对下一阶段的阻塞性</th></tr>
+<tr>
+  <td><strong>G001</strong></td>
+  <td>grader</td>
+  <td>把「命令参数」问题判进「IO」criterion</td>
+  <td>高——L1 归因不可信</td>
+</tr>
+<tr>
+  <td><strong>G002</strong></td>
+  <td>grader / 证据</td>
+  <td>无完整 shell 时参数类只能猜</td>
+  <td>中——新 runner 已 <code>-p</code>，需重跑确认是否解除</td>
+</tr>
+<tr>
+  <td><strong>H001</strong></td>
+  <td>harness</td>
+  <td>不记录 tool_use / tool_result</td>
+  <td><strong>硬阻塞</strong>——corrupted/decoy 可靠评分的前置</td>
+</tr>
+<tr>
+  <td><strong>F001</strong></td>
+  <td>agent</td>
+  <td>诊断报告数字自相矛盾</td>
+  <td>中——确定性报告应已消除，需回归确认</td>
+</tr>
+<tr>
+  <td><strong>F002</strong></td>
+  <td>agent</td>
+  <td>corrupted 下不读输入目录，只靠话术</td>
+  <td>高——依赖 H001 才能系统检测，并反馈给 Agent 侧修 Skill/门禁</td>
+</tr>
+</table>
+
+<h2 id="s6">6. 规划 vs 现状差距</h2>
+<table>
+<tr><th>ViriBench 路线图</th><th>计划交付</th><th>现状</th></tr>
+<tr>
+  <td>P1 数据集构建（第 1–4 周）</td>
+  <td>D1–D10 共 160 样本 + ground truth + 消融</td>
+  <td><span class="badge todo">未开始</span>；目前只用少量真实/衍生 FASTQ</td>
+</tr>
+<tr>
+  <td>P2 任务与 Rubric（第 3–6 周）</td>
+  <td>60 任务 × 专家 rubric</td>
+  <td><span class="badge partial">7 任务骨架</span>；仅 task01 六层完备，无病毒学领域交叉矩阵</td>
+</tr>
+<tr>
+  <td>P3 评估框架（第 5–8 周）</td>
+  <td>LLM grader + 自动化流水线</td>
+  <td><span class="badge done">MVP 已通</span>；缺工具事件、缺 grader 校准、缺数值自动评分机制 A</td>
+</tr>
+<tr>
+  <td>P4 专家评审（第 7–10 周）</td>
+  <td>3–5 名专家审任务与 rubric</td>
+  <td><span class="badge todo">未开始</span></td>
+</tr>
+<tr>
+  <td>P5 基线评测（第 9–12 周）</td>
+  <td>全 60 任务基线报告</td>
+  <td><span class="badge partial">仅 task01 demo</span></td>
+</tr>
+<tr>
+  <td>P6 消融与对比（第 11–14 周）</td>
+  <td>E1–E6、多模型、扰动对比</td>
+  <td><span class="badge todo">未开始</span></td>
+</tr>
+<tr>
+  <td>P7 迭代与发布（第 13–16 周）</td>
+  <td>ViriBench v1.0 + 论文</td>
+  <td><span class="badge todo">未开始</span></td>
+</tr>
+</table>
+
+<p>与 Agent 能力的耦合：</p>
+<ul>
+  <li>L3 要等 <code>adaptive_virus_analysis</code> 稳定并暴露 routing 日志，才有可评的调度场景。</li>
+  <li>L2 / L4「研判结论」要等 Agent 产出四层结论与 evidence.json，否则只能评流程数值合理性。</li>
+  <li>L6 要等专家打回接口存在，feedback variant 才能不是空转。</li>
+</ul>
+
+
+<h2 id="s7">7. 百分制评分方案（VAS-1.0）</h2>
+
+<div class="callout callout-key">
+  详细公式、指标定义、JSON schema、跨 Agent 接口与反作弊清单见：
+  <a href="./ViriBench_VAS_百分制评分规范.html"><strong>ViriBench VAS 百分制评分规范</strong></a>。
+  本节是进展报告中的执行摘要。
+</div>
+
+<p>引入 <strong>VAS（ViriBench Agent Score）</strong>：每层先打到 0–100，再按权重合成总分 100。这样每次优化可以看「总分涨了多少、涨在哪一层」；其他同类 Agent 只要实现 AUT 适配接口，也可在同一 suite 下对比。</p>
+
+<h3>7.1 权重与总分</h3>
+<table>
+<tr><th>层</th><th>权重（分）</th><th>层内核心指标（详见规范）</th><th>主要借鉴</th></tr>
+<tr><td>L1 执行完成度</td><td><strong>18</strong></td><td>VER, SCR, PFR, FAR, TPF</td><td>ScienceAgentBench VER；BioAgent Bench completion</td></tr>
+<tr><td>L2 推理准确性</td><td><strong>28</strong></td><td>L2-O 数值区间；L2-D 检出 F1；L2-T 矛盾/EVE/边界</td><td>GeneBench-Pro；研究方案验证指标</td></tr>
+<tr><td>L3 调度智能</td><td><strong>10</strong></td><td>RAC, CR, CA, TC, EHR, TBR</td><td>路径正确率；紧急通道 ≤25min</td></tr>
+<tr><td>L4 解释质量</td><td><strong>18</strong></td><td>GRD, HAL, COT, RUB, CHK</td><td>LifeSciBench rubric；证据锚定</td></tr>
+<tr><td>L5 鲁棒性</td><td><strong>16</strong></td><td>COR, DEC, PBR, STB, pass^k</td><td>BioAgent Bench 扰动；τ-Bench pass^k</td></tr>
+<tr><td>L6 人机协作</td><td><strong>10</strong></td><td>FIX, DLT, ACC, EFF</td><td>反馈修复率；迭代提升</td></tr>
+</table>
+
+<pre>VAS = 0.18·L1 + 0.28·L2 + 0.10·L3 + 0.18·L4 + 0.16·L5 + 0.10·L6</pre>
+
+<p><strong>两种模式：</strong></p>
+<ul>
+  <li><code>development</code>：只对已激活层重归一化（当前适用），必须披露 coverage。</li>
+  <li><code>official</code>：六层全评，未实现层记 0；用于发版与跨 Agent 对比。</li>
+</ul>
+
+<h3>7.2 用现有 demo 反推的旧 Agent 分数</h3>
+<p>基于 <code>bench-20260728-114255-task01-v61_rat</code> pipeline_01（L2/L3/L6 未评）：</p>
+<table>
+<tr><th>L1</th><th>L4</th><th>L5</th><th>VAS_dev（L1+L4+L5）</th><th>等级</th></tr>
+<tr><td>≈82–88</td><td>≈20</td><td>≈67</td><td><strong>≈56–58</strong></td><td>C/D 边界（演示可用，不可作鉴定依据）</td></tr>
+</table>
+<p>预期：确定性 runner + 确定性报告上线并重跑后，L1.TPF 与 L4.GRD 应明显上升；修好 decoy 识别后 L5 可再抬一截。具体升降以同协议重跑为准。</p>
+
+<h3>7.3 版本对比与跨 Agent</h3>
+<ul>
+  <li><strong>版本对比：</strong>固定 <code>suite_id + protocol_version + task_set_hash</code>，输出六层雷达 + VAS 折线；主分提升 ≥2 或目标层 ≥5 且无显著回退，视为有效优化。</li>
+  <li><strong>跨 Agent：</strong>统一 AUT 产物（plan / artifacts / report / tool_events / costs）；主排序 VAS，并列看 pass^k → Cost → WallTime。</li>
+  <li><strong>副指标（不进百分制）：</strong>API Cost、Tokens、WallTime、ToolCalls——防止靠重试刷分。</li>
+</ul>
+
+<h3>7.4 与「只报 hit/miss」的关系</h3>
+<p>逐条 criterion 仍然保留（可审计、可定位 G001 这类问题）。VAS 是其上的聚合层：rubric 负责「哪条错了」，VAS 负责「整系统多少分、比上周高了吗、比别的 Agent 强吗」。</p>
+
+<h2 id="s8">8. 下一步工作安排</h2>
+<p>原则：<strong>先让现有层可信，再扩任务，再造大数据集</strong>。不要在 grader 仍乱判时大规模跑 60 任务。</p>
+
+<h3>P0　评测可信度（1–2 周，最高优先）</h3>
+<table>
+<tr><th>任务</th><th>交付物</th><th>验收</th></tr>
+<tr>
+  <td>修复 H001：harness 记录 tool_use / tool_result</td>
+  <td><code>events_*.jsonl</code> 含工具名、关键参数摘要、结果状态</td>
+  <td>可用脚本判定「是否 Read/Bash 过输入目录」</td>
+</tr>
+<tr>
+  <td>修复 G001：强化 grader 维度隔离 prompt</td>
+  <td>command 类与 IO 类分开投喂参照字段</td>
+  <td>人工抽查 10 条无维度串判</td>
+</tr>
+<tr>
+  <td>验证 G002：用最新 runner（已 <code>--printshellcmds</code>）重跑 task01</td>
+  <td>新 bench_run + 对比旧 miss 率</td>
+  <td>参数类 criterion 不再因「日志无命令」系统性 miss</td>
+</tr>
+<tr>
+  <td>回归 F001：确定性报告上重测 L4.e1</td>
+  <td>graded.json + 报告截图</td>
+  <td>L4 在正常成功 run 上应变 hit（或只剩可解释的边界差）</td>
+</tr>
+<tr>
+  <td>落地 VAS：实现 <code>score.py</code> + 报告总分页</td>
+  <td><code>score_card.json</code>；L1/L4/L5 的 VAS_dev；旧 vs 新对比表</td>
+  <td>同一 suite 重跑后能读出总分与六层涨跌</td>
+</tr>
+</table>
+
+<h3>P1　补完 task01 六层（2–3 周）</h3>
+<table>
+<tr><th>任务</th><th>交付物</th><th>验收</th></tr>
+<tr>
+  <td>调研并填写 L2 <code>ground_truth.yaml</code> 阈值</td>
+  <td>g1–g4 区间 + 来源说明（经验分布 / 文献 / 历史 run）</td>
+  <td>去掉 <code>status: draft</code>，grade.py 正式打 L2</td>
+</tr>
+<tr>
+  <td>决定 L3 criteria 去留，并接 adaptive 路由日志</td>
+  <td>scheduling variant prompt + routing 证据字段</td>
+  <td>emergency / standard 各至少 1 条可判定</td>
+</tr>
+<tr>
+  <td>实现 feedback variant（L6）</td>
+  <td>同 chat 两轮：首轮结果 → 注入专家意见 → 次轮</td>
+  <td>L6.f1 有真实 hit/miss，不只空页</td>
+</tr>
+<tr>
+  <td>小范围人工校准 grader</td>
+  <td>专家用同一 rubric 盲打 5–10 条</td>
+  <td>报告一致率，写入 FINDINGS / 校准笔记</td>
+</tr>
+</table>
+
+<h3>P2　任务库对齐 Agent 能力（3–5 周）</h3>
+<table>
+<tr><th>任务</th><th>交付物</th><th>验收</th></tr>
+<tr>
+  <td>将 task02–task06 的 rubric 升级到 v3 layers[]</td>
+  <td>每任务 L1 必齐；L4/L5 复用模板；L2/L3/L6 按能力逐步放开</td>
+  <td><code>run_benchmark.sh --list-tasks</code> 与 schema 校验全部通过</td>
+</tr>
+<tr>
+  <td>新增 adaptive / virus_classification 专用 task（可拆自 task02）</td>
+  <td>覆盖新 adapter 线性五段与路由阶段</td>
+  <td>与当前 Agent execution_spec 字段一一对应</td>
+</tr>
+<tr>
+  <td>启动 task07（TaxonAgent）设计，但实现可滞后于 MCP 工具扩展</td>
+  <td>至少写清 stages 与判定标准草案</td>
+  <td>不再是空 <code>stages: []</code></td>
+</tr>
+</table>
+
+<h3>P3　ViriBench 数据集与正式基线（与 Agent P2 研判并行，约 6–10 周）</h3>
+<table>
+<tr><th>任务</th><th>交付物</th><th>验收</th></tr>
+<tr>
+  <td>先做最小 DGP：D1（已知阳性）+ D3（阴性）+ D10（扰动）</td>
+  <td>模拟 FASTQ + virus_list.json / reasoning_truth.json</td>
+  <td>正确路径可复现真值；错误路径答案可区分</td>
+</tr>
+<tr>
+  <td>再扩展 D4/D5/D7（EVE、阈值、高同源低覆盖）</td>
+  <td>专用于 L2 的困难集</td>
+  <td>与研判引擎开发共用同一批数据</td>
+</tr>
+<tr>
+  <td>在新 Agent + 校准后 grader 上跑 task01–06 基线</td>
+  <td>正式 <code>report.html</code> + graded_summary</td>
+  <td>作为版本化基线归档，不与旧 demo 混用</td>
+</tr>
+<tr>
+  <td>邀请 3 名内部专家审 task01/task02 rubric</td>
+  <td>评审纪要与修订版</td>
+  <td>对应 ViriBench P4 的轻量启动</td>
+</tr>
+</table>
+
+<h3>明确暂缓</h3>
+<ul>
+  <li><strong>完整 160 样本 / 60 任务矩阵</strong>：等 P0–P2 与 Agent 研判模块有雏形后再铺开，避免造完数据却评不到。</li>
+  <li><strong>E1–E6 全套消融与多模型对比</strong>：依赖正式基线与稳定被测系统。</li>
+  <li><strong>在 grader 未校准前对外发布 VAS_official</strong>：可先用 VAS_dev 内部追踪；正式榜须等 H001/G001 修复与小范围专家校准。</li>
+  <li><strong>与 XvirBench 混用</strong>：继续分仓；需要时只共享样本 ID 与 FASTQ 路径。</li>
+</ul>
+
+<div class="callout callout-success">
+  <strong>建议的联合节奏：</strong>
+  <ol style="margin-top:8px;">
+    <li>Agent 同步到 cyclone（见 Agent 进展报告 P0）</li>
+    <li>Benchmark 修 H001/G001，落地 score.py，用新系统重跑 task01 并给出 VAS_dev</li>
+    <li>填 L2 阈值、接 L3 路由日志，扩展 coverage</li>
+    <li>task02–06 升 v3，与 W2–W6 adapter 同步扩展</li>
+    <li>最小模拟数据集支撑 L2；冻结 suite 后切 VAS_official，并接入至少 1 个外部 Agent 对比</li>
+  </ol>
+</div>
+
+<div class="footnote">
+  <p><strong>依据：</strong><a href="./ViriBench_Benchmark_Design.html">ViriBench 设计方案</a>；<code>/data/bioagent/bioagent-bench</code> 的 README、FINDINGS.md、task01–07 rubric；<a href="./benchmark_report_v3.html">bench-20260728-114255-task01-v61_rat 报告</a>；Agent 侧最新 runner 行为（<code>--printshellcmds</code>、确定性报告）。</p>
+  <p><strong>配套文档：</strong><a href="./ViriBench_VAS_百分制评分规范.html">VAS 百分制评分规范</a>　·　<a href="./Agent项目进展与下一步工作安排.html">Agent 项目进展与下一步工作安排</a>　·　研究方案 PDF（验证指标 §6）</p>
+</div>
+
+</body>
+</html>

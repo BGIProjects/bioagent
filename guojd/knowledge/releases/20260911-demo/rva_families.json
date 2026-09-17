@@ -1,0 +1,9 @@
+{
+  "family_count": 26,
+  "matched": [
+    "Coronaviridae",
+    "Flaviviridae"
+  ],
+  "source": "/data/user/wangdaxi/rna_virus_annotation/data/benchmarks/vertebrate_rna/intrafamily_split.json",
+  "exists": true
+}

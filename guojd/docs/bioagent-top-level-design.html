@@ -1,0 +1,2709 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="BioAgent 宏转录组病毒鉴定与专家研判系统顶层设计：四层架构、知识与证据、小模型运行机制及分阶段建设路线。"
+    />
+    <title>BioAgent · 病毒鉴定与专家研判系统顶层设计 v1.1</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #16324f;
+        --text: #2e4355;
+        --muted: #607386;
+        --teal: #087f83;
+        --line: #dce5ec;
+        --wash: #f4f7fa;
+        --pale: #edf8f6;
+        --amber: #8a5b0b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 28px;
+      }
+      body {
+        margin: 0;
+        background: #fff;
+        color: var(--text);
+        font:
+          16px/1.85 -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          "PingFang SC",
+          "Microsoft YaHei",
+          sans-serif;
+      }
+      a {
+        color: var(--teal);
+        text-underline-offset: 4px;
+        overflow-wrap: anywhere;
+      }
+      a:hover {
+        color: var(--ink);
+      }
+      a:focus-visible,
+      button:focus-visible,
+      summary:focus-visible,
+      [tabindex]:focus-visible {
+        outline: 3px solid var(--teal);
+        outline-offset: 4px;
+      }
+      .skip {
+        position: absolute;
+        left: 20px;
+        top: -100px;
+        z-index: 5;
+        padding: 8px 16px;
+        background: white;
+      }
+      .skip:focus {
+        top: 12px;
+      }
+      .shell {
+        max-width: 1510px;
+        margin: auto;
+        display: grid;
+        grid-template-columns: 230px minmax(0, 1fr);
+      }
+      aside {
+        border-right: 1px solid var(--line);
+        padding: 42px 24px;
+      }
+      .sidebar {
+        position: sticky;
+        top: 28px;
+      }
+      .brand {
+        color: var(--ink);
+        font-size: 24px;
+        font-weight: 780;
+        letter-spacing: -0.6px;
+      }
+      .brand span {
+        color: var(--teal);
+      }
+      .edition {
+        color: var(--muted);
+        font-size: 12px;
+        margin: 0 0 28px;
+      }
+      nav a {
+        display: block;
+        padding: 8px 0;
+        text-decoration: none;
+        color: var(--text);
+        font-size: 14px;
+      }
+      nav a span {
+        display: inline-block;
+        width: 26px;
+        color: var(--teal);
+        font-size: 11px;
+      }
+      .nav-foot {
+        margin-top: 28px;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      main {
+        min-width: 0;
+        padding: 48px 54px 64px;
+      }
+      .eyebrow {
+        color: var(--teal);
+        font-size: 12px;
+        font-weight: 750;
+        letter-spacing: 2px;
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        color: var(--ink);
+        line-height: 1.4;
+      }
+      h1 {
+        font-size: clamp(30px, 3.1vw, 46px);
+        letter-spacing: -1px;
+        margin: 18px 0 22px;
+      }
+      h1 small {
+        display: block;
+        font-size: 0.56em;
+        font-weight: 500;
+        margin-top: 14px;
+        letter-spacing: 0;
+      }
+      h2 {
+        font-size: 27px;
+        margin: 0 0 20px;
+      }
+      h2 .num {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--teal);
+        font-size: 12px;
+        letter-spacing: 2px;
+      }
+      h3 {
+        font-size: 19px;
+        margin: 30px 0 12px;
+      }
+      h4 {
+        font-size: 16px;
+        margin: 16px 0 8px;
+      }
+      p {
+        margin: 0 0 16px;
+      }
+      .lead {
+        font-size: 19px;
+        color: #425b71;
+        max-width: 900px;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 20px;
+        color: var(--muted);
+        font-size: 12px;
+        margin: 24px 0;
+      }
+      .hero {
+        border-bottom: 2px solid var(--ink);
+        padding-bottom: 30px;
+      }
+      section {
+        padding-top: 44px;
+        margin-top: 18px;
+        border-top: 1px solid var(--line);
+      }
+      section:first-of-type {
+        border-top: 0;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin: 24px 0;
+      }
+      .card {
+        background: var(--wash);
+        border-top: 3px solid var(--teal);
+        padding: 20px;
+        border-radius: 0 0 8px 8px;
+      }
+      .card h3 {
+        margin: 0 0 10px;
+        font-size: 17px;
+      }
+      .card p {
+        font-size: 14px;
+        margin: 0;
+      }
+      .callout {
+        background: var(--pale);
+        border-left: 4px solid var(--teal);
+        padding: 18px 22px;
+        margin: 24px 0;
+        border-radius: 0 8px 8px 0;
+      }
+      .callout p:last-child {
+        margin-bottom: 0;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .status {
+        display: inline-block;
+        white-space: nowrap;
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.6;
+      }
+      .exists {
+        color: #075b59;
+        background: #e0f3ed;
+      }
+      .planned {
+        color: #28578e;
+        background: #eaf0fa;
+      }
+      .conditional {
+        color: var(--amber);
+        background: #fbf1de;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin: 16px 0;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .table-wrap,
+      .diagram {
+        overflow-x: auto;
+        margin: 22px 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        text-align: left;
+        font-size: 14px;
+      }
+      th {
+        background: var(--wash);
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 700;
+      }
+      th,
+      td {
+        padding: 14px 16px;
+        vertical-align: top;
+        border-bottom: 1px solid var(--line);
+        overflow-wrap: anywhere;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      .wide-table {
+        min-width: 750px;
+      }
+      td:first-child {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      ul,
+      ol {
+        padding-left: 23px;
+        margin: 12px 0 22px;
+      }
+      li {
+        margin: 8px 0;
+      }
+      strong {
+        color: var(--ink);
+      }
+      figure {
+        margin: 26px 0;
+      }
+      figure .diagram {
+        margin-bottom: 10px;
+        background: #fbfcfe;
+      }
+      figcaption {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        min-width: 760px;
+        font-family: inherit;
+      }
+      .box {
+        fill: #fff;
+        stroke: #ccdbe5;
+        stroke-width: 1.5;
+      }
+      .box-teal {
+        fill: #edf8f6;
+        stroke: #8cc8c3;
+        stroke-width: 1.5;
+      }
+      .box-dark {
+        fill: #16324f;
+      }
+      .svg-title {
+        font-size: 18px;
+        font-weight: 700;
+        fill: #16324f;
+      }
+      .svg-label {
+        font-size: 15px;
+        fill: #2e4355;
+      }
+      .svg-small {
+        font-size: 13px;
+        fill: #607386;
+      }
+      .svg-white {
+        fill: white;
+        font-size: 16px;
+        font-weight: 650;
+      }
+      .arrow {
+        fill: none;
+        stroke: #087f83;
+        stroke-width: 2;
+      }
+      .arrow-grey {
+        fill: none;
+        stroke: #607386;
+        stroke-width: 1.5;
+      }
+      .dashed {
+        stroke-dasharray: 6 5;
+      }
+      .steps {
+        list-style: none;
+        counter-reset: process;
+        padding: 0;
+      }
+      .steps li {
+        counter-increment: process;
+        padding: 0 0 20px 48px;
+        position: relative;
+        border-left: 1px solid var(--line);
+        margin-left: 17px;
+      }
+      .steps li::before {
+        content: counter(process, decimal-leading-zero);
+        position: absolute;
+        left: -17px;
+        top: 0;
+        width: 34px;
+        height: 34px;
+        background: var(--ink);
+        color: #fff;
+        font-size: 12px;
+        text-align: center;
+        line-height: 34px;
+        border-radius: 50%;
+      }
+      .steps li:last-child {
+        border-left: 0;
+      }
+      .steps strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .two-col {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 22px;
+      }
+      code {
+        background: #edf2f6;
+        padding: 2px 5px;
+        border-radius: 3px;
+        font-size: 0.87em;
+        overflow-wrap: anywhere;
+      }
+      details {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        margin: 16px 0;
+      }
+      summary {
+        padding: 16px 20px;
+        cursor: pointer;
+        color: var(--ink);
+        font-weight: 700;
+      }
+      details[open] summary {
+        border-bottom: 1px solid var(--line);
+        background: var(--wash);
+      }
+      .detail-body {
+        padding: 18px 22px;
+      }
+      .detail-body > :first-child {
+        margin-top: 0;
+      }
+      .detail-body .table-wrap {
+        margin: 16px 0;
+      }
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 22px 0 0;
+      }
+      button,
+      .button-link {
+        background: #fff;
+        border: 1px solid #afc3d2;
+        border-radius: 6px;
+        color: var(--ink);
+        font: inherit;
+        font-size: 13px;
+        padding: 8px 14px;
+        cursor: pointer;
+        text-decoration: none;
+      }
+      button:hover,
+      .button-link:hover {
+        background: var(--wash);
+      }
+      .source-list {
+        font-size: 13px;
+      }
+      .source-list li {
+        margin: 14px 0;
+      }
+      footer {
+        margin-top: 48px;
+        border-top: 2px solid var(--ink);
+        padding-top: 20px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      @media (max-width: 1100px) {
+        .shell {
+          grid-template-columns: 195px minmax(0, 1fr);
+        }
+        aside {
+          padding: 35px 20px;
+        }
+        main {
+          padding: 36px 30px;
+        }
+        .cards {
+          gap: 10px;
+        }
+        .card {
+          padding: 15px;
+        }
+      }
+      @media (max-width: 780px) {
+        .shell {
+          display: block;
+        }
+        aside {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+          padding: 18px 22px;
+        }
+        .sidebar {
+          position: static;
+        }
+        .brand {
+          font-size: 21px;
+        }
+        .edition {
+          margin: 0 0 10px;
+        }
+        nav {
+          display: flex;
+          flex-wrap: wrap;
+          column-gap: 18px;
+        }
+        nav a {
+          font-size: 12px;
+          padding: 4px 0;
+        }
+        nav a span {
+          width: 21px;
+        }
+        .nav-foot {
+          display: none;
+        }
+        main {
+          padding: 28px 22px;
+        }
+        .cards,
+        .two-col {
+          grid-template-columns: 1fr;
+        }
+        h2 {
+          font-size: 24px;
+        }
+        .lead {
+          font-size: 17px;
+        }
+        .detail-body {
+          padding: 16px;
+        }
+        .callout {
+          padding: 16px;
+        }
+        .steps li {
+          padding-left: 31px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+      @page {
+        size: A4;
+        margin: 15mm 13mm;
+      }
+      @media print {
+        html {
+          scroll-behavior: auto;
+        }
+        body {
+          font-size: 10pt;
+          line-height: 1.65;
+          color: #172d40;
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+        }
+        .shell {
+          display: block;
+        }
+        aside,
+        .toolbar,
+        .skip {
+          display: none;
+        }
+        main {
+          padding: 0;
+        }
+        .hero {
+          padding-bottom: 18px;
+        }
+        h1 {
+          font-size: 27pt;
+        }
+        h2 {
+          font-size: 18pt;
+        }
+        h3 {
+          font-size: 13pt;
+        }
+        .lead {
+          font-size: 12pt;
+        }
+        section {
+          margin-top: 14px;
+          padding-top: 24px;
+        }
+        h2,
+        h3,
+        h4,
+        summary {
+          break-after: avoid;
+        }
+        p,
+        li {
+          orphans: 3;
+          widows: 3;
+        }
+        .cards {
+          gap: 10px;
+        }
+        .card {
+          padding: 12px;
+        }
+        .card p,
+        table {
+          font-size: 9pt;
+        }
+        th {
+          font-size: 9pt;
+        }
+        th,
+        td {
+          padding: 8px;
+        }
+        th:first-child,
+        td:first-child {
+          min-width: 8em;
+        }
+        .table-wrap,
+        .diagram {
+          overflow: visible;
+        }
+        .wide-table,
+        svg {
+          min-width: 0;
+        }
+        svg {
+          width: 100%;
+        }
+        figure,
+        .card,
+        .callout,
+        tr {
+          break-inside: avoid;
+        }
+        table {
+          width: 100%;
+        }
+        thead {
+          display: table-header-group;
+        }
+        details {
+          border: 0;
+        }
+        summary {
+          padding: 10px 0;
+          list-style: none;
+        }
+        details[open] summary {
+          background: none;
+        }
+        .detail-body {
+          padding: 10px 0;
+        }
+        details::details-content {
+          display: block;
+          content-visibility: visible;
+        }
+        .note,
+        figcaption,
+        .source-list {
+          font-size: 8.5pt;
+        }
+        a {
+          text-decoration: none;
+          color: #164e63;
+        }
+        footer {
+          margin-top: 24px;
+        }
+      }
+
+      .moat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin: 16px 0 22px;
+      }
+      .moat-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px 16px;
+        background: var(--wash);
+      }
+      .moat-card.core {
+        background: var(--pale);
+        border-color: #b7ddd9;
+      }
+      .moat-card h3 {
+        margin: 0 0 8px;
+        font-size: 16px;
+      }
+      .kicker {
+        font-size: 12px;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+        margin-bottom: 6px;
+      }
+      .keyword {
+        display: inline-block;
+        margin: 0 6px 8px 0;
+        padding: 2px 10px;
+        border: 1px solid #b7ddd9;
+        border-radius: 999px;
+        background: var(--pale);
+        color: var(--teal);
+        font-size: 13px;
+      }
+      @media (max-width: 800px) {
+        .moat-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#main">跳到正文</a>
+    <div class="shell">
+      <aside aria-label="文档导航">
+        <div class="sidebar">
+          <div class="brand">Bio<span>Agent</span></div>
+          <p class="edition">系统顶层设计 · 2026.09 · v1.1</p>
+          <nav aria-label="目录">
+            <a href="#positioning"><span>01</span>战略定位与壁垒</a>
+            <a href="#overview"><span>02</span>建设目标与价值</a>
+            <a href="#architecture"><span>03</span>四层总体架构</a>
+            <a href="#lifecycle"><span>04</span>一次分析如何完成</a>
+            <a href="#knowledge"><span>05</span>数据库与知识库</a>
+            <a href="#agent"><span>06</span>编排层与本地模型</a>
+            <a href="#delivery"><span>07</span>证据研判与交付</a>
+            <a href="#appendix"><span>08</span>工程附录与现状</a>
+            <a href="#roadmap"><span>09</span>分阶段建设路线</a>
+            <a href="#sources"><span>10</span>依据与术语</a>
+          </nav>
+          <div class="nav-foot">
+            正文先讲什么是壁垒、什么可以替换。<br />工程附录和独立实施清单面向研发。<br /><br />离线可读
+            · 可打印<br />正文图示均为目标设计。
+          </div>
+        </div>
+      </aside>
+      <main id="main">
+        <header class="hero">
+          <div class="eyebrow">本地化 / 产业化 / 知识壁垒 / 可替换编排</div>
+          <h1>
+            宏转录组病毒鉴定<br />与专家研判系统<small>BioAgent 顶层设计</small>
+          </h1>
+          <p class="lead">
+            系统的产品不是通用 Agent，而是可私有化交付的病毒鉴定能力：本地数据库、版本化知识、标准生信插件和可替换的编排层。前端与 Harness 都可以换；计算事实、知识依据和专家审核不能换。
+          </p>
+          <div class="meta">
+            <span>设计版本：1.1</span><span>源码核对：2026-09-09</span
+            ><span>定位：疾控可私有化的鉴定与研判</span
+            ><span>部署基线：交互节点＋计算节点＋本地资产包</span>
+          </div>
+          <div class="toolbar">
+            <button id="print-document" type="button">打印 / 另存为 PDF</button
+            ><a class="button-link" href="bioagent-implementation-roadmap.md"
+              >查看分阶段实施清单</a
+            ><a class="button-link" href="XvirMind_建设情况总结评价_20260910.html"
+              >建设情况评价</a
+            >
+          </div>
+        </header>
+
+
+        <section id="positioning">
+          <h2>
+            <span class="num">01 / 战略定位与壁垒</span
+            >做可私有化的领域系统，而不是再做一个通用 Agent
+          </h2>
+          <p>
+            团队已明确：前端交互和通用 Agent
+            框架容易被开源工具替代，也可以直接接到 DeepSeek Harness
+            一类现成编排器上。真正难以复制、且必须留在疾控内网的，是垂直领域的本地数据库、审核过的专业知识，以及在算力受限的量化模型上把生信任务做稳的能力。
+          </p>
+          <p>
+            <span class="keyword">本地化</span
+            ><span class="keyword">产业化</span
+            ><span class="keyword">易迭代更新</span
+            ><span class="keyword">本地数据库</span>
+          </p>
+          <div class="moat-grid">
+            <article class="moat-card">
+              <div class="kicker">可替换层 · 不作为产品壁垒</div>
+              <h3>交互界面与通用 Harness</h3>
+              <p>
+                Open WebUI、Claude Agent SDK、DeepSeek Harness
+                以及任何 OpenAI 兼容会话前端，只负责把用户意图送进本系统的动作契约。领域规则、权限、方案编译、计算插件和报告模板不得写入某一家
+                SDK。更换编排器不应要求重写 workflow 或知识库。
+              </p>
+            </article>
+            <article class="moat-card core">
+              <div class="kicker">领域内核 · 建设重心</div>
+              <h3>本地库 · 知识 · 规则 · 研判</h3>
+              <p>
+                NT/NR/Kraken/CheckV
+                等参考库以离线版本包交付；ICTV、技能、工具说明和文献以可审核知识快照交付；鉴定规则与矛盾检测独立于模型。本地小模型只在这些资产上做窄任务，并用专家修订做后续微调。
+              </p>
+            </article>
+          </div>
+          <div
+            class="table-wrap"
+            tabindex="0"
+            role="group"
+            aria-label="可替换层与领域内核对照表"
+          >
+            <table class="wide-table">
+              <thead>
+                <tr>
+                  <th scope="col">层次</th>
+                  <th scope="col">放什么</th>
+                  <th scope="col">如何更新</th>
+                  <th scope="col">私有化要求</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>交互层</td>
+                  <td>文件选择、自动配对确认、标准/紧急模式、报告与审核页</td>
+                  <td>UI 可整体替换；只保留对业务 API 的适配</td>
+                  <td>内网浏览器访问，不依赖公有云账号</td>
+                </tr>
+                <tr>
+                  <td>编排层</td>
+                  <td>主 Agent 的意图、追问、受控改参、引用说明</td>
+                  <td>Harness / 模型供应商做成 provider 适配器</td>
+                  <td>默认本地推理；云端必须显式启用</td>
+                </tr>
+                <tr>
+                  <td>领域内核</td>
+                  <td>工具目录、技能、鉴定规则、知识图谱、文献、证据服务</td>
+                  <td>不可变 release；纠错发新版本，历史报告钉住旧快照</td>
+                  <td>资料包可离线导入，检索不访问外网</td>
+                </tr>
+                <tr>
+                  <td>计算插件层</td>
+                  <td>Workflow 1–6 及后续补齐/注释等标准流程</td>
+                  <td>按 capability 注册；适配器版本与库版本一起发布</td>
+                  <td>计算节点独立升级，不与 Agent 进程耦合</td>
+                </tr>
+                <tr>
+                  <td>本地数据库层</td>
+                  <td>NT、NR、Kraken2、CheckV、rRNA、宿主/BOLD 等索引</td>
+                  <td>清单 + 哈希 + 兼容矩阵；切换需确认，禁止静默覆盖</td>
+                  <td>现场可断网使用；更新走离线介质或内网镜像</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <p>
+              <strong>产业化含义：</strong
+              >交付物不是一份绑定特定云模型和特定聊天框架的演示，而是可在疾控环境安装的资产包——计算插件、参考库、知识快照、规则包、本地模型和业务数据库。其中任何一层更新，都应能单独发版、单独回滚，而不重训整个系统、不改写历史报告。
+            </p>
+          </div>
+        </section>
+        <section id="overview">
+          <h2>
+            <span class="num">02 / 建设目标与价值</span
+            >让每个结论都有可检查的依据
+          </h2>
+          <p>
+            系统面向宏转录组分析人员、项目负责人和病毒学专家，从 FASTQ
+            或规范的中间分析产物出发，组织已知病毒识别与未知病毒候选发现，交付结构化分析结果、证据支持的研判意见和运行审计记录。未知候选意味着当前证据尚不能完成归属，需要进一步分析或专家复核。
+          </p>
+          <div class="cards">
+            <article class="card">
+              <h3>稳定完成分析</h3>
+              <p>
+                用户选择目标，系统补齐依赖、校验输入并执行已验证流程。计算状态独立于对话模型，断线后可重新核对任务进展。
+              </p>
+            </article>
+            <article class="card">
+              <h3>缩短获得信息的等待</h3>
+              <p>
+                智能模式先交付阶段快报，再继续已确认分析。优先级与资源约束由调度规则管理，完成时限以实测估算为依据。
+              </p>
+            </article>
+            <article class="card">
+              <h3>积累可复用的专业能力</h3>
+              <p>
+                将分类依据、分析方法、工具约束、本地库版本和专家修订转化为审核过的知识与数据库资产。更换前端或
+                Harness 不影响核心流程和证据标准。
+              </p>
+            </article>
+          </div>
+          <div class="callout">
+            <p>
+              <strong>建设优先级：</strong
+              >本地数据库与知识发布 &gt; 计算插件版本化 &gt; 多证据研判 &gt;
+              本地小模型微调 &gt; 交互和 Harness
+              适配。后两项只为维持闭环，不作为差异化功能继续加厚。
+            </p>
+          </div>
+          <div class="callout">
+            <p>
+              <strong>目标能力：</strong
+              >受控自动分析、候选级证据整合、可引用的知识解释和专家审核闭环。报告用于科研鉴定与研判；分类归属、证据强弱和专家审核分别呈现。
+            </p>
+          </div>
+          <div class="legend">
+            <span class="status exists">已实现</span
+            >指源码中存在对应能力，验证范围见工程附录。<span
+              class="status planned"
+              >待建设</span
+            >纳入实施路线。<span class="status conditional">条件接入</span
+            >须服务可用且专项验证通过。
+          </div>
+          <p class="note">
+            本文描述目标架构。当前具备 Workflow 1–6
+            的编译与执行接入、数据集及方案版本、远端运行管理和确定性数值报告等基础；完整项目管理、知识库、专家审核和本地模型迁移仍需建设。本次完成源码核对，未执行
+            Cyclone 全流程验收。
+          </p>
+        </section>
+
+        <section id="architecture">
+          <h2>
+            <span class="num">03 / 四层总体架构</span
+            >四层业务流程，共享知识与证据支撑
+          </h2>
+          <p>
+            四层按业务职责划分，并且必须允许「编排与计算分离」。浏览器与业务后端只做交互和权限；编排节点只做方案编译、知识检索和模型调用；计算节点只通过注册过的插件执行
+            Snakemake。知识服务和本地参考库是共享资产，分别支撑研判与比对，都不进入
+            Agent 进程内部。Claude Agent SDK 或 DeepSeek Harness
+            属于编排节点上的可替换运行时，不是第四层业务的一部分。
+          </p>
+          <figure>
+            <div
+              class="diagram"
+              tabindex="0"
+              role="group"
+              aria-label="四层架构图，窄屏可横向滚动"
+            >
+              <svg
+                viewBox="0 0 1020 665"
+                role="img"
+                aria-labelledby="arch-title arch-desc"
+              >
+                <title id="arch-title">四层组件交互图：目标架构</title>
+                <desc id="arch-desc">
+                  数据输入生成数据集版本，方案交互生成确认方案，计算层通过 SSH
+                  worker 和 Snakemake
+                  执行，交付层整合证据并交由专家审核。业务存储支持输入和方案，知识服务支持方案和研判，参考库支持计算，运行产物支持交付。
+                </desc>
+                <defs>
+                  <marker
+                    id="a-head"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#087f83" />
+                  </marker>
+                </defs>
+                <text x="30" y="35" class="svg-small">业务与运行主链路</text>
+                <text x="735" y="35" class="svg-small">
+                  共享支撑组件 · 按职责访问
+                </text>
+                <rect
+                  x="30"
+                  y="65"
+                  width="595"
+                  height="110"
+                  rx="10"
+                  class="box"
+                />
+                <text x="50" y="94" class="svg-title">第一层 · 数据输入</text>
+                <text x="50" y="124" class="svg-label">
+                  项目与权限 / 文件选择与上传 / 元信息 / 数据预检
+                </text>
+                <text x="50" y="151" class="svg-small">
+                  WebUI 后端＋远端数据服务 → 不可变数据集版本
+                </text>
+                <rect
+                  x="30"
+                  y="205"
+                  width="595"
+                  height="110"
+                  rx="10"
+                  class="box"
+                />
+                <text x="50" y="234" class="svg-title">第二层 · 方案交互</text>
+                <text x="50" y="264" class="svg-label">
+                  目标与模式 / 主 Agent 提议 / 规则校验 / 确定性编译
+                </text>
+                <text x="50" y="291" class="svg-small">
+                  WebUI＋BioAgent → 用户确认的方案版本与资源预算
+                </text>
+                <rect
+                  x="30"
+                  y="345"
+                  width="595"
+                  height="110"
+                  rx="10"
+                  class="box"
+                />
+                <text x="50" y="374" class="svg-title">第三层 · 计算运行</text>
+                <text x="50" y="404" class="svg-label">
+                  优先级队列 / SSH worker / runner / Snakemake
+                </text>
+                <text x="50" y="431" class="svg-small">
+                  Cyclone → 初筛、完整流程、受控专项任务及运行产物
+                </text>
+                <rect
+                  x="30"
+                  y="485"
+                  width="595"
+                  height="110"
+                  rx="10"
+                  class="box-teal"
+                />
+                <text x="50" y="514" class="svg-title">第四层 · 数据交付</text>
+                <text x="50" y="544" class="svg-label">
+                  证据标准化 / 规则研判 / 主 Agent 说明 / 专家审核
+                </text>
+                <text x="50" y="571" class="svg-small">
+                  证据服务＋WebUI → 分析报告、审核记录、运行审计
+                </text>
+                <path
+                  d="M 320 175 V 205"
+                  class="arrow"
+                  marker-end="url(#a-head)"
+                />
+                <path
+                  d="M 320 315 V 345"
+                  class="arrow"
+                  marker-end="url(#a-head)"
+                />
+                <path
+                  d="M 320 455 V 485"
+                  class="arrow"
+                  marker-end="url(#a-head)"
+                />
+                <rect
+                  x="735"
+                  y="65"
+                  width="255"
+                  height="110"
+                  rx="10"
+                  class="box"
+                />
+                <text x="753" y="94" class="svg-title">业务存储</text>
+                <text x="753" y="124" class="svg-label">
+                  项目 / 会话 / 版本 / 审核
+                </text>
+                <text x="753" y="151" class="svg-small">
+                  WebUI 后端拥有写入权
+                </text>
+                <rect
+                  x="735"
+                  y="205"
+                  width="255"
+                  height="110"
+                  rx="10"
+                  class="box-teal"
+                />
+                <text x="753" y="234" class="svg-title">统一知识服务</text>
+                <text x="753" y="264" class="svg-label">
+                  图谱 / 技能 / 工具 / 文献
+                </text>
+                <text x="753" y="291" class="svg-small">
+                  只读检索快照＋受审发布
+                </text>
+                <rect
+                  x="735"
+                  y="345"
+                  width="255"
+                  height="110"
+                  rx="10"
+                  class="box"
+                />
+                <text x="753" y="374" class="svg-title">生信参考库</text>
+                <text x="753" y="404" class="svg-label">
+                  NT / NR / Kraken2 等
+                </text>
+                <text x="753" y="431" class="svg-small">
+                  计算节点本地读取 / 版本锁定
+                </text>
+                <rect
+                  x="735"
+                  y="485"
+                  width="255"
+                  height="110"
+                  rx="10"
+                  class="box"
+                />
+                <text x="753" y="514" class="svg-title">
+                  运行产物与证据快照
+                </text>
+                <text x="753" y="544" class="svg-label">
+                  指标 / 定位 / 日志 / 版本
+                </text>
+                <text x="753" y="571" class="svg-small">
+                  Cyclone 保存 / 按权限读取
+                </text>
+                <path
+                  d="M 625 120 H 735"
+                  class="arrow"
+                  marker-end="url(#a-head)"
+                />
+                <text x="648" y="110" class="svg-small">存取</text>
+                <path
+                  d="M 735 260 H 625"
+                  class="arrow"
+                  marker-end="url(#a-head)"
+                />
+                <text x="648" y="249" class="svg-small">检索</text>
+                <path
+                  d="M 735 400 H 625"
+                  class="arrow"
+                  marker-end="url(#a-head)"
+                />
+                <text x="648" y="389" class="svg-small">比对</text>
+                <path
+                  d="M 735 540 H 625"
+                  class="arrow"
+                  marker-end="url(#a-head)"
+                />
+                <text x="648" y="529" class="svg-small">复核</text>
+                <path
+                  d="M 760 315 H 701 V 502 H 625"
+                  class="arrow dashed"
+                  marker-end="url(#a-head)"
+                />
+                <path
+                  d="M 625 435 H 657 V 473 H 865 V 485"
+                  class="arrow"
+                  marker-end="url(#a-head)"
+                />
+                <text x="751" y="468" class="svg-small">产物与版本</text>
+                <text x="30" y="635" class="svg-small">
+                  专家反馈 → 审核修订 → 新知识版本；需补做计算时 → 新方案确认 →
+                  新任务或经验证的恢复尝试
+                </text>
+              </svg>
+            </div>
+            <figcaption>
+              图 1 ·
+              目标组件交互。实线表示主要数据访问，虚线表示知识服务对交付研判的支撑。参考库版本信息随计算结果进入运行快照；原始序列留在计算侧。
+            </figcaption>
+          </figure>
+          <div
+            class="table-wrap"
+            tabindex="0"
+            role="group"
+            aria-label="四层职责表，窄屏可横向滚动"
+          >
+            <table class="wide-table">
+              <thead>
+                <tr>
+                  <th scope="col">层级</th>
+                  <th scope="col">输入与核心职责</th>
+                  <th scope="col">输出及进入下一层的条件</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>数据输入层</td>
+                  <td>
+                    管理员维护项目与成员；分析人员建立会话，选择远端文件或上传数据，记录样本、测序批次、宿主背景及对照关系。校验类型、配对、样本一致性、路径和文件指纹。
+                  </td>
+                  <td>
+                    可追溯的数据集版本。文件上传结束且预检通过后才允许编译方案；中间产物须满足目录中定义的完整文件契约。
+                  </td>
+                </tr>
+                <tr>
+                  <td>方案交互层</td>
+                  <td>
+                    用户选择分析目标和模式；模型解释能力并提出结构化修改建议；编译器依据工具目录、技能预设及约束补齐依赖。
+                  </td>
+                  <td>
+                    含数据集版本、步骤、参数、参考库及资源预算的方案版本。用户看到改动与代价并确认后，后端才发起执行。
+                  </td>
+                </tr>
+                <tr>
+                  <td>计算运行层</td>
+                  <td>
+                    持久化队列决定顺序；worker 校验输入和版本，runner 组织各
+                    phase，Snakemake 按依赖和资源执行具体任务。
+                  </td>
+                  <td>
+                    带运行身份与来源的初筛结果、完整分析产物、指标和日志。计算失败保留已完成内容，报告明确其覆盖范围。
+                  </td>
+                </tr>
+                <tr>
+                  <td>数据交付层</td>
+                  <td>
+                    证据服务读取产物并核算，规则服务识别冲突，知识服务返回依据，主
+                    Agent 生成受约束的说明，专家审核与补证。
+                  </td>
+                  <td>
+                    阶段快报、完整分析／研判报告、审核记录、运行审计包。核验失败不发布受影响的正式结论；不隐藏其他已验证产物。
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="lifecycle">
+          <h2>
+            <span class="num">04 / 一次分析如何完成</span
+            >先确认目标，再让计算和证据推动下一步
+          </h2>
+          <ol class="steps">
+            <li>
+              <strong>归入项目，建立分析会话</strong
+              >项目是权限、样本组织和调度管理的单位；会话承载一次分析意图，可包含多版数据集、方案和执行记录。重复测序批次与生物学样本分别建模，合并关系由用户确认。
+            </li>
+            <li>
+              <strong>冻结本次输入</strong
+              >远端文件选择与上传共用数据预检入口。原始文件保持只读，记录逻辑路径和经准入检查的真实目标；输入变化产生新数据集版本，旧版本保留。
+            </li>
+            <li>
+              <strong>展示可执行方案并确认</strong
+              >模型将“质控松一点”等请求映射为已发布的参数预设，展示具体变化；未定义的参数请求必须澄清。去除
+              rRNA、宿主序列去除和宿主识别分别建模，只有接入并验证的能力可供选择。
+            </li>
+            <li>
+              <strong>排队与执行</strong
+              >执行前再次验证输入指纹、方案版本与工具参考库。近期重型分析一次准入一个任务；内部阶段可在资源额度内并行。队列规则决定顺序，模型不分配线程或跳过用户目标。
+            </li>
+            <li>
+              <strong>分批交付可验证的结果</strong>智能模式产生 5%
+              初筛快报后继续完整目标。资源不足时保留快报并等待资源；输入、工具等错误则转入明确的阻塞或失败状态。快报不会把正在进行的完整任务标为完成。
+            </li>
+            <li>
+              <strong>形成研判，进入专家复核</strong
+              >对每个候选整理数值证据、知识引用、冲突和缺失项。专家可认可、要求补证或提出修订；修改报告形成新版本，补做计算形成新的确认动作。
+            </li>
+          </ol>
+          <figure>
+            <div
+              class="diagram"
+              tabindex="0"
+              role="group"
+              aria-label="分析执行时序图，窄屏可横向滚动"
+            >
+              <svg
+                viewBox="0 0 1020 635"
+                role="img"
+                aria-labelledby="seq-title seq-desc"
+              >
+                <title id="seq-title">一次智能模式分析的目标执行时序</title>
+                <desc id="seq-desc">
+                  用户通过 WebUI 预检数据并确认方案。BioAgent 将任务送至
+                  Cyclone，先返回初筛快报，再执行完整流程。证据与知识服务核验产物并支持主
+                  Agent 研判，专家审核后形成报告新版本。
+                </desc>
+                <defs>
+                  <marker
+                    id="s-head"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#087f83" />
+                  </marker>
+                </defs>
+                <rect
+                  x="24"
+                  y="20"
+                  width="140"
+                  height="46"
+                  rx="7"
+                  class="box-dark"
+                />
+                <text x="94" y="49" text-anchor="middle" class="svg-white">
+                  用户 / 专家
+                </text>
+                <rect
+                  x="219"
+                  y="20"
+                  width="140"
+                  height="46"
+                  rx="7"
+                  class="box-dark"
+                />
+                <text x="289" y="49" text-anchor="middle" class="svg-white">
+                  WebUI 后端
+                </text>
+                <rect
+                  x="414"
+                  y="20"
+                  width="140"
+                  height="46"
+                  rx="7"
+                  class="box-dark"
+                />
+                <text x="484" y="49" text-anchor="middle" class="svg-white">
+                  BioAgent
+                </text>
+                <rect
+                  x="609"
+                  y="20"
+                  width="140"
+                  height="46"
+                  rx="7"
+                  class="box-dark"
+                />
+                <text x="679" y="49" text-anchor="middle" class="svg-white">
+                  Cyclone
+                </text>
+                <rect
+                  x="804"
+                  y="20"
+                  width="190"
+                  height="46"
+                  rx="7"
+                  class="box-dark"
+                />
+                <text x="899" y="49" text-anchor="middle" class="svg-white">
+                  证据 / 知识服务
+                </text>
+                <path
+                  d="M 94 66 V 595 M 289 66 V 595 M 484 66 V 595 M 679 66 V 595 M 899 66 V 595"
+                  class="arrow-grey dashed"
+                />
+                <path
+                  d="M 94 106 H 289"
+                  class="arrow"
+                  marker-end="url(#s-head)"
+                />
+                <text x="108" y="95" class="svg-small">选择数据与分析目标</text>
+                <path
+                  d="M 289 150 H 679"
+                  class="arrow"
+                  marker-end="url(#s-head)"
+                />
+                <text x="325" y="137" class="svg-small">
+                  经 BioAgent 远端预检，返回数据集校验结果
+                </text>
+                <path
+                  d="M 289 194 H 484"
+                  class="arrow"
+                  marker-end="url(#s-head)"
+                />
+                <text x="313" y="183" class="svg-small">确定性编译方案</text>
+                <path
+                  d="M 484 238 H 94"
+                  class="arrow"
+                  marker-end="url(#s-head)"
+                />
+                <text x="160" y="227" class="svg-small">
+                  经 WebUI 展示依赖、参数、预算与版本
+                </text>
+                <path
+                  d="M 94 282 H 679"
+                  class="arrow"
+                  marker-end="url(#s-head)"
+                />
+                <text x="167" y="271" class="svg-small">
+                  用户确认 → 后端登记执行 → BioAgent 校验 → worker 排队
+                </text>
+                <rect
+                  x="46"
+                  y="299"
+                  width="925"
+                  height="140"
+                  rx="8"
+                  fill="#edf8f6"
+                  opacity=".93"
+                />
+                <text x="62" y="321" class="svg-small">
+                  智能模式：阶段交付，完整目标继续
+                </text>
+                <path
+                  d="M 679 354 H 94"
+                  class="arrow"
+                  marker-end="url(#s-head)"
+                />
+                <text x="188" y="343" class="svg-label">
+                  5% 初筛快报（经证据核验和 WebUI 展示）
+                </text>
+                <path
+                  d="M 679 414 H 899"
+                  class="arrow"
+                  marker-end="url(#s-head)"
+                />
+                <text x="698" y="383" class="svg-small">完整流程产物</text>
+                <text x="698" y="402" class="svg-small">
+                  来源定位与版本清单
+                </text>
+                <path
+                  d="M 899 479 H 484"
+                  class="arrow"
+                  marker-end="url(#s-head)"
+                />
+                <text x="520" y="455" class="svg-small">
+                  标准化证据＋规则检查＋知识引用
+                </text>
+                <text x="520" y="472" class="svg-small">
+                  主 Agent 形成说明草稿后交回校验
+                </text>
+                <path
+                  d="M 899 533 H 94"
+                  class="arrow"
+                  marker-end="url(#s-head)"
+                />
+                <text x="310" y="522" class="svg-small">
+                  校验通过 → WebUI 渲染报告 → 专家复核
+                </text>
+                <path
+                  d="M 94 580 H 289"
+                  class="arrow"
+                  marker-end="url(#s-head)"
+                />
+                <text x="106" y="568" class="svg-small">
+                  保存审核与修订记录
+                </text>
+                <text x="46" y="618" class="svg-small">
+                  知识检索为只读操作；计算执行和专家反馈写入分别由授权后端入口管理。图中跨列长箭头表示经中间服务转交。
+                </text>
+              </svg>
+            </div>
+            <figcaption>
+              图 2 · 智能模式主时序。主 Agent
+              的咨询不是方案编译和任务启动的必经步骤；知识检索也不要求重新运行生信流程。
+            </figcaption>
+          </figure>
+          <div
+            class="table-wrap"
+            tabindex="0"
+            role="group"
+            aria-label="分析模式表，窄屏可横向滚动"
+          >
+            <table class="wide-table">
+              <thead>
+                <tr>
+                  <th scope="col">模式 / 入口</th>
+                  <th scope="col">目标行为</th>
+                  <th scope="col">边界与适用条件</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>智能</td>
+                  <td>
+                    成对 reads 可用时执行 5%
+                    初筛，交付快报，再完成用户选择的目标。
+                  </td>
+                  <td>
+                    已知病毒信号只影响提示与补证建议。仅有 contig
+                    等中间输入时，确认页面明确改用标准流程。
+                  </td>
+                </tr>
+                <tr>
+                  <td>紧急</td>
+                  <td>
+                    完成预定快检范围即可交付；首期沿用现有 5% 抽样、质控、去
+                    rRNA 与 Kraken2 初筛链路。
+                  </td>
+                  <td>
+                    计划确认前明确“抽样快检”，不承诺全量检测；不具备成对 reads
+                    时不接受此模式。阴性表述限定为本次范围内未检出。
+                  </td>
+                </tr>
+                <tr>
+                  <td>标准</td>
+                  <td>
+                    按用户目标编译依赖闭包，完成相应质控、组装、识别、定量或注释。
+                  </td>
+                  <td>
+                    只执行已注册的能力；合法中间输入可以省去已完成的上游步骤。
+                  </td>
+                </tr>
+                <tr>
+                  <td>专项深度分析</td>
+                  <td>
+                    从候选及证据缺口出发，追加已接入的分类、系统发育等任务，并复用经验证的上游产物。
+                  </td>
+                  <td>
+                    <span class="status conditional">条件接入</span>
+                    不设空泛的第四条路由；展示所需输入、服务状态、成本和交付物后单独确认。
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note">
+            智能模式“先快报、后完整”是本次提出的目标变更。当前代码在满足初筛门槛时可提前结束整个
+            pipeline；当前不适用初筛的输入会归一化为标准模式。相关修改列入阶段
+            1。
+          </p>
+        </section>
+
+        <section id="knowledge">
+          <h2>
+            <span class="num">05 / 数据库与知识库</span
+            >计算读取参考序列，研判读取有出处的知识
+          </h2>
+          <p>
+            生信参考库回答“序列与哪些参考对象匹配”；知识库回答“在何种条件下，这些结果支持何种解释”。业务数据库记录谁提交、确认和审核了什么，运行存储保存能够复算的实际产物。四类存储通过稳定标识与版本关联。
+          </p>
+          <div
+            class="table-wrap"
+            tabindex="0"
+            role="group"
+            aria-label="存储与知识资产分工，窄屏可横向滚动"
+          >
+            <table class="wide-table">
+              <thead>
+                <tr>
+                  <th scope="col">资产</th>
+                  <th scope="col">保存内容 / 维护责任</th>
+                  <th scope="col">读取与交互方式</th>
+                  <th scope="col">追溯要求</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>生信参考库</td>
+                  <td>
+                    NT 核酸、NR 蛋白、Kraken2 分类索引、CheckV 参考数据、rRNA
+                    索引及各 workflow 专用库；由生信维护者发布。
+                  </td>
+                  <td>
+                    计算侧
+                    BLAST、分类器等读取本地索引；工具注册表声明所需库和兼容版本。NT/NR
+                    的用途参见
+                    <a
+                      href="https://blast.ncbi.nlm.nih.gov/doc/blast-help/blastdatabases.html"
+                      >NCBI 文档</a
+                    >。
+                  </td>
+                  <td>
+                    记录来源、发布或下载时间、构建命令、工具版本和清单哈希。实际路径与可用性以阶段
+                    0 的 Cyclone 盘点为准。
+                  </td>
+                </tr>
+                <tr>
+                  <td>知识图谱</td>
+                  <td>
+                    类群、别名、标志基因、分类标准、适用范围与文献的关系；由领域专家审核。
+                  </td>
+                  <td>
+                    按候选
+                    taxon／基因及问题检索关系，定位应采用的规则和原文；通过来源和版本区分名称变更及冲突。
+                  </td>
+                  <td>
+                    每条事实或关系保留来源定位、适用范围、版本和审核状态；自动抽取内容先进入待审核区。
+                  </td>
+                </tr>
+                <tr>
+                  <td>技能库</td>
+                  <td>
+                    分析方法、前置条件、参数预设、常见陷阱、结果解释及审核清单；由生信维护者与专家共同发布。
+                  </td>
+                  <td>
+                    按任务加载少量技能卡；可执行部分引用工具目录和参数
+                    schema，解释部分提供给主
+                    Agent。运行时不扫描任意项目技能文件。
+                  </td>
+                  <td>
+                    技能
+                    ID、版本、依赖工具／规则及验证案例。预设参数只有通过编译器才能生效。
+                  </td>
+                </tr>
+                <tr>
+                  <td>工具库</td>
+                  <td>
+                    工具与 workflow
+                    能力的输入输出类型、参数范围、参考库依赖、资源要求和结果解析器；由工程与生信维护者管理。
+                  </td>
+                  <td>
+                    编译器据此组织 DAG；runner
+                    调用已实现适配器。供模型阅读的说明由同一注册信息生成，避免两套能力定义漂移。
+                  </td>
+                  <td>
+                    工具
+                    ID、执行适配器版本、软件版本和验证状态；登记说明不等于完成执行接入。
+                  </td>
+                </tr>
+                <tr>
+                  <td>文献库</td>
+                  <td>
+                    ICTV
+                    原文、工具官方资料、可合法获取的论文与审核摘录；由资料维护者整理、专家审定适用性。
+                  </td>
+                  <td>
+                    检索返回来源
+                    ID、段落位置、原文片段和版本，支撑分类依据及报告解释；只有摘要时明确证据范围。
+                  </td>
+                  <td>
+                    DOI／URL、版本或访问日期、内容哈希、许可信息与段落定位。文献支持规则的适用解释，样本结论还必须有计算证据。
+                  </td>
+                </tr>
+                <tr>
+                  <td>业务数据库</td>
+                  <td>
+                    账号、项目成员、会话、数据集和方案版本、执行登记、审核及事件；由
+                    WebUI 后端写入。
+                  </td>
+                  <td>
+                    前端经授权 API 访问；BioAgent
+                    接收必要上下文和对象标识，不直接操作 WebUI 数据库。
+                  </td>
+                  <td>
+                    所有权、关联
+                    ID、版本和操作记录；项目权限同时作用于文件、报告、检索上下文及专项任务。
+                  </td>
+                </tr>
+                <tr>
+                  <td>运行产物与资源历史</td>
+                  <td>
+                    Cyclone 上的只读输入引用、run-local
+                    配置、结果、日志、证据快照；资源索引记录耗时与内存历史。
+                  </td>
+                  <td>
+                    runner 写入，后端通过 worker
+                    获取状态和受限产物；资源估算器读取历史，模型只接收裁剪后的指标。
+                  </td>
+                  <td>
+                    run／attempt
+                    身份、输入与产物指纹、方案及执行版本。资源估算的置信程度与生物学结论分开。
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>最小知识底座如何落地</h3>
+          <p>
+            首期部署一个知识模块，使用版本化资料包、SQLite
+            关系表和全文索引。节点与有出处的关系构成最小知识图谱，全文检索提供原文定位；四类资产共享检索入口，并保留各自的治理规则。知识模块在应用侧运行，大型参考索引与
+            FASTQ 留在 Cyclone。
+          </p>
+          <p>
+            检索先依据任务、类群和版本筛选，再按别名、标志基因及关键词查找相关关系与片段。面向中文问题预处理中文词项，英文专业名和
+            taxon ID
+            保持可精确查找。只有在固定评测集上证明能改善召回与引用质量，才增加向量检索；检索分数只用于排序。
+          </p>
+          <div class="callout">
+            <p>
+              <strong>发布流程：</strong>资料导入 → 来源与许可登记 → 结构化整理
+              → 专家审核 → 冻结知识版本 → 回归验证 →
+              发布。分析或研判记录所用快照；新知识只影响新版本研判，历史报告保留原有引用。
+            </p>
+          </div>
+          <p>
+            参考库采用不可变版本目录。大型索引在发布时计算文件清单和校验信息，执行时核对登记清单及完整性状态，避免每次扫描整个
+            NT/NR。版本发生变化时阻止未经确认的续跑；已有历史库版本未知时明确标记，不能把目录名推断为完整的版本证明。
+          </p>
+          <h3>知识库如何构建：五条资产线，一条发布流水线</h3>
+          <p>
+            知识建设与业务 CRUD
+            并行，不排到「页面都做完」之后。先保证断网可检索、每条事实有出处、发布可回滚，再谈向量检索或自动抽取。模型抽取的内容只进待审核区，不能直接成为线上事实。
+          </p>
+          <div
+            class="table-wrap"
+            tabindex="0"
+            role="group"
+            aria-label="知识与本地库建设策略"
+          >
+            <table class="wide-table">
+              <thead>
+                <tr>
+                  <th scope="col">资产线</th>
+                  <th scope="col">首期收录</th>
+                  <th scope="col">结构化产物</th>
+                  <th scope="col">谁审核 / 如何更新</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>分类知识</td>
+                  <td>ICTV 官方标准、科级阈值、标志基因、别名与分类版本</td>
+                  <td>实体（taxon/gene/rule）、带出处的关系、适用类群</td>
+                  <td>领域专家；ICTV 版本变更发新知识 release，旧报告钉住旧版</td>
+                </tr>
+                <tr>
+                  <td>方法与技能</td>
+                  <td>W1–W6 的任务卡、预设、陷阱、解释模板、审核要点</td>
+                  <td>skill_id + 版本 + 工具/规则引用 + 验证案例</td>
+                  <td>生信维护者；技能更新不改已冻结方案，只影响新编译</td>
+                </tr>
+                <tr>
+                  <td>工具契约</td>
+                  <td>已接入 adapter 的输入输出、参数范围、参考库依赖、解析器</td>
+                  <td>capability 注册表；供编译器执行，同时生成只读说明</td>
+                  <td>工程 + 生信；登记不等于开放。未验收能力对用户不可选</td>
+                </tr>
+                <tr>
+                  <td>文献与摘录</td>
+                  <td>可合法获取的方法学论文、工具文档、内部流程说明</td>
+                  <td>Source + Passage；摘要来源必须标明范围</td>
+                  <td>资料维护者登记许可与哈希；专家审定适用性后才可被引用</td>
+                </tr>
+                <tr>
+                  <td>本地参考库</td>
+                  <td>NT、NR、Kraken2、CheckV、rRNA、宿主/BOLD、workflow 专用库</td>
+                  <td>库 ID、构建命令、文件清单、哈希、兼容工具版本</td>
+                  <td>生信发布离线包；计算节点校验后切换；禁止目录名冒充版本</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>工具库与知识图谱如何进入报告</h3>
+          <p>
+            报告不是模型通读全部结果后写的作文。固定数据流为：计算插件写出 typed
+            artifact → 解析器生成候选级计算证据（身份、完整性、覆盖、同一性等）→
+            规则服务按类群命中矛盾/缺失 →
+            知识服务按候选检索适用规则和文献段落 → 主 Agent
+            只解释这份证据包 →
+            程序校验数值和引用 ID → 模板渲染。知识图谱提供「该用哪条规则、哪段原文」；工具库提供「这个数是哪个工具、哪版库、怎样算出来的」。缺任何一侧，都只能出数值报告，不能出研判结论。
+          </p>
+          <div class="callout">
+            <p>
+              <strong>易迭代更新：</strong
+              >知识包、规则包、参考库、计算插件、本地模型五类资产各自编号。现场更新是「导入新包 →
+              校验 → 回归 → 切换默认快照」。正在运行的任务和已发布报告继续使用旧快照。失败则保留上一版本，不出现半更新状态。
+            </p>
+          </div>
+        </section>
+
+        <section id="agent">
+          <h2>
+            <span class="num">06 / 编排层与本地模型</span
+            >让模型处理有限的问题，让系统承担稳定的责任
+          </h2>
+          <p>
+            本地小模型按“意图识别、修改建议、知识问答、证据说明”分别评测和启用。应用将任务整理为短上下文：当前目标、允许动作、选定技能、标准化证据和检索片段；模型返回结构化结果，宿主服务校验后再进入业务流程。原始
+            FASTQ、大型日志和完整历史对话无需整体进入模型上下文。
+          </p>
+          <div
+            class="table-wrap"
+            tabindex="0"
+            role="group"
+            aria-label="规则技能 Agent 与 MCP 职责表，窄屏可横向滚动"
+          >
+            <table class="wide-table">
+              <thead>
+                <tr>
+                  <th scope="col">组件 / 机制</th>
+                  <th scope="col">负责的事情</th>
+                  <th scope="col">实现与使用决定</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>业务规则</td>
+                  <td>
+                    权限、输入有效性、参数范围、方案确认、队列优先级、资源准入及恢复条件。
+                  </td>
+                  <td>
+                    确定性代码和配置，先于执行强制检查。自然语言说明与规则结果关联。
+                  </td>
+                </tr>
+                <tr>
+                  <td>生物学判读规则</td>
+                  <td>
+                    分类条件适用性、指标矛盾、缺失证据、阈值附近提示及专家复核触发条件。
+                  </td>
+                  <td>
+                    有来源、版本和适用范围的规则包。保留实际阈值及观测差异；边界样本追加不确定性说明。
+                  </td>
+                </tr>
+                <tr>
+                  <td>Snakemake rule</td>
+                  <td>描述命令、输入输出文件、依赖、线程与资源额度。</td>
+                  <td>
+                    由工程维护的 workflow
+                    执行定义。通过固定适配器接入，模型不能生成并执行任意 rule。
+                  </td>
+                </tr>
+                <tr>
+                  <td>Skill / 技能</td>
+                  <td>
+                    提供完成某类任务的方法、可选预设、解释模板和审核要点。
+                  </td>
+                  <td>
+                    确定性选择适用技能，再将少量内容交给模型；技能中的执行参数引用工具
+                    schema，验证示例随版本发布。
+                  </td>
+                </tr>
+                <tr>
+                  <td>主 Agent</td>
+                  <td>
+                    咨询、澄清、生成方案修改提议、结合规则结果和引用解释候选证据。
+                  </td>
+                  <td>
+                    保留一个对话与研判协调入口。模型供应方可替换，不直接拥有方案执行、业务库写入或计算节点
+                    shell 权限。
+                  </td>
+                </tr>
+                <tr>
+                  <td>多证据融合服务</td>
+                  <td>标准化证据、识别矛盾、组织待解释事实并校验生成结果。</td>
+                  <td>
+                    <strong>首期采用确定性服务＋主 Agent。</strong
+                    >一次研判可按候选分批调用同一模型，无需为每个候选创建自主
+                    subagent。
+                  </td>
+                </tr>
+                <tr>
+                  <td>专项 subagent</td>
+                  <td>完成边界清晰、需要独立工具与专业上下文的专项任务。</td>
+                  <td>
+                    <span class="status conditional">条件接入</span>
+                    优先判断固定工具是否足够；只有多步决策确有收益、独立结果可验收时使用。任务限制工具、预算、超时和写入范围。
+                  </td>
+                </tr>
+                <tr>
+                  <td>MCP 桥接</td>
+                  <td>连接外部知识服务或独立专项服务，统一发现与调用能力。</td>
+                  <td>
+                    由 BioAgent
+                    宿主适配器控制调用及结果校验；本地函数直接调用，Cyclone 保留
+                    SSH worker。MCP 是通信接口，其服务是否包含 Agent
+                    由服务实现决定。<a
+                      href="https://modelcontextprotocol.io/docs/learn/architecture"
+                      >协议依据</a
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <td>Harness / provider</td>
+                  <td>
+                    会话传输与结构化生成。把短上下文送给 Claude Agent SDK、DeepSeek
+                    Harness 或本地 OpenAI 兼容服务。
+                  </td>
+                  <td>
+                    可替换适配器。领域规则、编译、执行和知识检索不放进某一家
+                    SDK。更换编排器不得要求重写 workflow 或知识包。
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="two-col">
+            <div>
+              <h3>主 Agent 足够完成融合研判</h3>
+              <p>
+                关键计算、规则命中和来源定位已经由服务完成。主 Agent
+                的任务是解释一份有边界的证据包，输出支持项、反对项、缺失项和建议。额外拆分
+                Agent
+                会增加上下文交接与结果协调，首期没有足够理由承担这部分复杂度。
+              </p>
+            </div>
+            <div>
+              <h3>专项服务满足条件后再接入</h3>
+              <p>
+                ICTV
+                条目查询通过知识检索完成；需要独立分类算法或系统发育分析时，先注册为专项工具。若确实需要在多步专业分析间迭代决策，再采用
+                subagent。Workflow 6 已有注释能力，新增注释 Agent
+                必须有清晰的增量价值。
+              </p>
+            </div>
+          </div>
+          <h3>Harness 可替换，领域逻辑不进会话框架</h3>
+          <p>
+            编排层只通过 provider 接口调用模型：输入 task_kind、schema、有限上下文；输出结构化动作或研判草稿。Claude Agent
+            SDK、DeepSeek Harness、本地 OpenAI 兼容服务（vLLM / llama.cpp
+            等）都是适配器。检索、规则、引用校验、工具调度和 Snakemake
+            启动由宿主执行，不要求本地模型自主多轮调用 MCP。
+          </p>
+          <h3>从 MiniMax-M3 迁移到疾控可落地的量化模型</h3>
+          <p>
+            先建设模型无关的动作、引用和研判契约，再让 MiniMax-M3
+            使用同样接口建立基线；本地量化模型只做影子评测，不产生业务动作。按能力切换：意图与追问 →
+            受控参数建议 → 引用式问答 →
+            候选证据说明。未达门槛的能力保持表单或人工路径。
+          </p>
+          <p>
+            私有化难点不在「再找一个更大的云模型」，而在算力受限条件下把四类窄任务做稳。记录量化方式、模型哈希和推理参数；用冻结任务集和专家修订计算结构化输出通过率、合法动作率、引用正确率、遗漏冲突率和幻觉率。专家审核过的「证据包 →
+            合格说明 / 不合格修订」形成微调语料，定期离线训练后以新模型包发布。训练不读取原始
+            FASTQ，也不把未审核对话直接当数据。
+          </p>
+          <p>
+            默认 local_only。模型不可用时保留表单规划、确定性执行和数值报告；没有管理员授权与用户确认，不得回退到云端。
+          </p>
+        </section>
+
+        <section id="delivery">
+          <h2>
+            <span class="num">07 / 证据研判与交付</span
+            >把计算事实、知识依据和专家判断连接起来
+          </h2>
+          <p>
+            研判服务按候选收集证据，并保留样本与批次身份。数值证据需说明定义、单位、分母和来源，例如同一性针对核酸还是蛋白，覆盖率针对查询片段还是参考基因组。缺少深度
+            CV、系统发育支持度或对照结果时记录“未提供”，不以其他指标代替。
+          </p>
+          <figure>
+            <div
+              class="diagram"
+              tabindex="0"
+              role="group"
+              aria-label="结论证据关系图，窄屏可横向滚动"
+            >
+              <svg
+                viewBox="0 0 1020 505"
+                role="img"
+                aria-labelledby="evidence-title evidence-desc"
+              >
+                <title id="evidence-title">候选结论与证据关系：结构示意</title>
+                <desc id="evidence-desc">
+                  候选关联计算证据和知识依据，计算证据追溯原始产物及工具参考库版本，知识依据追溯适用规则及文献段落。两者支撑含冲突与缺失项的研判记录，专家审核追加新版本。
+                </desc>
+                <defs>
+                  <marker
+                    id="e-head"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#087f83" />
+                  </marker>
+                </defs>
+                <rect
+                  x="355"
+                  y="24"
+                  width="310"
+                  height="64"
+                  rx="9"
+                  class="box-dark"
+                />
+                <text x="510" y="51" text-anchor="middle" class="svg-white">
+                  样本 S-01 / 候选 C-01
+                </text>
+                <text
+                  x="510"
+                  y="73"
+                  text-anchor="middle"
+                  fill="#c8e1e9"
+                  font-size="13"
+                >
+                  数据集版本＋run ID＋候选定位
+                </text>
+                <rect
+                  x="35"
+                  y="128"
+                  width="445"
+                  height="82"
+                  rx="9"
+                  class="box"
+                />
+                <text x="55" y="159" class="svg-title">计算证据 E-01…</text>
+                <text x="55" y="190" class="svg-label">
+                  同一性 / 覆盖 / 深度 / 质量 / 对照状态
+                </text>
+                <rect
+                  x="540"
+                  y="128"
+                  width="445"
+                  height="82"
+                  rx="9"
+                  class="box-teal"
+                />
+                <text x="560" y="159" class="svg-title">知识依据 K-01…</text>
+                <text x="560" y="190" class="svg-label">
+                  适用分类规则 / 分析方法 / 已知局限
+                </text>
+                <rect
+                  x="35"
+                  y="239"
+                  width="445"
+                  height="72"
+                  rx="9"
+                  class="box"
+                />
+                <text x="55" y="269" class="svg-label">
+                  原始产物 → 文件 / 行列 / 序列坐标
+                </text>
+                <text x="55" y="293" class="svg-small">
+                  来源哈希＋工具版本＋参考库快照＋派生公式
+                </text>
+                <rect
+                  x="540"
+                  y="239"
+                  width="445"
+                  height="72"
+                  rx="9"
+                  class="box"
+                />
+                <text x="560" y="269" class="svg-label">
+                  原始资料 → ICTV 条目 / 文献段落
+                </text>
+                <text x="560" y="293" class="svg-small">
+                  来源 ID＋内容版本＋适用类群＋审核状态
+                </text>
+                <path
+                  d="M 440 88 L 260 128"
+                  class="arrow"
+                  marker-end="url(#e-head)"
+                />
+                <path
+                  d="M 580 88 L 760 128"
+                  class="arrow"
+                  marker-end="url(#e-head)"
+                />
+                <path
+                  d="M 260 210 V 239"
+                  class="arrow"
+                  marker-end="url(#e-head)"
+                />
+                <path
+                  d="M 760 210 V 239"
+                  class="arrow"
+                  marker-end="url(#e-head)"
+                />
+                <rect
+                  x="190"
+                  y="348"
+                  width="640"
+                  height="72"
+                  rx="9"
+                  class="box-teal"
+                />
+                <text x="510" y="378" text-anchor="middle" class="svg-title">
+                  研判记录 A-01：结论＋支持／反对证据＋缺失项
+                </text>
+                <text x="510" y="402" text-anchor="middle" class="svg-small">
+                  结论绑定 E 与 K 的具体引用；检索相关度不作为生物学概率
+                </text>
+                <path
+                  d="M 35 170 H 18 V 384 H 190"
+                  class="arrow"
+                  marker-end="url(#e-head)"
+                />
+                <path
+                  d="M 985 170 H 1002 V 384 H 830"
+                  class="arrow"
+                  marker-end="url(#e-head)"
+                />
+                <rect
+                  x="290"
+                  y="449"
+                  width="440"
+                  height="38"
+                  rx="7"
+                  class="box-dark"
+                />
+                <text x="510" y="475" text-anchor="middle" class="svg-white">
+                  专家审核 R-01 → 认可 / 补证 / 修订新版本
+                </text>
+                <path
+                  d="M 510 420 V 449"
+                  class="arrow"
+                  marker-end="url(#e-head)"
+                />
+              </svg>
+            </div>
+            <figcaption>
+              图 3 · 结构示意，S-01、C-01
+              等为虚构标识，不代表真实样本或验证结果。箭头表示关联或来源追溯；正式报告保存具体引用映射。
+            </figcaption>
+          </figure>
+          <h3>多证据融合的六个步骤</h3>
+          <ol>
+            <li>
+              <strong>标准化：</strong>解析器将 workflow
+              产物变成候选级证据记录，区分核酸／蛋白同一性、比对覆盖／测序覆盖及
+              reads／read pairs 等不同口径。
+            </li>
+            <li>
+              <strong>检查：</strong
+              >确定性规则识别高同源低覆盖、指标不一致、样本错配、重复或相关证据以及关键证据缺失。同一
+              reads 派生的结果归入来源组，避免简单叠加权重。
+            </li>
+            <li>
+              <strong>检索：</strong
+              >根据候选类群、标志基因及异常模式获取适用规则与文献。返回空结果、来源冲突和不可用状态时保留不确定性。
+            </li>
+            <li>
+              <strong>说明：</strong>主 Agent
+              仅对证据包和引用内容生成结构化研判草稿；规则产生的冲突和缺失项必须保留，不允许凭语言推测新增样本事实。
+            </li>
+            <li>
+              <strong>核验：</strong
+              >程序验证数值、单位、来源定位、引用身份及规则适用范围；文献是否充分支持解释仍需专家复核。正文由模板渲染，模型只提供经校验的结构化内容。
+            </li>
+            <li>
+              <strong>审核：</strong
+              >专家检查对照、混合感染、分节段、EVE、污染、组装质量和类群标准的适用性。修订追加审核记录；报告和知识分别产生新版本。
+            </li>
+          </ol>
+          <div
+            class="table-wrap"
+            tabindex="0"
+            role="group"
+            aria-label="研判状态表，窄屏可横向滚动"
+          >
+            <table class="wide-table">
+              <thead>
+                <tr>
+                  <th scope="col">分别呈现的维度</th>
+                  <th scope="col">报告中的含义</th>
+                  <th scope="col">避免的混淆</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>分类归属</td>
+                  <td>
+                    已支持到的分类层级、候选归属或当前无法分类，并记录所采用的分类版本。
+                  </td>
+                  <td>
+                    无法分类不直接等于新病毒或新物种；新分类单元的正式认可遵循
+                    <a href="https://ictv.global/about/code">ICTV 程序</a>。
+                  </td>
+                </tr>
+                <tr>
+                  <td>证据支持程度</td>
+                  <td>
+                    按审核规则给出“充分支持”“有限支持”“证据不足”或“现有证据不支持当前候选归属”。
+                  </td>
+                  <td>
+                    规则未建立时使用“证据不足”；不把模型自信程度、Kraken
+                    初筛门槛或检索分数写成概率。
+                  </td>
+                </tr>
+                <tr>
+                  <td>冲突与缺失</td>
+                  <td>
+                    独立列出相互矛盾的证据、阈值附近情况、未测项目和缺失对照。
+                  </td>
+                  <td>可与任一支持程度并存；不得为得到单一标签而消去冲突。</td>
+                </tr>
+                <tr>
+                  <td>审核状态</td>
+                  <td>草稿、待审核、已审核、需补证或已被新版本替代。</td>
+                  <td>
+                    计算完成与专家审核完成分别计数；审核认可也保留原有适用范围与限制。
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <p>
+              <strong>示意案例：</strong>某候选蛋白局部同一性为
+              91%，查询覆盖率为
+              18%。系统首先核对比较对象、覆盖分母和数据来源，再标记“高同源低覆盖”，检索该类群的判定条件并提出补证要求。仅凭这两个数值，不给出确定分类，也不能认定
+              EVE 或污染。
+            </p>
+            <p>
+              CheckV
+              可提供完整度和宿主污染相关信息，其结果需结合工具适用范围解释；它不能独立承担全部嵌合、EVE
+              或污染排查。参见
+              <a href="https://www.nature.com/articles/s41587-020-00774-7"
+                >CheckV 原始研究</a
+              >。上述数值为设计示意，非本系统实测。
+            </p>
+          </div>
+          <div class="two-col">
+            <div>
+              <h3>业务交付包</h3>
+              <p>
+                阶段快报、完整分析结果、候选证据卡、来源引用、研判意见和专家审核清单。每份报告标注分析范围、版本、是否完成全部目标和审核状态。
+              </p>
+            </div>
+            <div>
+              <h3>运行审计包</h3>
+              <p>
+                输入与方案版本、工具和参考库快照、worker
+                版本、排队及资源决策、执行状态、日志、产物清单和证据校验记录。支持复盘计算问题与报告来源。
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="appendix">
+          <h2>
+            <span class="num">08 / 工程附录与现状</span
+            >从现有仓库出发，补齐明确的缺口
+          </h2>
+          <p class="note">
+            源码基线：根仓库 <code>3909ed5</code>；agent
+            <code>3ba16a0</code>；open-webui
+            <code>548238bfa</code
+            >。以下“已实现”表示代码存在，不能替代实际数据、远端参考库与全流程验证。源文件路径供研发定位，分享
+            HTML 时不依赖这些文件。
+          </p>
+          <div class="toolbar">
+            <button id="toggle-appendices" type="button" aria-expanded="false">
+              展开全部附录
+            </button>
+          </div>
+          <details>
+            <summary>A · 仓库能力与目标差距</summary>
+            <div class="detail-body">
+              <div
+                class="table-wrap"
+                tabindex="0"
+                role="group"
+                aria-label="现状对照表，窄屏可横向滚动"
+              >
+                <table class="wide-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">能力</th>
+                      <th scope="col">当前证据</th>
+                      <th scope="col">建设决定</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>项目与权限</td>
+                      <td>
+                        Dashboard 的项目数组为静态示例；分析对象已有 user／chat
+                        关联。见
+                        <code>src/routes/dashboard/+page.svelte</code> 与后端
+                        analysis models。
+                      </td>
+                      <td>
+                        <span class="status planned">待建设</span>
+                        增加真实项目、成员和会话归属；真实统计替换演示数字。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>数据接入</td>
+                      <td>
+                        <span class="status exists">已实现</span>
+                        远端文件、typed artifact、预检、版本及 symlink
+                        双重指纹；专用 analysis 接口未接通浏览器到 Cyclone
+                        的大文件上传闭环。见 <code>remote_worker.py</code> 与
+                        <code>analysis_datasets.py</code>。
+                      </td>
+                      <td>
+                        增加可续传上传、样本／批次元信息、项目范围路径准入；既有结果仅接受已注册的完整
+                        artifact bundle。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>对话与方案</td>
+                      <td>
+                        <span class="status exists">已实现</span>
+                        ConversationAction 只允许回答、追问、goals／viral_type
+                        建议；方案编译和启动通过独立 API。见
+                        <code>conversation_contract.py</code
+                        >、<code>deterministic_planner.py</code>。
+                      </td>
+                      <td>
+                        扩展受控参数预设；工具能力始终由 catalog／compiler
+                        决定。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Workflow 1–6</td>
+                      <td>
+                        <span class="status exists">已实现</span>
+                        质控组装、病毒识别、宿主识别、微生物谱、定量、注释的依赖编译与适配。见
+                        <code>workflow_catalog.py</code
+                        >、<code>workflow_adapters.py</code>。
+                      </td>
+                      <td>
+                        逐项补足端到端验收。Workflow 1 的 rrna_filter 是去
+                        rRNA，宿主序列去除需要独立接入；宿主识别也属另一能力。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>模式与初筛</td>
+                      <td>
+                        <span class="status exists">已实现</span>
+                        auto／emergency／standard；5% 初筛及确定性门槛；route A
+                        可结束整个 pipeline。见
+                        <code>adaptive_routing.py</code
+                        >、<code>adaptive_screening.py</code>、<code>analysis_runner.py</code>。
+                      </td>
+                      <td>
+                        智能模式阶段快报后继续；将深度能力表示为专项追加任务。当前门槛仅保留作初筛提示的待验证基线。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>调度与恢复</td>
+                      <td>
+                        <span class="status exists">已实现</span> SSH
+                        worker、私有 tmux、全局 flock 串行准入、状态
+                        reconciliation
+                        与历史资源估算。没有业务优先级调度闭环。见
+                        <code>remote_worker.py</code
+                        >、<code>resource_calibration.py</code>。
+                      </td>
+                      <td>
+                        明确的持久化优先级队列；中断任务经验证再恢复。已有排队
+                        session 可重建，不代表 running 任务会自动续跑。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>报告与证据</td>
+                      <td>
+                        <span class="status exists">已实现</span> schema v4
+                        的确定性
+                        conclusions／evidence、原始产物复算、后端模板渲染。见
+                        <code>analysis_runner.py</code
+                        >、<code>utils/report_evidence.py</code>。
+                      </td>
+                      <td>
+                        补充候选级多证据、知识引用和专家审核；现有数值证据不可描述为已完成文献支持的生物学研判。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>知识与引用</td>
+                      <td>
+                        已定义
+                        Citation／RetrievalResult／RetrievalAdapter，TaxonAgent
+                        adapter 是封装边界；ConversationAction 当前主动清空
+                        citations。见
+                        <code>conversation_contract.py</code
+                        >、<code>taxonagent_adapter.py</code>。
+                      </td>
+                      <td>
+                        <span class="status planned">待建设</span>
+                        本地知识资产、索引、检索、引用解析与可信校验；不能只删除
+                        citations 清空逻辑就信任模型引用。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>外部 Agent 与模型</td>
+                      <td>
+                        对话经 Claude Agent SDK 接入固定 MiniMax-M3；runtime
+                        不加载项目 Skills，无自主 subagent 编排。本机 TaxonAgent
+                        按部署说明关闭。
+                      </td>
+                      <td>
+                        <span class="status planned">待建设</span>
+                        模型接口解耦。<span class="status conditional"
+                          >条件接入</span
+                        >
+                        外部服务以健康、版本和专项评测准入。
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+          <details>
+            <summary>B · 接口、对象与数据所有权</summary>
+            <div class="detail-body">
+              <p>
+                保留浏览器 → WebUI 后端 → BioAgent → Cyclone 的访问链。WebUI
+                后端负责用户权限、对象所有权与业务持久化；BioAgent
+                负责模型和编译执行边界；worker 管理计算侧路径、进程与产物。
+              </p>
+              <div
+                class="table-wrap"
+                tabindex="0"
+                role="group"
+                aria-label="关键接口与对象表，窄屏可横向滚动"
+              >
+                <table class="wide-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">现有接口 / 对象</th>
+                      <th scope="col">最小目标变化</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <code>/v1/chat/completions</code
+                        ><br />ConversationAction
+                      </td>
+                      <td>
+                        维持动作契约；增加版本化参数预设提议和经过检索服务验证的引用。模型供应方置于内部
+                        provider 接口之后。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>/v1/analysis/plans/compile</code
+                        ><br />数据集、方案及执行版本
+                      </td>
+                      <td>
+                        方案记录参数、规则与参考库快照；模型提议仍需确认并重新编译，旧方案不就地改写。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>/v1/analysis/runs/start</code
+                        ><br />snapshot、resources
+                      </td>
+                      <td>
+                        执行身份绑定项目和版本；增加等待原因、可用阶段报告、队列记录与恢复
+                        attempt，重试不创建重复计算。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>/v1/analysis/evidence/verify</code
+                        ><br />Citation、RetrievalResult
+                      </td>
+                      <td>
+                        延续产物数值复核；增加候选证据与文献引用映射。引用身份、定位和可信来源由服务确定，模型不自行签发
+                        verified。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>新增业务对象</td>
+                      <td>
+                        项目／成员、上传会话、参考库快照、知识发布版本、候选证据包、研判版本、审核事件与专项任务引用。尽量复用既有版本和事件机制。
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>
+                运行事实以 Cyclone 的 run state 和产物为准，WebUI
+                中的执行状态是同步视图；业务确认与审核以 WebUI
+                数据库为准；知识发布以不可变资料包和索引版本为准。三类事实通过
+                ID 关联，不让模型对它们进行合并写入。
+              </p>
+              <p>
+                业务数据延续当前数据库体系，知识模块使用独立 SQLite
+                资料索引与关系表，重型产物保存在远端文件系统。备份覆盖业务库、知识快照和运行清单，并定期演练恢复；报告与审核记录采用追加版本，保留期限由项目要求配置，不预设“两年”即可满足所有用途。
+              </p>
+            </div>
+          </details>
+          <details>
+            <summary>C · 资源调度、断线与断点续跑</summary>
+            <div class="detail-body">
+              <ul>
+                <li>
+                  <strong>队列：</strong
+                  >默认一个重型分析运行，单一调度者按管理员项目优先级、项目内紧急级和入队时间选择下一任务。等待老化规则避免长期饥饿；不抢占正在执行的
+                  Snakemake job。
+                </li>
+                <li>
+                  <strong>资源：</strong
+                  >线程和内存额度来自经过验证的预设及历史估算；在阶段边界重新准入。共享慢盘上的并行以磁盘吞吐为约束，初筛和大型参考库查询同样计入资源预算。
+                </li>
+                <li>
+                  <strong>SSH 断线：</strong
+                  >显示缓存状态与连接更新时间，远端任务继续存在。重连后联合
+                  state、tmux、PID 和 boot ID 核对，不据此直接判为分析失败。
+                </li>
+                <li>
+                  <strong>指纹暂不可验：</strong
+                  >返回可重试状态并保留数据集原状态；确认 link 或 target
+                  变化才标记 stale，要求新建版本。
+                </li>
+                <li>
+                  <strong>任务中断：</strong>已运行进程消失或机器重启时保留
+                  interrupted
+                  及产物。用户申请恢复后，验证输入、方案、软件、参考库和已完成输出，建立新
+                  attempt；只有完整且一致的产物可以复用。
+                </li>
+                <li>
+                  <strong>版本变化：</strong>新建方案和
+                  run，显式引用可复用产物。Snakemake
+                  的增量执行能力需要系统级版本与身份约束配合，不能仅凭输出文件存在判断可续跑。
+                </li>
+                <li>
+                  <strong>阶段快报：</strong
+                  >作为独立、不可变的报告版本保存。完整分析未完成或失败时保持其原范围和标识；资源不足不会静默删去用户选择的目标。
+                </li>
+              </ul>
+            </div>
+          </details>
+          <details>
+            <summary>D · 设计取舍与验证边界</summary>
+            <div class="detail-body">
+              <div
+                class="table-wrap"
+                tabindex="0"
+                role="group"
+                aria-label="设计取舍表，窄屏可横向滚动"
+              >
+                <table class="wide-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">原稿中的设想</th>
+                      <th scope="col">本版决定与原因</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>强制输出完整 CoT</td>
+                      <td>
+                        改为结构化决策依据：使用了哪些证据、适用哪些规则、存在何种矛盾与缺失。可审计性建立在来源和可复算事实之上。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>GMM、贝叶斯网络、GNN 直接给出概率</td>
+                      <td>
+                        近期采用审核规则和明确的支持程度；当前未建立训练、校准和独立验证数据，不承诺概率推断效果。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>统一同一性阈值或统一模糊化阈值</td>
+                      <td>
+                        保留类群特异的标准及版本；临界样本报告差异、覆盖和缺失条件，交由补证或复核。依据
+                        <a href="https://ictv.global/about/code"
+                          >ICTV Code 3.19–3.20</a
+                        >。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>内置 EVE 黑名单即可排除</td>
+                      <td>
+                        使用有来源的可疑模式与补证清单。EVE、污染及组装问题分别处理，单个工具结果不能覆盖全部判定。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>强化学习调度与每月自动模型更新</td>
+                      <td>
+                        不纳入本轮路线。先建立稳定队列、运行历史、专家反馈与回归评测；资料和规则经审核发布。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>专家反对后自动触发重跑</td>
+                      <td>
+                        反馈先形成修订或补证提议；纯解释修订无需重算，新增计算须展示影响并确认，保留原记录。
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>所有专业能力都拆成 Agent</td>
+                      <td>
+                        分类查询采用检索，固定算法采用工具，多证据说明使用主
+                        Agent；subagent 只服务于确有收益且可独立验收的专项任务。
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="note">
+                本版未进行模型或病毒识别性能测试，不提供准确率、节省时间或可并行任务数的实测承诺。后续上线门槛由冻结评测集、业务风险和计算资源共同确定。
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section id="roadmap">
+          <h2>
+            <span class="num">09 / 分阶段建设路线</span
+            >先把事实和知识管好，再逐步替换模型
+          </h2>
+          <p>
+            各阶段以验收门槛推进，不预设未经评估的完成日期。建设分成三条可并行的轨：领域资产轨（本地库、知识、规则）、业务闭环轨（项目、上传、队列、报告）、模型替换轨（provider、量化模型、微调数据）。知识与本地库不再等待全部页面完成才开工。交互和
+            Harness 适配只维持闭环，不单独立项做「更强的通用 Agent」。
+          </p>
+          <div
+            class="table-wrap"
+            tabindex="0"
+            role="group"
+            aria-label="实施路线表，窄屏可横向滚动"
+          >
+            <table class="wide-table">
+              <thead>
+                <tr>
+                  <th scope="col">阶段</th>
+                  <th scope="col">交付目标</th>
+                  <th scope="col">完成标志</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>0 · 现状基线</td>
+                  <td>能力清单、参考库盘点、典型数据与对话评测集。</td>
+                  <td>
+                    代码支持和运行验证分开记录；每项能力有可复现的验收入口。
+                  </td>
+                </tr>
+                <tr>
+                  <td>1 · 业务与执行闭环</td>
+                  <td>项目权限、上传、受控参数、智能模式修正、队列与恢复。</td>
+                  <td>
+                    输入到报告有真实项目归属；快报与完整目标并行呈现；恢复不重复执行。
+                  </td>
+                </tr>
+                <tr>
+                  <td>2 · 知识与本地库</td>
+                  <td>
+                    与阶段 1 并行：四类知识资产、参考库发布目录、统一检索、审核发布和引用校验。
+                  </td>
+                  <td>
+                    每条可信引用可回到具体版本和原文位置；空检索和冲突有明确处理。
+                  </td>
+                </tr>
+                <tr>
+                  <td>3 · 研判与审核</td>
+                  <td>候选级证据、规则融合、引用式研判及专家修订。</td>
+                  <td>冲突和缺失不被隐藏；报告数值可复核，审核可追溯。</td>
+                </tr>
+                <tr>
+                  <td>4 · 本地模型与微调</td>
+                  <td>
+                    provider 解耦（含 DeepSeek Harness 适配）、量化模型影子评测、按能力切换；用审核修订积累微调包。
+                  </td>
+                  <td>
+                    本地默认可用；模型失败不影响确定性流程；迁移前后可同条件比较。
+                  </td>
+                </tr>
+                <tr>
+                  <td>5 · 条件接入专项能力</td>
+                  <td>通过验证的 ICTV 等专项工具或 Agent。</td>
+                  <td>
+                    服务健康、输入输出、证据格式、权限及失败处理均有专项验收。
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            具体代码落点、最小接口变化、验收案例、迁移和回退方式、知识库建设步骤见
+            <a href="bioagent-implementation-roadmap.md">分阶段实施清单 v1.1</a
+            >。现状评价见
+            <a href="XvirMind_建设情况总结评价_20260910.html">建设情况总结</a
+            >。本地模型的硬件、量化方案与推理后端在阶段 4 依据现场算力选定；阶段 0
+            先记录可用资源和参考库版本。
+          </p>
+        </section>
+
+        <section id="sources">
+          <h2>
+            <span class="num">10 / 依据与术语</span>设计建议与事实来源分别记录
+          </h2>
+          <p class="note">
+            外部资料用于限定分类、工具与协议的职责。战略定位（可替换 Harness、知识与本地库为壁垒、Agent
+            与计算分离）来自 2026-09 项目讨论；组件拆分和实施顺序是结合本仓库的工程设计，不代表外部资料背书。外部链接联网时可打开，离线阅读不受影响。
+          </p>
+          <ol class="source-list">
+            <li>
+              <strong>本地源码与部署说明：</strong
+              ><code>AGENTS.md</code>、根目录及 agent README；agent 的
+              catalog、compiler、runtime、worker、runner、conversation
+              contract；WebUI 的 analysis models、router、report
+              evidence、Dashboard 和 AnalysisPage。核对日期与 commit
+              见工程附录。原始 <code>design.md</code> 为需求参考，保留不改。
+            </li>
+            <li>
+              <a href="https://ictv.global/about/code"
+                >ICTV · International Code of Virus Classification and
+                Nomenclature</a
+              >，页面标注 March 2025，查阅于
+              2026-09-09。用于类群划界标准、分类名称认可和规则适用边界。
+            </li>
+            <li>
+              <a href="https://www.nature.com/articles/s41587-020-00774-7"
+                >Nayfach 等 · CheckV assesses the quality and completeness of
+                metagenome-assembled viral genomes</a
+              >，Nature
+              Biotechnology，DOI：10.1038/s41587-020-00774-7。用于完整度、宿主污染评估及结果解释边界。
+            </li>
+            <li>
+              <a
+                href="https://blast.ncbi.nlm.nih.gov/doc/blast-help/blastdatabases.html"
+                >NCBI · BLAST 数据库说明</a
+              >，查阅于
+              2026-09-09。用于核酸、蛋白及派生搜索库的用途区分；部署实例采用何种数据库须另行盘点。
+            </li>
+            <li>
+              <a href="https://modelcontextprotocol.io/docs/learn/architecture"
+                >Model Context Protocol · Architecture overview</a
+              >，查阅于 2026-09-09。用于 host、client、server 与工具访问边界。
+            </li>
+          </ol>
+          <p class="note">
+            <strong>术语：</strong
+            >数据集版本＝一次被冻结的输入描述；方案版本＝经编译的目标、依赖与参数；run＝一次确认后登记的分析执行；attempt＝同一冻结执行条件下的一次运行尝试；artifact＝有类型和文件角色约束的分析产物；证据＝有来源定位的观测或依据；知识快照＝经审核发布的固定版本知识集合。
+          </p>
+        </section>
+        <footer>
+          BioAgent · 顶层设计 1.0 · 2026-09-09<br />正文为建设目标，工程附录为源码现状对照。配套实施清单与本文件共同维护。
+        </footer>
+      </main>
+    </div>
+    <script>
+      const appendices = [...document.querySelectorAll("#appendix details")];
+      const toggle = document.getElementById("toggle-appendices");
+      function syncToggle() {
+        const allOpen = appendices.every((item) => item.open);
+        toggle.textContent = allOpen ? "收起全部附录" : "展开全部附录";
+        toggle.setAttribute("aria-expanded", String(allOpen));
+      }
+      toggle.addEventListener("click", () => {
+        const open = !appendices.every((item) => item.open);
+        appendices.forEach((item) => {
+          item.open = open;
+        });
+        syncToggle();
+      });
+      appendices.forEach((item) => item.addEventListener("toggle", syncToggle));
+      document
+        .getElementById("print-document")
+        .addEventListener("click", () => window.print());
+      let beforePrint = null;
+      window.addEventListener("beforeprint", () => {
+        if (beforePrint === null)
+          beforePrint = appendices.map((item) => item.open);
+        appendices.forEach((item) => {
+          item.open = true;
+        });
+      });
+      window.addEventListener("afterprint", () => {
+        if (beforePrint !== null)
+          appendices.forEach((item, index) => {
+            item.open = beforePrint[index];
+          });
+        beforePrint = null;
+        syncToggle();
+      });
+    </script>
+  </body>
+</html>

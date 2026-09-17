@@ -1,0 +1,13 @@
+# 符号链接的批次运行目录（实际数据在 legacy 路径）
+batches/pxy_V350399508
+
+# 标准化表（体积可能较大）
+harmonized/*.parquet
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# IDE
+.claude/

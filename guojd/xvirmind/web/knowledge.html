@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>XvirMind 知识库与第二波 Demo</title>
+<style>
+:root { --ink:#16324f; --text:#2e4355; --muted:#5b6778; --teal:#087f83; --line:#dce5ec; --ok:#157a45; --warn:#b45309; --bad:#b42318; }
+* { box-sizing:border-box; }
+body { margin:0; font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; color:var(--text); background:#f6f8fa; }
+header { background:#16324f; color:#fff; padding:18px 28px; }
+header h1 { margin:0; font-size:20px; }
+header p { margin:6px 0 0; opacity:.85; font-size:13px; }
+main { max-width:1100px; margin:0 auto; padding:20px 24px 64px; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+section { background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+h2 { margin:0 0 8px; font-size:16px; color:var(--ink); }
+.full { grid-column:1/-1; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th,td { border-top:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
+button,select,input,textarea { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:6px; }
+button { background:var(--teal); color:#fff; border:0; cursor:pointer; }
+button.ghost { background:#fff; color:var(--ink); border:1px solid var(--line); }
+.row { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+.ok { color:var(--ok); font-weight:600; }
+.warn { color:var(--warn); }
+.bad { color:var(--bad); }
+pre { background:#f1f5f9; padding:10px; border-radius:8px; overflow:auto; max-height:240px; font-size:12px; }
+.muted { color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>知识库 Demo · 第二波治理</h1>
+  <p>本地 kb.jsonl 子集发布 · 项目权限 · 分块上传 · 优先级队列 · 候选规则 · 专家打回 · RVA 实跑状态。不经过 cyclone 写权限。</p>
+</header>
+<main>
+  <section>
+    <h2>知识包</h2>
+    <div id="packs" class="muted">加载中…</div>
+  </section>
+  <section>
+    <h2>RVA 实跑（KP641127 / Flaviviridae）</h2>
+    <div id="rva" class="muted">加载中…</div>
+  </section>
+  <section>
+    <h2>项目成员</h2>
+    <div id="members"></div>
+    <div class="row">
+      <input id="newUser" placeholder="用户名" />
+      <select id="newRole"><option>analyst</option><option>reviewer</option><option>viewer</option><option>owner</option></select>
+      <button type="button" onclick="addMember()">加入</button>
+    </div>
+  </section>
+  <section>
+    <h2>分块上传到 testdata/uploads</h2>
+    <input id="file" type="file" />
+    <div class="row"><button type="button" onclick="uploadFile()">上传</button><span id="uploadStatus" class="muted"></span></div>
+  </section>
+  <section class="full">
+    <h2>W1–W4+W6 时长估计与队列</h2>
+    <div class="row">
+      <button type="button" onclick="enqueueAll()">入队第一波计算</button>
+      <span class="muted">小样本 2 万对 reads；W2/W4 仍受数据库检索主导。</span>
+    </div>
+    <div id="jobs"></div>
+  </section>
+  <section>
+    <h2>候选矛盾 / 完整性</h2>
+    <button type="button" class="ghost" onclick="runRules()">评估 demo 候选</button>
+    <div id="rules"></div>
+  </section>
+  <section>
+    <h2>专家审核打回</h2>
+    <textarea id="reason" rows="3">冲突候选未消解，打回补齐 locator 后再审。</textarea>
+    <div class="row">
+      <button type="button" onclick="rejectRun()">打回</button>
+      <button type="button" class="ghost" onclick="approveRun()">通过</button>
+    </div>
+    <div id="reviews"></div>
+  </section>
+  <section class="full">
+    <h2>交付报告字段预览</h2>
+    <p class="muted">定种结论 · RVA 摘要 · kb.jsonl 引用 · 规则命中 · 审核意见。完整 HTML：<a href="/api/ops/report/preview" target="_blank">/api/ops/report/preview</a></p>
+    <div id="report"></div>
+  </section>
+</main>
+<script>
+const api = (path, opts={}) => fetch(path, { headers: { 'Content-Type': 'application/json', 'x-user': 'guojindan', ...(opts.headers||{}) }, ...opts }).then(async r => {
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || r.statusText);
+  return data;
+});
+function tbl(headers, rows) {
+  return `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+let snap = null;
+async function refresh() {
+  snap = await api('/api/ops/snapshot');
+  const packs = snap.knowledge_releases || [];
+  document.getElementById('packs').innerHTML = packs.length ? tbl(['pack','families','kb records','status'], packs.map(p => [p.pack_id, (p.families||[]).join(', '), p.artifacts?.['kb.jsonl']?.records ?? '—', p.status])) : '尚无发布。先运行 publish_knowledge_pack.py';
+  const rva = snap.rva_demo || {};
+  document.getElementById('rva').innerHTML = `<p>状态：<b>${rva.status}</b>　pid ${rva.pid ?? '—'}　运行中 ${rva.running}</p><p>GPU：${(rva.gpu?.devices||[]).join('<br>') || '未检测到'}</p><pre>${(rva.log_tail||'暂无日志').replace(/</g,'&lt;')}</pre>`;
+  const members = [];
+  (snap.projects?.projects||[]).forEach(p => p.members.forEach(m => members.push([p.id, m.user, m.role])));
+  document.getElementById('members').innerHTML = tbl(['项目','用户','角色'], members);
+  const jobs = snap.jobs?.jobs || [];
+  document.getElementById('jobs').innerHTML = tbl(['任务','优先级','状态','估计(min)','检查点','操作'], jobs.map(j => [
+    j.kind, j.priority, j.status, j.estimate?.wall_min || '—', j.checkpoint || '—',
+    `<button class="ghost" onclick="pause('${j.id}')">暂停</button> <button class="ghost" onclick="recover('${j.id}')">恢复</button>`
+  ]));
+  const reviews = snap.reviews?.reviews || [];
+  document.getElementById('reviews').innerHTML = reviews.length ? tbl(['决定','人','原因'], reviews.map(r => [r.decision, r.actor, r.reason])) : '<p class="muted">暂无审核</p>';
+  const preview = await api('/api/ops/report/preview');
+  document.getElementById('report').innerHTML = preview.html || '<p class="muted">还没有 specialist.json，先构建 demo。</p>';
+}
+async function addMember() {
+  await api('/api/ops/projects/proj-testdata/members', { method:'POST', body: JSON.stringify({ user: document.getElementById('newUser').value, role: document.getElementById('newRole').value })});
+  refresh();
+}
+async function enqueueAll() {
+  for (const kind of ['workflow1','workflow2','workflow3','workflow4','workflow6']) {
+    await api('/api/ops/jobs', { method:'POST', body: JSON.stringify({ kind, priority: kind==='workflow1'?'high':'standard' })});
+  }
+  refresh();
+}
+async function pause(id) { await api(`/api/ops/jobs/${id}/pause`, { method:'POST' }); refresh(); }
+async function recover(id) { await api(`/api/ops/jobs/${id}/recover`, { method:'POST' }); refresh(); }
+async function runRules() {
+  const data = await api('/api/ops/rules/evaluate', { method:'POST', body: JSON.stringify({ candidates: [
+    { id:'KP641127', family:'Flaviviridae', rva_family:'Flaviviridae', taxonomy:{ locator:'kb.jsonl#Flaviviridae' }, evidence:[{type:'kb'}], rva_status:'running' },
+    { id:'conflict-demo', family:'Coronaviridae', rva_family:'Flaviviridae', evidence:[], rva_status:'NOT_RUN' }
+  ]})});
+  document.getElementById('rules').innerHTML = `<p>完整性：<b>${data.completeness}</b></p>` + tbl(['候选','规则','级别','说明'], (data.findings||[]).map(f => [f.candidate_id, f.code, f.severity, f.message]));
+}
+async function rejectRun() {
+  await api('/api/ops/reviews', { method:'POST', body: JSON.stringify({ run_id:'demo-kp641127', decision:'reject', reason: document.getElementById('reason').value })});
+  refresh();
+}
+async function approveRun() {
+  await api('/api/ops/reviews', { method:'POST', body: JSON.stringify({ run_id:'demo-kp641127', decision:'approve', reason: '通过' })});
+  refresh();
+}
+async function uploadFile() {
+  const file = document.getElementById('file').files[0];
+  if (!file) return;
+  const st = document.getElementById('uploadStatus');
+  st.textContent = '初始化…';
+  const init = await api('/api/ops/uploads/init', { method:'POST', body: JSON.stringify({ filename: file.name, size: file.size })});
+  const chunk = init.chunk_size || 4*1024*1024;
+  let index = 0;
+  for (let offset=0; offset<file.size; offset+=chunk) {
+    const form = new FormData();
+    form.append('index', String(index));
+    form.append('file', file.slice(offset, offset+chunk));
+    const res = await fetch(`/api/ops/uploads/${init.id}/chunk`, { method:'POST', headers:{ 'x-user':'guojindan' }, body: form });
+    if (!res.ok) throw new Error('chunk failed');
+    index += 1;
+    st.textContent = `已传 ${Math.min(offset+chunk, file.size)} / ${file.size}`;
+  }
+  await api(`/api/ops/uploads/${init.id}/complete`, { method:'POST' });
+  st.textContent = '完成';
+  refresh();
+}
+refresh().catch(err => document.getElementById('packs').textContent = err.message);
+</script>
+</body>
+</html>

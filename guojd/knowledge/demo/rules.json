@@ -1,0 +1,35 @@
+{
+  "candidate_count": 2,
+  "finding_count": 4,
+  "completeness": "blocked",
+  "findings": [
+    {
+      "candidate_id": "conflict-demo",
+      "code": "FAMILY_CONFLICT",
+      "severity": "error",
+      "message": "W2 科 Coronaviridae 与 RVA 科 Flaviviridae 不一致",
+      "requires_expert_review": true
+    },
+    {
+      "candidate_id": "conflict-demo",
+      "code": "INCOMPLETE_EVIDENCE",
+      "severity": "warn",
+      "message": "无 kb.jsonl locator，不能作为正式定种引用",
+      "requires_expert_review": false
+    },
+    {
+      "candidate_id": "conflict-demo",
+      "code": "RVA_NOT_CONFIRMED",
+      "severity": "info",
+      "message": "RVA 未确认实跑或未完成",
+      "requires_expert_review": false
+    },
+    {
+      "candidate_id": "conflict-demo",
+      "code": "INCOMPLETE_EVIDENCE",
+      "severity": "warn",
+      "message": "缺少证据条目",
+      "requires_expert_review": false
+    }
+  ]
+}

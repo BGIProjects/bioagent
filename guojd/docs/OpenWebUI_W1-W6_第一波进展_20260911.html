@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Open WebUI 第二波进展 · 2026-09-11</title>
+<style>
+:root { --ink:#16324f; --text:#2e4355; --muted:#5b6778; --teal:#087f83; --line:#dce5ec; --ok:#157a45; --warn:#b45309; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font:15px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; color:var(--text); max-width:960px; margin:0 auto; padding:40px 28px 80px; }
+h1 { font-size:24px; color:var(--ink); margin-bottom:8px; }
+h2 { font-size:19px; color:var(--ink); margin:32px 0 12px; padding-bottom:6px; border-bottom:2px solid var(--teal); }
+p,li { margin-bottom:8px; }
+ul,ol { margin:8px 0 14px 22px; }
+.meta { color:var(--muted); font-size:13px; margin-bottom:18px; }
+.banner { background:#e6f4f4; border-left:4px solid var(--teal); padding:14px 16px; margin:14px 0 22px; }
+table { width:100%; border-collapse:collapse; font-size:13px; margin:12px 0 18px; border:1px solid var(--line); }
+th { background:#ecf3f4; text-align:left; padding:8px 10px; }
+td { padding:8px 10px; border-top:1px solid var(--line); vertical-align:top; }
+code { background:#f1f5f9; padding:1px 5px; border-radius:4px; }
+.ok { color:var(--ok); font-weight:600; }
+.wait { color:var(--warn); font-weight:600; }
+</style>
+</head>
+<body>
+<h1>第二波进展：治理 + 知识包 + RVA 实跑 + 报告字段</h1>
+<p class="meta">2026-09-11　|　第一波 overlay 仍有效；本页覆盖第二波清单</p>
+<div class="banner">
+  <span class="wait">cyclone 合入仍需所有者。</span> 当前账号对 <code>/data/bioagent</code> 无写权限且 sudo 要密码。Demo 在 <code>http://127.0.0.1:3080/knowledge</code> 可立即验收。合入命令不变：<code>bash deploy/openwebui_firstwave/sync_to_cyclone.sh</code> 后重启 5173/8080/8001。
+</div>
+<h2>清单对照</h2>
+<table>
+<thead><tr><th>第二波项</th><th>状态</th><th>落点</th></tr></thead>
+<tbody>
+<tr><td>合入 /data/bioagent 并重启</td><td><span class="wait">受阻</span></td><td>sync 脚本已含 overlay；live 仍是旧树。请 lihuyang 执行并重启三端口。</td></tr>
+<tr><td>项目/成员权限</td><td><span class="ok">已做</span></td><td>默认项目 proj-testdata；角色 owner/analyst/reviewer/viewer；无权限则 403。</td></tr>
+<tr><td>浏览器大文件分块上传</td><td><span class="ok">已做</span></td><td>4MiB chunk，完成后落到 testdata/uploads。3080 demo 与分析页「治理」都可调。</td></tr>
+<tr><td>优先级队列与受控恢复</td><td><span class="ok">已做</span></td><td>emergency/high/standard/low；pause；从 checkpoint 恢复。预置 W1 暂停在 megahit。</td></tr>
+<tr><td>知识包发布流水线</td><td><span class="ok">已做</span></td><td><code>publish_knowledge_pack.py</code> → knowledge/releases/&lt;id&gt;/manifest.json</td></tr>
+<tr><td>候选矛盾/完整性规则</td><td><span class="ok">已做</span></td><td>MISSING_TAXONOMY / FAMILY_CONFLICT / INCOMPLETE_EVIDENCE / RVA_NOT_CONFIRMED</td></tr>
+<tr><td>专家审核打回</td><td><span class="ok">已做</span></td><td>reject 必须写原因；demo 已打回 conflict-demo</td></tr>
+<tr><td>抽样子 W1–W4+W6 时长与排队</td><td><span class="ok">已估计并入队</span></td><td>2 万对 reads 的墙钟区间写入队列。未在 cyclone 上强行跑满 NT/Kraken，避免占死共享库。</td></tr>
+<tr><td>RVA GPU/rnavirus 实跑</td><td><span class="ok">已启动</span></td><td>rnavirus python · rva_annotate.py · KP641127 · --fam Flaviviridae。状态见 3080 页。</td></tr>
+<tr><td>报告写入定种/RVA/kb 引用</td><td><span class="ok">已做</span></td><td>delivery HTML 注入 specialist 段；预览 knowledge/demo/delivery_report_preview.html</td></tr>
+<tr><td>知识库建设方案 + demo</td><td><span class="ok">已做</span></td><td>docs/知识库建设方案_20260911.html ；demo http://127.0.0.1:3080/knowledge</td></tr>
+</tbody>
+</table>
+<h2>立即打开</h2>
+<ul>
+  <li>知识/治理 Demo：<code>http://127.0.0.1:3080/knowledge</code></li>
+  <li>建设方案：<code>docs/知识库建设方案_20260911.html</code></li>
+  <li>报告预览：<code>knowledge/demo/delivery_report_preview.html</code></li>
+  <li>RVA 日志：<code>xvirmind/runs/rva/kp641127/rva.log</code></li>
+</ul>
+<h2>合入 cyclone 后你在 5173 看到的</h2>
+<ol>
+  <li>文件树根目录 testdata（单对 / 四文件 / contig）。</li>
+  <li>右侧「知识/专项」与「治理」。</li>
+  <li>下载报告时自动附定种、RVA、kb.jsonl 引用（若 specialist.json 存在）。</li>
+</ol>
+<p>本地量化模型、DeepSeek Harness、W5/W8/W9、RL 仍不在本路线。</p>
+</body>
+</html>

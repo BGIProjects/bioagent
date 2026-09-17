@@ -1,0 +1,181 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>VAS-2.0 实评 v120（不及格）</title>
+<style>
+:root { --bg:#fff; --fg:#1a1a2e; --muted:#555; --accent:#2563eb; --al:#dbeafe; --bd:#e2e8f0; --card:#f8fafc; --code:#f1f5f9; --green:#16a34a; --orange:#ea580c; --red:#dc2626; --purple:#7c3aed; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans CJK SC",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;font-size:14.5px;max-width:1000px;margin:0 auto;padding:36px 22px 90px}
+h1{font-size:24px;font-weight:700;margin-bottom:6px}
+h2{font-size:19px;font-weight:700;margin:34px 0 12px;padding-bottom:7px;border-bottom:2px solid var(--accent)}
+h3{font-size:15.5px;font-weight:600;margin:20px 0 8px;color:var(--accent)}
+p,li{margin-bottom:5px} ul,ol{margin:6px 0 12px 20px}
+code{background:var(--code);padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace;font-size:12px}
+pre{background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:8px;overflow-x:auto;font-size:12px;line-height:1.5;margin:10px 0}
+table{width:100%;border-collapse:collapse;margin:10px 0 14px;font-size:12px;border:1px solid var(--bd)}
+th{background:var(--accent);color:#fff;padding:7px 8px;text-align:left;font-weight:600}
+td{padding:6px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
+tr:nth-child(even){background:#f8fafc}
+.callout{background:var(--al);border-left:4px solid var(--accent);padding:12px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+.callout-warn{background:#fef3c7;border-left-color:var(--orange)}
+.callout-key{background:#ede9fe;border-left-color:var(--purple)}
+.callout-fail{background:#fee2e2;border-left-color:var(--red)}
+.callout-ok{background:#d1fae5;border-left-color:var(--green)}
+.meta{color:var(--muted);font-size:13px;margin-bottom:14px}
+.toc{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:14px 18px;margin:14px 0}
+.toc a{color:var(--accent);text-decoration:none}
+.badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600;margin-right:3px}
+.ref{background:#e0e7ff;color:#3730a3}.a{background:#dbeafe;color:#1e40af}.b{background:#ede9fe;color:#6b21a8}.c{background:#d1fae5;color:#065f46}
+.hit{color:#157a3d;font-weight:600}.miss{color:#a30000;font-weight:600}.zero{color:#a30000;font-weight:700}
+.kpi{display:inline-block;border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin:3px;min-width:100px;text-align:center;background:var(--card)}
+.kpi .n{font-size:20px;font-weight:700;color:var(--accent)}.kpi .l{font-size:10.5px;color:var(--muted)}
+.kpi.bad .n{color:var(--red)}
+.layer{border:2px solid;border-radius:10px;padding:12px 14px;margin:12px 0}
+.tabs{display:flex;gap:.35rem;flex-wrap:wrap;margin:1rem 0}
+.tab{padding:.4rem .75rem;border:1px solid #ddd;border-radius:6px;background:#fafafa;cursor:pointer;font-size:.84rem;font-family:inherit}
+.tab.active{background:#2d5aa0;color:#fff;border-color:#2d5aa0;font-weight:600}
+.page{display:none}.page.active{display:block}
+.foot{font-size:11.5px;color:var(--muted);margin-top:24px;border-top:1px solid var(--bd);padding-top:12px}
+</style></head><body>
+<h1>VAS-2.0 实评案例：v120</h1>
+<p style="font-size:18px;color:var(--red);font-weight:700">官方 VAS = 20.2　·　不及格（&lt; 60）</p>
+<div class="meta">run <code>analysis-20260813-160906-0f9eda85</code>　|　<strong>样本不具代表性</strong>，仅演示全局指标卡　|　
+<a href="./ViriBench_VAS2_全局评估方案.html">评估方案</a>　|　旧乐观高分作废</div>
+
+<div class="callout callout-fail">
+<strong>不及格原因（结构化）：</strong>
+L5 全部 15 条=0（未跑扰动/稳定性）；L6 全部 13 条=0（无人机闭环）；
+L2 18 条中仅 2 条有非零分（无 virus_list/矛盾/EVE/四层结论）；
+L1 因 W3–W6、evidence.json、断点续跑、紧急通道、多样本未证明而大幅扣分。
+单次 W1+W2 成功不能抬高全局分。
+</div>
+
+<div class="kpi bad"><div class="n">20.2</div><div class="l">VAS official</div></div>
+<div class="kpi"><div class="n">58.0</div><div class="l">L1</div></div>
+<div class="kpi"><div class="n">7.4</div><div class="l">L2</div></div>
+<div class="kpi"><div class="n">37.2</div><div class="l">L3</div></div>
+<div class="kpi"><div class="n">21.7</div><div class="l">L4</div></div>
+<div class="kpi bad"><div class="n">0</div><div class="l">L5</div></div>
+<div class="kpi bad"><div class="n">0</div><div class="l">L6</div></div>
+
+<pre>0.18×58.0 + 0.28×7.4 + 0.10×37.2 + 0.18×21.7 + 0.16×0 + 0.10×0 = 20.15
+观测备忘（不计分外推）：墙钟 12.74h；峰值~108GiB；路由 B；代表序列 8；脊椎动物 0；returncode=0
+</pre>
+
+<div class="tabs">
+<button class="tab active" data-l="L1">L1 58</button>
+<button class="tab" data-l="L2">L2 7</button>
+<button class="tab" data-l="L3">L3 37</button>
+<button class="tab" data-l="L4">L4 22</button>
+<button class="tab" data-l="L5">L5 0</button>
+<button class="tab" data-l="L6">L6 0</button>
+</div>
+
+<div class="page active" id="p-L1"><h2>L1　<span class="badge ref">ScienceAgentBench + BioAgent Bench</span></h2>
+<table><thead><tr><th>ID</th><th>指标</th><th>权重</th><th>分</th><th>理由</th></tr></thead><tbody><tr><td><code>L1.VER</code></td><td>可执行完成率 Valid Execution</td><td>0.080</td><td class='hit'>100</td><td>returncode=0 completed</td></tr>
+<tr><td><code>L1.SCR</code></td><td>步骤完成率 Step Completion</td><td>0.080</td><td class='hit'>100</td><td>W1+W2 阶段均完成且命令/IO 匹配</td></tr>
+<tr><td><code>L1.PFR</code></td><td>路径忠实度 Path Fidelity</td><td>0.070</td><td class='hit'>100</td><td>plan 与执行一致</td></tr>
+<tr><td><code>L1.FAR</code></td><td>最终产物率 Final Artifact</td><td>0.070</td><td class='hit'>100</td><td>分类 CSV/XLSX/FASTA 存在</td></tr>
+<tr><td><code>L1.TPF</code></td><td>工具参数忠实度</td><td>0.070</td><td class='hit'>100</td><td>printshellcmds 显示标准参数</td></tr>
+<tr><td><code>L1.W1</code></td><td>W1 上游流程覆盖</td><td>0.050</td><td class='hit'>100</td><td>upstream ok</td></tr>
+<tr><td><code>L1.W2</code></td><td>W2 病毒鉴定覆盖</td><td>0.050</td><td class='hit'>100</td><td>classification ok</td></tr>
+<tr><td><code>L1.W3</code></td><td>W3 宿主鉴定覆盖</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L1.W4</code></td><td>W4 Kraken/Bracken 覆盖</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L1.W5</code></td><td>W5 病毒定量覆盖</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L1.W6</code></td><td>W6 病毒注释覆盖</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L1.EVJ</code></td><td>evidence.json 汇聚</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L1.BPR</code></td><td>断点续跑成功率</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L1.MSL</code></td><td>多样本并行正确性</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L1.SLA_S</code></td><td>标准通道时限</td><td>0.050</td><td class='hit'>100</td><td>12.74h≤16h</td></tr>
+<tr><td><code>L1.SLA_E</code></td><td>紧急通道时限</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L1.PSF</code></td><td>失败即停</td><td>0.030</td><td class='hit'>100</td><td>runner 失败即停设计</td></tr>
+<tr><td><code>L1.AUD</code></td><td>命令审计轨迹</td><td>0.030</td><td class='hit'>100</td><td>telemetry/benchmark/log 齐</td></tr></tbody></table></div>
+<div class="page" id="p-L2"><h2>L2　<span class="badge ref">GeneBench-Pro</span></h2>
+<table><thead><tr><th>ID</th><th>指标</th><th>权重</th><th>分</th><th>理由</th></tr></thead><tbody><tr><td><code>L2.REC</code></td><td>已知病毒检出召回率</td><td>0.070</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.PREC</code></td><td>已知病毒检出精确率</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.F1</code></td><td>检出 F1</td><td>0.070</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.NOV</code></td><td>属内新种判定 F1</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.FPR</code></td><td>假阳性过滤率</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.TAX_F</code></td><td>科级分类准确率</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.TAX_G</code></td><td>属级分类准确率</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.TAX_S</code></td><td>种级分类准确率</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.CON_R</code></td><td>矛盾模式召回率</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.CON_P</code></td><td>矛盾模式精确率</td><td>0.040</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.EVE</code></td><td>EVE 排除率</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.BND</code></td><td>阈值边界处理正确率</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.CHG</code></td><td>嵌合体/分节段处理</td><td>0.040</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.GRD</code></td><td>四层结论分级正确率</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.CAL</code></td><td>置信度校准 (1−ECE)</td><td>0.040</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.EVC</code></td><td>evidence.json 字段完备率</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L2.OIR</code></td><td>上游数值合理性</td><td>0.050</td><td class='hit'>85</td><td>保留率/N50/contig 数可观测合理</td></tr>
+<tr><td><code>L2.CNS</code></td><td>多库证据一致性处理</td><td>0.080</td><td class='miss'>40</td><td>多库字段有，无冲突引擎→弱分</td></tr></tbody></table></div>
+<div class="page" id="p-L3"><h2>L3　<span class="badge ref">τ-Bench</span></h2>
+<table><thead><tr><th>ID</th><th>指标</th><th>权重</th><th>分</th><th>理由</th></tr></thead><tbody><tr><td><code>L3.RAC</code></td><td>路径选择正确率</td><td>0.120</td><td class='hit'>70</td><td>规则选 B 合理但缺专家金标集</td></tr>
+<tr><td><code>L3.EHR</code></td><td>紧急样本响应率</td><td>0.100</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L3.DPR</code></td><td>深度路径触发正确率</td><td>0.070</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L3.CR</code></td><td>约束识别</td><td>0.060</td><td class='hit'>100</td><td>mode=auto 记录</td></tr>
+<tr><td><code>L3.CA</code></td><td>约束适应</td><td>0.080</td><td class='hit'>100</td><td>route B full_analysis</td></tr>
+<tr><td><code>L3.TC</code></td><td>代价说明</td><td>0.050</td><td class='hit'>90</td><td>reason_codes 完备</td></tr>
+<tr><td><code>L3.TBR</code></td><td>调度耗时收益</td><td>0.080</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L3.RUT</code></td><td>资源利用率</td><td>0.060</td><td class='miss'>55</td><td>长耗时利用率一般</td></tr>
+<tr><td><code>L3.ADM</code></td><td>资源准入门控</td><td>0.070</td><td class='hit'>100</td><td>admission_ok</td></tr>
+<tr><td><code>L3.MRR</code></td><td>误路由恢复率</td><td>0.070</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L3.RCK</code></td><td>路由一致性 pass^k</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L3.DDL</code></td><td>截止期达成率</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L3.EST</code></td><td>历史资源估计质量</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L3.RLB</code></td><td>自优化调度就绪</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr></tbody></table></div>
+<div class="page" id="p-L4"><h2>L4　<span class="badge ref">LifeSciBench</span></h2>
+<table><thead><tr><th>ID</th><th>指标</th><th>权重</th><th>分</th><th>理由</th></tr></thead><tbody><tr><td><code>L4.GRD</code></td><td>证据锚定准确率</td><td>0.100</td><td class='miss'>55</td><td>分类可追溯但 QC 聚合错误</td></tr>
+<tr><td><code>L4.HAL</code></td><td>反幻觉率</td><td>0.080</td><td class='hit'>75</td><td>确定性报告降低幻觉</td></tr>
+<tr><td><code>L4.COT</code></td><td>推理链完整性</td><td>0.090</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L4.SUP</code></td><td>多证据支撑率</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L4.RUL</code></td><td>规则/ICTV 引用率</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L4.GRD4</code></td><td>报告内四层分级正确</td><td>0.070</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L4.CHK</code></td><td>审核清单覆盖率</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L4.RB_EV</code></td><td>Rubric-证据呈现</td><td>0.060</td><td class='miss'>35</td><td>有数值呈现缺量表</td></tr>
+<tr><td><code>L4.RB_CN</code></td><td>Rubric-矛盾检测</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L4.RB_TH</code></td><td>Rubric-阈值处理</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L4.RB_CL</code></td><td>Rubric-结论可操作性</td><td>0.050</td><td class='miss'>20</td><td>缺审核建议</td></tr>
+<tr><td><code>L4.FMT</code></td><td>多格式交付</td><td>0.050</td><td class='miss'>40</td><td>无 MD+JSON+PDF 三联</td></tr>
+<tr><td><code>L4.UNC</code></td><td>不确定性显式标注</td><td>0.060</td><td class='miss'>15</td><td>不确定性标注不足</td></tr>
+<tr><td><code>L4.TRC</code></td><td>审计可追溯</td><td>0.060</td><td class='hit'>70</td><td>可反查 telemetry</td></tr>
+<tr><td><code>L4.AGG</code></td><td>无错误聚合</td><td>0.100</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr></tbody></table></div>
+<div class="page" id="p-L5"><h2>L5　<span class="badge ref">BioAgent Bench 扰动</span></h2>
+<div class="callout callout-fail">未跑 corrupted/decoy/bloat/对抗/pass^k → <strong>15/15 = 0</strong></div>
+<table><thead><tr><th>ID</th><th>指标</th><th>权重</th><th>分</th><th>理由</th></tr></thead><tbody><tr><td><code>L5.COR</code></td><td>损坏输入检出率</td><td>0.100</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.DEC</code></td><td>诱饵排除率</td><td>0.100</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.PBR</code></td><td>抗 Prompt 膨胀</td><td>0.080</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.ADV_E</code></td><td>对抗 EVE 诱饵</td><td>0.070</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.ADV_C</code></td><td>对抗嵌合 contig</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.TRUNC</code></td><td>截断 reads 鲁棒</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.WDB</code></td><td>错误库版本检测</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.TOOL</code></td><td>输入检查工具调用率</td><td>0.080</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.SIL</code></td><td>禁静默成功</td><td>0.080</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.PASK</code></td><td>可靠性 pass^k</td><td>0.080</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.JAC</code></td><td>分类稳定性 Jaccard</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.PEA</code></td><td>数值稳定性 Pearson</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.CONC</code></td><td>并发压力正确性</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.SAFE</code></td><td>危险操作门禁</td><td>0.040</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L5.INJ</code></td><td>提示注入抵抗</td><td>0.040</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr></tbody></table></div>
+<div class="page" id="p-L6"><h2>L6　<span class="badge ref">人机闭环</span></h2>
+<div class="callout callout-fail">无 feedback UI / pitfall_log / 双盲接受率 → <strong>13/13 = 0</strong></div>
+<table><thead><tr><th>ID</th><th>指标</th><th>权重</th><th>分</th><th>理由</th></tr></thead><tbody><tr><td><code>L6.ACC</code></td><td>专家直接接受率</td><td>0.120</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L6.FIX</code></td><td>反馈修复率</td><td>0.120</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L6.DLT</code></td><td>反馈后准确率提升</td><td>0.100</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L6.EFF</code></td><td>修正轮次效率</td><td>0.080</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L6.FRM</code></td><td>反馈表单完整率</td><td>0.080</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L6.PIT</code></td><td>pitfall_log 覆盖率</td><td>0.080</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L6.OPT</code></td><td>optimization_log 可追溯</td><td>0.080</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L6.KAP</code></td><td>人机一致 κ</td><td>0.080</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L6.OVR</code></td><td>专家覆盖合理区间</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L6.TIM</code></td><td>专家耗时节省</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L6.RET</code></td><td>反馈留存合规</td><td>0.060</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L6.FSW</code></td><td>提示进化有效</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr>
+<tr><td><code>L6.UI</code></td><td>打回重跑闭环 UI</td><td>0.050</td><td class='zero'>0</td><td>未实现 / 未评测 / 无金标准 → 正式口径记 0</td></tr></tbody></table></div>
+
+<div class="callout callout-ok"><strong>过线路径：</strong>先补 L5 套件与 L6 闭环（合计权重 0.26，现在贡献 0），再补 L2 金标准与研判引擎，并接通 W3–W6 + evidence.json。</div>
+<div class="foot">2026-08-18 18:43 | VAS-2.0 case</div>
+<script>
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+ document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+ t.classList.add('active'); document.getElementById('p-'+t.dataset.l).classList.add('active');
+}));
+</script></body></html>

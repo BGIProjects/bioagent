@@ -1,0 +1,26 @@
+[
+  {
+    "id": "KP641127",
+    "family": "Flaviviridae",
+    "rva_family": "Flaviviridae",
+    "taxonomy": {
+      "locator": "virus_taxonomy/data/kb/kb.jsonl#Flaviviridae",
+      "name": "Flaviviridae"
+    },
+    "evidence": [
+      {
+        "type": "kb",
+        "locator": "taxon.family=Flaviviridae"
+      }
+    ],
+    "rva_status": "running"
+  },
+  {
+    "id": "conflict-demo",
+    "family": "Coronaviridae",
+    "rva_family": "Flaviviridae",
+    "taxonomy": {},
+    "evidence": [],
+    "rva_status": "NOT_RUN"
+  }
+]

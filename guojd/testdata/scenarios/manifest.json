@@ -1,0 +1,90 @@
+{
+  "version": "2026-09-16",
+  "pair_count": 200,
+  "scenarios": [
+    {
+      "id": "S1_single_pe",
+      "title": "单样本双端",
+      "paths": [
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S1_single_pe/demoA_R1.fastq.gz",
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S1_single_pe/demoA_R2.fastq.gz"
+      ],
+      "goals": [
+        "contig_filter",
+        "virus_summary"
+      ],
+      "notes": "1 个样本、1 对 FASTQ。用来测配对、建数据集、W1/W2。"
+    },
+    {
+      "id": "S2_multi_sample",
+      "title": "多样本双端",
+      "paths": [
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S2_multi_sample/demoA_R1.fastq.gz",
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S2_multi_sample/demoA_R2.fastq.gz",
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S2_multi_sample/demoB_R1.fastq.gz",
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S2_multi_sample/demoB_R2.fastq.gz"
+      ],
+      "goals": [
+        "contig_filter",
+        "virus_summary",
+        "microbe_summary"
+      ],
+      "notes": "2 个样本、2 对 FASTQ。用来测多样本分组和并行方案。"
+    },
+    {
+      "id": "S3_hepacivirus_contigs",
+      "title": "contig 定种 + RVA",
+      "paths": [
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S3_hepacivirus_contigs/KP641127.fna",
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S3_hepacivirus_contigs/KP325401.fna"
+      ],
+      "goals": [
+        "virus_summary",
+        "annotation_delivery"
+      ],
+      "specialists": [
+        "virus_taxonomy",
+        "rva"
+      ],
+      "family": "Flaviviridae",
+      "notes": "Hepacivirus contig。右侧「知识/专项」做定种 dry-run / 确认，再 RVA。"
+    },
+    {
+      "id": "S4_hepacivirus_reads",
+      "title": "由 contig 模拟的小批量 reads",
+      "paths": [
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S4_hepacivirus_reads/KP641127_R1.fastq.gz",
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S4_hepacivirus_reads/KP641127_R2.fastq.gz"
+      ],
+      "goals": [
+        "contig_filter",
+        "virus_summary",
+        "annotation_delivery"
+      ],
+      "specialists": [
+        "virus_taxonomy",
+        "rva"
+      ],
+      "family": "Flaviviridae",
+      "notes": "200 对模拟 PE，来自 KP641127。只用来打通界面；组装/W2 请用 S5。"
+    },
+    {
+      "id": "S5_hepacivirus_w2w3w5",
+      "title": "Hepacivirus 组装 + 宿主 spike（W1/W2/W3/W5）",
+      "paths": [
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S5_hepacivirus_w2w3w5/hepaA_R1.fastq.gz",
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S5_hepacivirus_w2w3w5/hepaA_R2.fastq.gz",
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S5_hepacivirus_w2w3w5/hepaB_R1.fastq.gz",
+        "/data/user/guojindan/Projects/XvirMind/testdata/scenarios/S5_hepacivirus_w2w3w5/hepaB_R2.fastq.gz"
+      ],
+      "goals": [
+        "contig_filter",
+        "virus_summary",
+        "host_summary",
+        "virus_rpm"
+      ],
+      "family": "Flaviviridae",
+      "notes": "hepaA=KP641127 2500×150bp PE + 400 对 ND1 宿主 spike；hepaB=KP325401 2500×150bp PE。用于跑通 W2（至少 1 条病毒序列）、W3、W5。W7 不在默认报告。"
+    }
+  ]
+}

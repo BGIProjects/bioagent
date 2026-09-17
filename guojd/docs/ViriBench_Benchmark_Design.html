@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ViriBench — 宏转录组未知病毒自动鉴定系统 Benchmark 设计方案</title>
+<style>
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a2e;
+  --fg-muted: #555;
+  --accent: #2563eb;
+  --accent-light: #dbeafe;
+  --border: #e2e8f0;
+  --card-bg: #f8fafc;
+  --code-bg: #f1f5f9;
+  --red: #dc2626;
+  --green: #16a34a;
+  --orange: #ea580c;
+  --purple: #7c3aed;
+  --teal: #0d9488;
+  --table-stripe: #f8fafc;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  background: var(--bg); color: var(--fg);
+  line-height: 1.8; font-size: 15px;
+  max-width: 960px; margin: 0 auto; padding: 40px 24px 80px;
+}
+h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+h2 { font-size: 22px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); letter-spacing: -0.3px; }
+h3 { font-size: 17px; font-weight: 600; margin: 24px 0 12px; color: var(--accent); }
+h4 { font-size: 15px; font-weight: 600; margin: 16px 0 8px; }
+p { margin-bottom: 12px; }
+ul, ol { margin: 8px 0 16px 24px; }
+li { margin-bottom: 6px; }
+code {
+  background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
+  font-family: "SF Mono", "Fira Code", monospace; font-size: 13px;
+}
+pre {
+  background: var(--code-bg); padding: 16px; border-radius: 8px;
+  overflow-x: auto; margin: 12px 0; font-size: 13px; line-height: 1.6;
+  border: 1px solid var(--border);
+}
+pre code { background: none; padding: 0; }
+table {
+  width: 100%; border-collapse: collapse; margin: 16px 0;
+  font-size: 13px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+}
+th { background: var(--accent); color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; }
+td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:nth-child(even) { background: var(--table-stripe); }
+tr:last-child td { border-bottom: none; }
+.callout {
+  background: var(--accent-light); border-left: 4px solid var(--accent);
+  padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0;
+}
+.callout-warn { background: #fef3c7; border-left-color: var(--orange); }
+.callout-key { background: #ede9fe; border-left-color: var(--purple); }
+.callout-success { background: #d1fae5; border-left-color: var(--green); }
+.badge {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: 12px; font-weight: 600; margin-right: 6px;
+}
+.badge-l1 { background: #dbeafe; color: #1e40af; }
+.badge-l2 { background: #ede9fe; color: #6b21a8; }
+.badge-l3 { background: #fce7f3; color: #9d174d; }
+.badge-l4 { background: #d1fae5; color: #065f46; }
+.badge-l5 { background: #fef3c7; color: #92400e; }
+.badge-l6 { background: #e0e7ff; color: #3730a3; }
+.header-meta { color: var(--fg-muted); font-size: 14px; margin-bottom: 24px; }
+.toc {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px 24px; margin: 24px 0;
+}
+.toc h3 { margin-top: 0; color: var(--fg); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.toc ol { margin-left: 20px; }
+.toc li { margin-bottom: 4px; }
+.toc a { color: var(--accent); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+.ref-card {
+  border: 1px solid var(--border); border-radius: 8px; padding: 16px;
+  margin: 12px 0; background: var(--card-bg);
+}
+.ref-card h4 { color: var(--accent); margin-top: 0; }
+.ref-card .key-takeaway {
+  background: #fef3c7; padding: 8px 12px; border-radius: 6px;
+  font-size: 13px; margin-top: 8px;
+}
+.layer-box {
+  border: 2px solid; border-radius: 10px; padding: 16px 20px; margin: 12px 0;
+}
+.layer-box h4 { margin-top: 0; }
+.flow-diagram {
+  font-family: "SF Mono", monospace; font-size: 12px; line-height: 1.5;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0;
+}
+.metric-card {
+  display: inline-block; border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 16px; margin: 4px; background: var(--card-bg); min-width: 180px;
+  vertical-align: top;
+}
+.metric-card .metric-name { font-weight: 600; font-size: 13px; color: var(--accent); }
+.metric-card .metric-desc { font-size: 12px; color: var(--fg-muted); margin-top: 4px; }
+.metric-card .metric-target { font-weight: 700; font-size: 16px; margin-top: 6px; }
+hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+.footnote { font-size: 12px; color: var(--fg-muted); margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px; }
+</style>
+</head>
+<body>
+
+<h1>ViriBench</h1>
+<p style="font-size: 18px; color: var(--accent); font-weight: 600;">宏转录组未知病毒自动鉴定系统 Benchmark 设计方案</p>
+<div class="header-meta">
+  <strong>项目：</strong>XvirMind Harness Engineering &nbsp;|&nbsp;
+  <strong>版本：</strong>v1.0 &nbsp;|&nbsp;
+  <strong>日期：</strong>2026-07-21 &nbsp;|&nbsp;
+  <strong>参考：</strong>LifeSciBench, GeneBench-Pro, BioAgent Bench
+</div>
+
+<div class="callout callout-key">
+  <strong>设计理念：</strong>ViriBench 不是单一评测，而是一个<strong>分层评估体系</strong>——从底层生信流水线的完成度，到中层AI推理的准确性，再到顶层人机协作的有效性，逐层递进地衡量"AI驱动的病毒鉴定系统"是否真正从"固定产线"进化为"AI协诊专家"。
+</div>
+
+<div class="toc">
+<h3>目录</h3>
+<ol>
+  <li><a href="#sec1">设计背景与动机</a></li>
+  <li><a href="#sec2">参考文献方法论提取</a></li>
+  <li><a href="#sec3">Benchmark 总体架构</a></li>
+  <li><a href="#sec4">数据集设计</a></li>
+  <li><a href="#sec5">任务分类体系（Task Taxonomy）</a></li>
+  <li><a href="#sec6">评估指标体系</a></li>
+  <li><a href="#sec7">评估方法与评分机制</a></li>
+  <li><a href="#sec8">鲁棒性测试设计</a></li>
+  <li><a href="#sec9">专家评审与验证流程</a></li>
+  <li><a href="#sec10">实验设计</a></li>
+  <li><a href="#sec11">实施路线图</a></li>
+  <li><a href="#sec12">风险与应对</a></li>
+</ol>
+</div>
+
+<!-- ==================== Section 1 ==================== -->
+<h2 id="sec1">1. 设计背景与动机</h2>
+
+<h3>1.1 系统概况</h3>
+<p>XvirMind 是一套融合AI前瞻性能力的宏转录组未知病毒自动鉴定系统，基于Harness工程化架构（Rule / Skill / Sub Agent / Workflow / MCP / Scripts / dev-map），将三大核心AI能力嵌入系统：</p>
+<ul>
+  <li><strong>专家级综合研判</strong>：多证据融合推理器，处理高同源低覆盖、阈值边界、EVE整合等生物学陷阱</li>
+  <li><strong>应急智能调度</strong>：基于样本特征、资源状态、紧急度的自适应路由（快速通道 vs 完整链路）</li>
+  <li><strong>可解释推理链</strong>：输出带完整推理步骤与证据引用的"诊断意见书"，支持专家审查与持续进化</li>
+</ul>
+
+<p>系统的完整数据流为：</p>
+<div class="flow-diagram">
+FASTQ (PE150) → 质控/去宿主 (W1) → 病毒鉴定 (W2) → 宿主鉴定 (W3)
+  → Kraken2/Bracken 初筛 (W4) → 病毒定量 (W5) → 病毒注释 (W6)
+    → 证据汇聚 evidence.json
+    → AI 推理引擎 (矛盾检测 + 阈值处理 + 陷阱库)
+    → 诊断意见书 (Markdown + PDF + JSON)
+    → 专家审查 / 打回 → 反馈收集 → 模型进化
+</div>
+
+<h3>1.2 为什么需要专用 Benchmark</h3>
+<p>现有生信AI benchmark（LifeSciBench、GeneBench-Pro、BioAgent Bench）各有侧重，但均<strong>未覆盖</strong>以下XvirMind的核心评估需求：</p>
+<table>
+<tr><th>现有Benchmark的局限</th><th>XvirMind 的特殊评估需求</th></tr>
+<tr><td>LifeSciBench 关注单轮科学推理，不涉及多步骤流水线执行</td><td>需要评估从 FASTQ 到报告的完整端到端流程</td></tr>
+<tr><td>GeneBench-Pro 关注统计学推理决策，不涉及实时调度</td><td>需要评估自适应调度（紧急/标准/深度路径选择）</td></tr>
+<tr><td>BioAgent Bench 关注pipeline完成度，不评估推理链质量</td><td>需要评估"诊断意见书"的推理链完整性与可解释性</td></tr>
+<tr><td>三者均不涉及病毒学特有的生物学陷阱（EVE、嵌合体、阈值边界）</td><td>需要专门评估矛盾检测与生物学陷阱处理能力</td></tr>
+<tr><td>三者均不涉及人机协作闭环</td><td>需要评估专家反馈收集与模型自优化效果</td></tr>
+</table>
+
+<!-- ==================== Section 2 ==================== -->
+<h2 id="sec2">2. 参考文献方法论提取</h2>
+
+<div class="ref-card">
+  <h4>LifeSciBench (OpenAI, 2026)</h4>
+  <p><strong>核心方法：</strong>750个专家编写任务，7个工作流 × 7个生物领域，每个任务配备专家撰写的评分量表（rubric），共19,020条评分标准。</p>
+  <ul>
+    <li><strong>评估方式：</strong>单轮，模型接收prompt+附件，产出一份回答</li>
+    <li><strong>评分：</strong>归一化rubric分数 + 任务通过率（≥70%阈值）</li>
+    <li><strong>Rubric设计原则：</strong>Specificity、Atomicity、Evaluability、Grounding、Non-redundancy、Operational usefulness</li>
+    <li><strong>验证：</strong>453名独立专家审查，97%拥有博士学位，平均12年经验</li>
+  </ul>
+  <div class="key-takeaway"><strong>ViriBench 借鉴：</strong>专家rubric评分体系，用于评估"诊断意见书"质量；多维度×多领域交叉分类法</div>
+</div>
+
+<div class="ref-card">
+  <h4>GeneBench-Pro (OpenAI, 2026)</h4>
+  <p><strong>核心方法：</strong>129个多阶段统计分析问题，10个领域 × 21个子领域，每个问题3-13个决策点。</p>
+  <ul>
+    <li><strong>数据策略：</strong>完全模拟数据，已知ground truth，精确控制复杂度</li>
+    <li><strong>设计原则：</strong>唯一可识别答案、清晰数值分离、消融支持、最小可行prompt</li>
+    <li><strong>评分：</strong>二元通过/失败，带校准容差</li>
+    <li><strong>关键概念：</strong>"decision cascade"——上游错误选择传播至下游失败</li>
+    <li><strong>验证：</strong>11名外部专家审查82个问题</li>
+  </ul>
+  <div class="key-takeaway"><strong>ViriBench 借鉴：</strong>模拟数据集构建策略（已知ground truth）、decision cascade设计、消融验证、二元通过/失败评分</div>
+</div>
+
+<div class="ref-card">
+  <h4>BioAgent Bench (Entropic / FER, 2026)</h4>
+  <p><strong>核心方法：</strong>10个端到端生物信息学任务（含viral metagenomics），评估AI agent在真实pipeline中的表现。</p>
+  <ul>
+    <li><strong>评估方式：</strong>agent在沙箱中执行完整pipeline，指定输出格式（CSV/TSV）</li>
+    <li><strong>评分：</strong>LLM grader（GPT-5.1）打分，输出 steps_completed / steps_to_completion / final_result_reached / f1_score</li>
+    <li><strong>鲁棒性测试：</strong>三类扰动——corrupted inputs、decoy files、prompt bloat</li>
+    <li><strong>稳定性测试：</strong>多次试验，Jaccard Index（分类数据）+ Pearson相关（数值数据）</li>
+    <li><strong>关键发现：</strong>高完成率不等于可靠——pipeline能完成不代表步骤级推理正确</li>
+  </ul>
+  <div class="key-takeaway"><strong>ViriBench 借鉴：</strong>端到端pipeline评估、LLM grader机制、三类鲁棒性扰动设计、多次试验稳定性指标</div>
+</div>
+
+<!-- ==================== Section 3 ==================== -->
+<h2 id="sec3">3. Benchmark 总体架构</h2>
+
+<p>ViriBench 采用<strong>六层评估架构</strong>，从底向上逐层递进，每层聚焦不同的评估目标，对应系统不同的AI能力模块：</p>
+
+<div class="layer-box" style="border-color: var(--red);">
+  <h4><span class="badge badge-l1">Layer 1</span> 流水线完成度评估 (Pipeline Completion)</h4>
+  <p><strong>评估目标：</strong>系统是否能端到端完成从 FASTQ 到结构化报告的全流程</p>
+  <p><strong>对应系统模块：</strong>Snakemake workflows 1-6 + MCP桥接层</p>
+  <p><strong>方法：</strong>参考 BioAgent Bench —— LLM grader + 指定输出格式 + 步骤完成率</p>
+</div>
+
+<div class="layer-box" style="border-color: var(--accent);">
+  <h4><span class="badge badge-l2">Layer 2</span> AI推理准确性评估 (Reasoning Accuracy)</h4>
+  <p><strong>评估目标：</strong>多证据融合推理器是否能正确处理矛盾、阈值边界、生物学陷阱</p>
+  <p><strong>对应系统模块：</strong>review_agent + 矛盾检测器 + 阈值边界引擎</p>
+  <p><strong>方法：</strong>参考 GeneBench-Pro —— 模拟数据集 + 已知ground truth + 二元评分 + 消融验证</p>
+</div>
+
+<div class="layer-box" style="border-color: var(--purple);">
+  <h4><span class="badge badge-l3">Layer 3</span> 调度智能评估 (Scheduling Intelligence)</h4>
+  <p><strong>评估目标：</strong>自适应调度器是否能根据样本特征与紧急度选择正确分析路径</p>
+  <p><strong>对应系统模块：</strong>PMAgent + adaptive_scheduler + MCP pipeline_scheduler</p>
+  <p><strong>方法：</strong>路径选择正确率 + 时间优化收益 + 资源利用率</p>
+</div>
+
+<div class="layer-box" style="border-color: var(--teal);">
+  <h4><span class="badge badge-l4">Layer 4</span> 解释质量评估 (Explanation Quality)</h4>
+  <p><strong>评估目标：</strong>"诊断意见书"的推理链是否完整、可审计、证据充分</p>
+  <p><strong>对应系统模块：</strong>ai_report + 思维链生成器 + 审核清单</p>
+  <p><strong>方法：</strong>参考 LifeSciBench —— 专家rubric评分（分维度打分）</p>
+</div>
+
+<div class="layer-box" style="border-color: var(--orange);">
+  <h4><span class="badge badge-l5">Layer 5</span> 鲁棒性评估 (Robustness)</h4>
+  <p><strong>评估目标：</strong>系统在异常输入、干扰数据、噪声条件下的可靠性</p>
+  <p><strong>对应系统模块：</strong>全系统（pipeline + AI推理 + 调度）</p>
+  <p><strong>方法：</strong>参考 BioAgent Bench —— 扰动测试（corrupted / decoy / bloat）+ 稳定性测试</p>
+</div>
+
+<div class="layer-box" style="border-color: #3730a3;">
+  <h4><span class="badge badge-l6">Layer 6</span> 人机协作评估 (Human-AI Collaboration)</h4>
+  <p><strong>评估目标：</strong>专家反馈收集 → 模型进化的闭环是否有效</p>
+  <p><strong>对应系统模块：</strong>feedback_collector + optimization_log + pitfall_log</p>
+  <p><strong>方法：</strong>专家双盲对比实验 + 迭代前后准确率对比</p>
+</div>
+
+<!-- ==================== Section 4 ==================== -->
+<h2 id="sec4">4. 数据集设计</h2>
+
+<h3>4.1 设计原则</h3>
+<p>借鉴 GeneBench-Pro 的模拟数据策略，ViriBench 的核心数据集采用<strong>模拟数据为主、真实数据为辅</strong>的混合策略：</p>
+<ul>
+  <li><strong>模拟数据</strong>：完全控制数据生成过程（DGP），已知ground truth，可精确设计矛盾案例与边界条件</li>
+  <li><strong>真实数据</strong>：来自已发表研究的一线数据，用于验证模拟数据的代表性</li>
+  <li><strong>最小可行prompt</strong>：prompt只提供必要信息，不规定分析路径，留给AI系统自主决策</li>
+</ul>
+
+<h3>4.2 数据集分类</h3>
+<p>根据病毒学场景的真实挑战，设计10类数据集，覆盖系统需要处理的所有关键场景：</p>
+
+<table>
+<tr>
+  <th>编号</th>
+  <th>数据集类别</th>
+  <th>样本量</th>
+  <th>数据来源</th>
+  <th>关键特征 / 设计目标</th>
+  <th>评估层级</th>
+</tr>
+<tr>
+  <td><strong>D1</strong></td>
+  <td>已知病毒阳性样本</td>
+  <td>30</td>
+  <td>模拟 + 真实</td>
+  <td>覆盖RNA/DNA病毒、不同基因组大小、不同丰度（高/中/低）。用于评估基本检测准确率</td>
+  <td>L1, L2</td>
+</tr>
+<tr>
+  <td><strong>D2</strong></td>
+  <td>属内新种样本</td>
+  <td>20</td>
+  <td>模拟</td>
+  <td>同一性低于种级阈值（如RdRp &lt;90%但&gt;属级阈值），用于评估新种判定F1</td>
+  <td>L2</td>
+</tr>
+<tr>
+  <td><strong>D3</strong></td>
+  <td>阴性对照</td>
+  <td>15</td>
+  <td>模拟</td>
+  <td>无病毒reads，纯宿主背景。用于评估假阳性过滤率</td>
+  <td>L1, L2</td>
+</tr>
+<tr>
+  <td><strong>D4</strong></td>
+  <td>EVE污染样本</td>
+  <td>15</td>
+  <td>模拟</td>
+  <td>人内源病毒元件整合，高同源性但实为基因组整合。用于评估EVE陷阱检测</td>
+  <td>L2</td>
+</tr>
+<tr>
+  <td><strong>D5</strong></td>
+  <td>阈值边界样本</td>
+  <td>20</td>
+  <td>模拟</td>
+  <td>同一性89.5%-90.5%区间，覆盖度15%-25%区间。用于评估阈值边界引擎的概率模型</td>
+  <td>L2</td>
+</tr>
+<tr>
+  <td><strong>D6</strong></td>
+  <td>分节段病毒样本</td>
+  <td>10</td>
+  <td>模拟</td>
+  <td>如流感病毒8节段，部分节段高覆盖、部分低覆盖。用于评估分节段判读逻辑</td>
+  <td>L2</td>
+</tr>
+<tr>
+  <td><strong>D7</strong></td>
+  <td>高同源低覆盖矛盾样本</td>
+  <td>15</td>
+  <td>模拟</td>
+  <td>同一性&gt;95%但覆盖度&lt;20%，模拟低滴度感染 vs EVE残余的判别难题</td>
+  <td>L2</td>
+</tr>
+<tr>
+  <td><strong>D8</strong></td>
+  <td>混合感染样本</td>
+  <td>10</td>
+  <td>模拟</td>
+  <td>同时含2-3种不同病毒，不同丰度梯度。用于评估多重检出能力</td>
+  <td>L1, L2</td>
+</tr>
+<tr>
+  <td><strong>D9</strong></td>
+  <td>低生物量样本</td>
+  <td>10</td>
+  <td>模拟</td>
+  <td>病毒reads占比&lt;0.01%，接近检测极限。用于评估灵敏度与假阳性平衡</td>
+  <td>L1, L5</td>
+</tr>
+<tr>
+  <td><strong>D10</strong></td>
+  <td>扰动测试样本</td>
+  <td>15</td>
+  <td>从D1-D9衍生</td>
+  <td>三类扰动：corrupted reads / decoy reference / prompt bloat</td>
+  <td>L5</td>
+</tr>
+</table>
+
+<p><strong>总计：160个样本</strong>（含扰动衍生15个），覆盖10种关键场景。</p>
+
+<h3>4.3 模拟数据生成方法</h3>
+<p>借鉴 GeneBench-Pro 的 DGP 策略，模拟数据生成流程为：</p>
+<pre><code># 模拟数据生成管线（伪代码）
+
+1. 选择病毒参考基因组（来自ICTV/NCBI RefSeq）
+   ├── 已知病毒：直接使用RefSeq序列
+   ├── 属内新种：在种级阈值附近引入定向突变（SNV/indel）
+   └── 孤儿序列：使用NR库远缘序列
+
+2. 模拟测序reads（InSilicoSeq / ART）
+   ├── 参数：PE150, GC偏差, 插入片段长度分布
+   ├── 病毒丰度梯度：0.001% - 10%
+   └── 宿主背景：人类/猪/鸡 transcriptome（100:1 - 10000:1）
+
+3. 引入生物学陷阱（按需）
+   ├── EVE：将病毒序列片段整合到宿主基因组中
+   ├── 嵌合体：拼接两个不同病毒的contig片段
+   └── 阈值边界：精确控制同一性在目标区间
+
+4. 生成ground truth
+   ├── virus_list.json：每个样本的病毒物种、丰度、基因组位置
+   ├── evidence_truth.json：理想证据值（覆盖度、同一性、深度CV等）
+   └── reasoning_truth.json：正确推理链（矛盾标识、结论分级）
+
+5. 消融验证
+   ├── 验证正确分析路径能得到正确答案
+   ├── 验证常见错误路径会得到明显不同的错误答案
+   └── 确保ground truth可从agent可见数据中恢复</code></pre>
+
+<!-- ==================== Section 5 ==================== -->
+<h2 id="sec5">5. 任务分类体系（Task Taxonomy）</h2>
+
+<p>借鉴 LifeSciBench 的 workflow × domain 二维分类法，ViriBench 设计 <strong>6个工作流 × 5个评估领域</strong> 的任务矩阵：</p>
+
+<h3>5.1 工作流分类</h3>
+<table>
+<tr><th>编号</th><th>工作流</th><th>描述</th><th>输入</th><th>期望输出</th><th>对应层级</th></tr>
+<tr><td><strong>W1</strong></td><td>端到端鉴定</td><td>从FASTQ到完整诊断报告的全流程</td><td>FASTQ文件</td><td>结构化报告 (JSON+MD)</td><td>L1, L2, L3, L4</td></tr>
+<tr><td><strong>W2</strong></td><td>证据判读</td><td>给定中间结果(evidence.json)，做出研判结论</td><td>evidence.json</td><td>研判结论 (JSON)</td><td>L2, L4</td></tr>
+<tr><td><strong>W3</strong></td><td>路径决策</td><td>给定样本元数据与紧急度，选择分析路径</td><td>样本元数据</td><td>路径选择 (A/B/C) + 理由</td><td>L3</td></tr>
+<tr><td><strong>W4</strong></td><td>报告生成</td><td>给定完整证据，生成"诊断意见书"</td><td>evidence.json + 上下文</td><td>诊断意见书 (MD+PDF)</td><td>L4</td></tr>
+<tr><td><strong>W5</strong></td><td>错误检测</td><td>给定有缺陷的分析结果，识别错误并提供修正</td><td>有缺陷的报告/中间结果</td><td>错误列表 + 修正建议</td><td>L2, L4, L6</td></tr>
+<tr><td><strong>W6</strong></td><td>病毒分类</td><td>给定病毒序列，按ICTV标准进行分类判定</td><td>FASTA序列</td><td>分类结论 + 证据链</td><td>L2</td></tr>
+</table>
+
+<h3>5.2 评估领域分类</h3>
+<table>
+<tr><th>领域</th><th>涵盖范围</th><th>典型代表</th></tr>
+<tr><td><strong>+ssRNA病毒</strong></td><td>冠状病毒、小RNA病毒、黄病毒等</td><td>SARS-CoV-2, PV, HCV</td></tr>
+<tr><td><strong>-ssRNA病毒</strong></td><td>副黏液病毒、正黏液病毒、布尼亚病毒等</td><td>流感病毒, MeV, LACV</td></tr>
+<tr><td><strong>dsRNA病毒</strong></td><td>呼肠孤病毒等</td><td>RV, BTV</td></tr>
+<tr><td><strong>DNA病毒</strong></td><td>疱疹病毒、腺病毒、痘病毒等</td><td>HSV, AdV, VACV</td></tr>
+<tr><td><strong>逆转录病毒</strong></td><td>逆转录病毒科、嗜肝DNA病毒科</td><td>HIV, HBV</td></tr>
+</table>
+
+<h3>5.3 任务矩阵与分布</h3>
+<p>每个工作流×领域交叉设计任务，总计 <strong>60个核心任务</strong>：</p>
+<table>
+<tr><th></th><th>+ssRNA</th><th>-ssRNA</th><th>dsRNA</th><th>DNA</th><th>RT</th><th>合计</th></tr>
+<tr><td><strong>W1 端到端鉴定</strong></td><td>3</td><td>3</td><td>2</td><td>3</td><td>2</td><td><strong>13</strong></td></tr>
+<tr><td><strong>W2 证据判读</strong></td><td>4</td><td>3</td><td>2</td><td>3</td><td>2</td><td><strong>14</strong></td></tr>
+<tr><td><strong>W3 路径决策</strong></td><td>3</td><td>2</td><td>1</td><td>2</td><td>1</td><td><strong>9</strong></td></tr>
+<tr><td><strong>W4 报告生成</strong></td><td>3</td><td>3</td><td>1</td><td>2</td><td>1</td><td><strong>10</strong></td></tr>
+<tr><td><strong>W5 错误检测</strong></td><td>2</td><td>2</td><td>1</td><td>2</td><td>1</td><td><strong>8</strong></td></tr>
+<tr><td><strong>W6 病毒分类</strong></td><td>2</td><td>2</td><td>1</td><td>1</td><td>0</td><td><strong>6</strong></td></tr>
+<tr style="font-weight:bold; background: var(--accent-light);"><td>合计</td><td>17</td><td>15</td><td>8</td><td>13</td><td>7</td><td>60</td></tr>
+</table>
+
+<!-- ==================== Section 6 ==================== -->
+<h2 id="sec6">6. 评估指标体系</h2>
+
+<p>结合项目文档已定义的验证指标与三篇参考文献的评分方法，ViriBench 建立分层级指标体系：</p>
+
+<h3>6.1 Layer 1 — 流水线完成度指标</h3>
+<p>借鉴 BioAgent Bench 的 LLM grader 框架：</p>
+<table>
+<tr><th>指标</th><th>定义</th><th>目标值</th><th>测量方法</th></tr>
+<tr><td>步骤完成率</td><td>completed_steps / total_steps</td><td>≥95%</td><td>LLM grader 评估pipeline日志</td></tr>
+<tr><td>最终产物生成率</td><td>是否生成指定格式的最终报告</td><td>100%</td><td>检查 outputs/ 目录</td></tr>
+<tr><td>标准通道耗时</td><td>从FASTQ输入到报告输出的总耗时</td><td>≤16h</td><td>计时器记录</td></tr>
+<tr><td>紧急通道耗时</td><td>快速通道路径的总耗时</td><td>≤25min</td><td>计时器记录</td></tr>
+<tr><td>断点续跑成功率</td><td>中断后恢复执行并成功完成</td><td>100%</td><td>模拟中断+恢复</td></tr>
+</table>
+
+<h3>6.2 Layer 2 — AI推理准确性指标</h3>
+<p>借鉴 GeneBench-Pro 的二元评分 + 已知ground truth：</p>
+<table>
+<tr><th>指标</th><th>定义</th><th>目标值</th><th>测量方法</th></tr>
+<tr><td>已知病毒检测准确率</td><td>TP / (TP+FN)，与金标准对比</td><td>≥95%</td><td>与virus_list.json ground truth对比</td></tr>
+<tr><td>属内新种判定F1</td><td>新种判定的Precision×Recall调和均值</td><td>≥0.85</td><td>模拟新种数据集评估</td></tr>
+<tr><td>假阳性过滤率</td><td>1 - (FP / 阴性样本数)</td><td>≥99%</td><td>阴性对照（D3）误报率≤1%</td></tr>
+<tr><td>矛盾检测召回率</td><td>正确识别"高同源低覆盖"等矛盾模式的比例</td><td>≥90%</td><td>D7样本上人工标注矛盾模式</td></tr>
+<tr><td>EVE排除率</td><td>正确排除EVE污染的比例</td><td>≥95%</td><td>D4样本评估</td></tr>
+<tr><td>阈值边界处理正确率</td><td>在89-91%区间内给出正确结论（非硬阈值误判）</td><td>≥85%</td><td>D5样本评估</td></tr>
+<tr><td>分类准确率（科/属/种）</td><td>与ICTV标准答案的分类一致率</td><td>科≥98%, 属≥95%, 种≥90%</td><td>W6任务，与ICTV知识库对比</td></tr>
+</table>
+
+<h3>6.3 Layer 3 — 调度智能指标</h3>
+<table>
+<tr><th>指标</th><th>定义</th><th>目标值</th><th>测量方法</th></tr>
+<tr><td>路径选择正确率</td><td>与专家建议路径一致的比例</td><td>≥90%</td><td>W3任务，专家标注正确路径</td></tr>
+<tr><td>紧急样本响应率</td><td>紧急样本被正确路由到快速通道的比例</td><td>100%</td><td>调度日志审计</td></tr>
+<tr><td>调度优化收益</td><td>相比固定流程的耗时降低比例</td><td>≥30%</td><td>同资源条件下对比</td></tr>
+<tr><td>资源利用率</td><td>CPU/内存/时间的有效使用比例</td><td>≥70%</td><td>系统监控指标</td></tr>
+<tr><td>误路由恢复率</td><td>错误路由后自动检测并纠正的比例</td><td>≥80%</td><td>模拟异常场景</td></tr>
+</table>
+
+<h3>6.4 Layer 4 — 解释质量指标</h3>
+<p>借鉴 LifeSciBench 的rubric评分体系：</p>
+<table>
+<tr><th>指标</th><th>定义</th><th>目标值</th><th>测量方法</th></tr>
+<tr><td>推理链完整性</td><td>门禁脚本(verify_reasoning.sh)通过率</td><td>100%</td><td>自动化检查</td></tr>
+<tr><td>证据引用准确率</td><td>报告中引用的证据值与原始数据一致性</td><td>≥98%</td><td>自动化比对evidence.json</td></tr>
+<tr><td>结论分级正确率</td><td>四层结论（确证/高置信/可疑/排除）与金标准一致</td><td>≥90%</td><td>与reasoning_truth.json对比</td></tr>
+<tr><td>Rubric归一化分数</td><td>专家rubric评分 / 满分</td><td>≥0.80</td><td>专家按rubric打分（W4任务）</td></tr>
+<tr><td>审核清单覆盖率</td><td>报告中审核要点被覆盖的比例</td><td>≥95%</td><td>审核清单自动化检查</td></tr>
+</table>
+
+<h3>6.5 Layer 5 — 鲁棒性指标</h3>
+<p>借鉴 BioAgent Bench 的扰动测试设计：</p>
+<table>
+<tr><th>指标</th><th>定义</th><th>目标值</th><th>测量方法</th></tr>
+<tr><td>损坏数据检测率</td><td>正确识别corrupted输入并中止/报警</td><td>≥90%</td><td>D10 corrupted子集</td></tr>
+<tr><td>诱饵排除率</td><td>正确排除decoy reference（如无关物种基因组）</td><td>≥95%</td><td>D10 decoy子集</td></tr>
+<tr><td>抗提示膨胀率</td><td>在prompt bloat条件下完成率下降幅度</td><td>≤15%</td><td>对比原始/bloated prompt</td></tr>
+<tr><td>跨试验稳定性（分类）</td><td>多次运行结果的Jaccard Index</td><td>≥0.85</td><td>同一样本运行4次</td></tr>
+<tr><td>跨试验稳定性（数值）</td><td>多次运行数值结果的Pearson相关</td><td>≥0.90</td><td>同一样本运行4次</td></tr>
+</table>
+
+<h3>6.6 Layer 6 — 人机协作指标</h3>
+<table>
+<tr><th>指标</th><th>定义</th><th>目标值</th><th>测量方法</th></tr>
+<tr><td>专家接受率</td><td>AI结论被专家直接采纳（不修改）的比例</td><td>≥90%</td><td>双盲对比实验</td></tr>
+<tr><td>反馈迭代后准确率提升</td><td>迭代版本 vs 初始版本的准确率差</td><td>≥5%</td><td>前后版本对比测试</td></tr>
+<tr><td>反馈收集完整性</td><td>专家打回时结构化反馈表单的完整填写率</td><td>≥95%</td><td>feedback_collector日志审计</td></tr>
+<tr><td>进化日志可追溯性</td><td>每次模型更新都有对应的pitfall_log记录</td><td>100%</td><td>审计optimization_log</td></tr>
+</table>
+
+<!-- ==================== Section 7 ==================== -->
+<h2 id="sec7">7. 评估方法与评分机制</h2>
+
+<h3>7.1 三层评分机制</h3>
+<p>ViriBench 根据任务类型采用三种互补的评分方法：</p>
+
+<div class="layer-box" style="border-color: var(--green); padding: 12px 16px;">
+  <h4 style="margin-top:0;">机制A：自动化数值评分（Automated Numerical Grading）</h4>
+  <p><strong>适用任务：</strong>W1端到端鉴定、W6病毒分类</p>
+  <p><strong>方法：</strong>将系统输出与ground truth（virus_list.json）进行精确数值对比，计算Precision/Recall/F1。借鉴GeneBench-Pro的二元通过/失败 + 校准容差。</p>
+  <p><strong>容差设计：</strong></p>
+  <ul>
+    <li>病毒检出：物种级别精确匹配，属级别宽松匹配</li>
+    <li>覆盖度/同一性：±2%容差（避免微小数值波动导致误判）</li>
+    <li>定量结果：对数尺度±0.5（即2倍范围内视为正确）</li>
+  </ul>
+</div>
+
+<div class="layer-box" style="border-color: var(--accent); padding: 12px 16px;">
+  <h4 style="margin-top:0;">机制B：LLM Grader评分（LLM-based Grading）</h4>
+  <p><strong>适用任务：</strong>W1流水线完成度评估、W3路径决策</p>
+  <p><strong>方法：</strong>借鉴BioAgent Bench，使用一个强LLM作为grader，评估：</p>
+  <ul>
+    <li><code>steps_completed</code>：agent完成的pipeline步骤数</li>
+    <li><code>steps_to_completion</code>：预期总步骤数</li>
+    <li><code>final_result_reached</code>：是否生成最终产物</li>
+    <li><code>path_correct</code>：路径选择是否正确</li>
+    <li><code>reasoning_quality</code>：1-5评分</li>
+  </ul>
+  <p><strong>Grader选择：</strong>使用独立的强模型（如GPT-5级别），避免自评偏差。</p>
+</div>
+
+<div class="layer-box" style="border-color: var(--purple); padding: 12px 16px;">
+  <h4 style="margin-top:0;">机制C：专家Rubric评分（Expert Rubric Grading）</h4>
+  <p><strong>适用任务：</strong>W2证据判读、W4报告生成、W5错误检测</p>
+  <p><strong>方法：</strong>借鉴LifeSciBench，为每个任务编写详细的专家评分量表。</p>
+</div>
+
+<h3>7.2 Rubric 设计规范</h3>
+<p>遵循 LifeSciBench 的6条rubric编写原则，并结合病毒学场景细化：</p>
+<table>
+<tr><th>原则</th><th>定义</th><th>ViriBench具体要求</th></tr>
+<tr><td>Specificity</td><td>每条标准描述response的具体属性</td><td>如"正确识别NS1基因缺失并标注为不确定性"</td></tr>
+<tr><td>Atomicity</td><td>每条标准只评估一个claim/计算/决策</td><td>不合并"检测到H5N1"和"正确判断为确证"为一条</td></tr>
+<tr><td>Evaluability</td><td>仅从response本身即可判断是否满足</td><td>不依赖外部未公开数据</td></tr>
+<tr><td>Grounding</td><td>标准需有prompt/附件/科学共识/专家判断支撑</td><td>阈值标准需引用ICTV官方文件或已发表文献</td></tr>
+<tr><td>Non-redundancy</td><td>避免重复计数同一要求</td><td>覆盖度与同一性分别评分，不合并</td></tr>
+<tr><td>Operational usefulness</td><td>奖励对实际决策有用的回答</td><td>不仅检测正确，还需给出可操作的后续建议</td></tr>
+</table>
+
+<h4>Rubric 示例 — W4 报告生成任务</h4>
+<pre><code>任务：给定evidence.json（含H5N1候选病毒），生成诊断意见书
+
+评分量表（总分100分）：
+
+## 证据呈现（30分）
+[+8]  正确报告Kraken2置信度（±0.02容差）
+[+8]  正确报告Bowtie2覆盖度（±2%容差）
+[+7]  正确报告深度CV（±0.1容差）
+[+7]  正确报告Read一致性（±0.02容差）
+
+## 矛盾检测（20分）
+[+10] 识别"NS1基因缺失"不确定性并标注
+[+5]  正确评估覆盖度是否支持全基因组判断
+[+5]  检查是否考虑EVE污染可能性
+
+## 阈值处理（15分）
+[+8]  对接近阈值的数值不做硬性截断
+[+4]  使用概率模型而非固定阈值
+[+3]  标注"接近阈值"并解释影响
+
+## 结论分级（20分）
+[+10]  结论分级正确（确证/高置信/可疑/排除）
+[+5]  置信度赋值合理（±0.05容差）
+[+5]  引用对应规则编号（如FR-2）
+
+## 可操作性（15分）
+[+5]  提供后续验证建议（如补充实验）
+[+5]  嵌入结构化审核清单
+[+5]  报告格式符合规范（JSON+MD双格式）</code></pre>
+
+<h3>7.3 综合评分公式</h3>
+<p>ViriBench 综合评分采用加权平均：</p>
+<pre><code>ViriBench Score = w1·L1_score + w2·L2_score + w3·L3_score
+                + w4·L4_score + w5·L5_score + w6·L6_score
+
+推荐权重：
+  w1 = 0.15  (Pipeline Completion)
+  w2 = 0.30  (Reasoning Accuracy)  ← 核心
+  w3 = 0.10  (Scheduling Intelligence)
+  w4 = 0.20  (Explanation Quality)
+  w5 = 0.15  (Robustness)
+  w6 = 0.10  (Human-AI Collaboration)
+
+每层L_score ∈ [0, 1]，由该层各指标归一化后加权平均得到。</code></pre>
+
+<!-- ==================== Section 8 ==================== -->
+<h2 id="sec8">8. 鲁棒性测试设计</h2>
+
+<p>借鉴 BioAgent Bench 的三类扰动测试，并针对病毒鉴定场景设计领域特异性的扰动：</p>
+
+<h3>8.1 扰动类型</h3>
+
+<table>
+<tr><th>扰动类型</th><th>描述</th><th>具体实现</th><th>评估期望</th></tr>
+<tr>
+  <td><strong>Corrupted Inputs</strong></td>
+  <td>损坏的测序数据</td>
+  <td>① 将FASTQ中~90%碱基替换为N，质量值设为Phred 0<br>② 反向互补部分reads（模拟接头污染）<br>③ 截断reads至50bp</td>
+  <td>系统应检测到异常并在QC阶段报警，不产生无效报告</td>
+</tr>
+<tr>
+  <td><strong>Decoy References</strong></td>
+  <td>注入无关参考数据</td>
+  <td>① 注入无关物种基因组（如植物病毒到人类样本分析中）<br>② 注入错误版本的数据库（如过期NT库）<br>③ 注入EVE序列作为"诱饵命中"</td>
+  <td>系统应正确排除decoy，不将无关物种报告为检出</td>
+</tr>
+<tr>
+  <td><strong>Prompt Bloat</strong></td>
+  <td>膨胀任务描述</td>
+  <td>在系统prompt中注入500-2000字相关但非必要的背景文本（如冗长的病毒学教科书段落）</td>
+  <td>完成率下降≤15%，推理质量不显著降低</td>
+</tr>
+<tr>
+  <td><strong>Adversarial Cases</strong></td>
+  <td>对抗性生物学陷阱</td>
+  <td>① 精确设计的EVE序列（与真病毒仅差2-3个SNP）<br>② 嵌合contig（拼接两种病毒）<br>③ 阈值边界样本（89.8%同一性）</td>
+  <td>系统应正确识别陷阱并给出适当标注</td>
+</tr>
+</table>
+
+<h3>8.2 稳定性测试</h3>
+<p>对每个任务运行4次独立试验，计算：</p>
+<ul>
+  <li><strong>Jaccard Index</strong>（分类输出）：多次运行的病毒物种检出列表的交集/并集</li>
+  <li><strong>Pearson相关</strong>（数值输出）：多次运行的定量结果（丰度、覆盖度等）的相关系数</li>
+  <li><strong>路径一致性</strong>：同一输入多次运行的调度路径选择是否一致</li>
+</ul>
+
+<!-- ==================== Section 9 ==================== -->
+<h2 id="sec9">9. 专家评审与验证流程</h2>
+
+<p>综合三篇文献的验证方法，ViriBench 采用<strong>四阶段验证流程</strong>：</p>
+
+<h3>阶段1：内部构建与消融验证（参考 GeneBench-Pro）</h3>
+<ul>
+  <li>每个任务使用模拟数据生成，确保ground truth可从agent可见数据中恢复</li>
+  <li>执行消融测试：验证常见错误分析路径会产生明显不同的错误答案</li>
+  <li>验证正确路径的鲁棒性：附近合理阈值选择不影响最终结论</li>
+  <li>确保每个问题有唯一可识别答案</li>
+</ul>
+
+<h3>阶段2：专家Rubric审查（参考 LifeSciBench）</h3>
+<ul>
+  <li>邀请3-5名病毒学专家（病毒分类学、宏转录组学方向）审查任务和rubric</li>
+  <li>审查维度：question-rubric一致性、科学严谨性、事实准确性、可评估性</li>
+  <li>任务需经过至少2轮专家评审才能纳入正式benchmark</li>
+  <li>阈值标准需≥90%专家一致同意</li>
+</ul>
+
+<h3>阶段3：独立专家验证（参考 LifeSciBench）</h3>
+<ul>
+  <li>独立专家组（不参与任务编写）对子集进行盲审</li>
+  <li>评估四个维度：真实世界相关性、科学推理与领域技能对齐、科学依据、整体有用性</li>
+  <li>目标：≥95%专家认为任务反映真实病毒鉴定工作</li>
+</ul>
+
+<h3>阶段4：Grader校准验证（参考 LifeSciBench + BioAgent Bench）</h3>
+<ul>
+  <li>对分层抽样的模型输出，由独立专家使用相同rubric手工打分</li>
+  <li>比较专家分数与自动/LLM grader分数：报告相关性、平均绝对误差、通过/失败一致率</li>
+  <li>特别关注artifact-heavy任务和精确输出任务的grader可靠性</li>
+</ul>
+
+<!-- ==================== Section 10 ==================== -->
+<h2 id="sec10">10. 实验设计</h2>
+
+<h3>10.1 对比实验</h3>
+<table>
+<tr><th>实验</th><th>对比组</th><th>目的</th><th>关键指标</th></tr>
+<tr><td><strong>E1: AI vs Baseline</strong></td><td>XvirMind(AI全开) vs 固定流程(无AI推理)</td><td>量化AI组件的增益</td><td>L2各指标差值</td></tr>
+<tr><td><strong>E2: AI vs 人工</strong></td><td>XvirMind报告 vs 专家人工分析</td><td>双盲对比AI与人类专家</td><td>L4 rubric分数, L6接受率</td></tr>
+<tr><td><strong>E3: 迭代进化</strong></td><td>v1(初始) vs v2(反馈后) vs v3(再次迭代)</td><td>验证模型自优化效果</td><td>L2/L4指标纵向对比</td></tr>
+<tr><td><strong>E4: 调度消融</strong></td><td>RL调度 vs 规则调度 vs 固定流程</td><td>调度策略的层次化对比</td><td>L3各指标</td></tr>
+<tr><td><strong>E5: 多模型对比</strong></td><td>MiniMax-M3 vs Claude Sonnet vs 本地化模型</td><td>不同LLM后端的影响</td><td>全层级指标</td></tr>
+<tr><td><strong>E6: 鲁棒性对比</strong></td><td>vanilla vs corrupted vs decoy vs bloat</td><td>系统在各扰动下的表现</td><td>L5各指标</td></tr>
+</table>
+
+<h3>10.2 消融实验设计</h3>
+<p>参考 GeneBench-Pro 的消融方法论，系统性地移除AI组件，量化各组件贡献：</p>
+<table>
+<tr><th>配置</th><th>移除组件</th><th>预期影响</th></tr>
+<tr><td>Full System</td><td>—</td><td>基线（全部AI能力开启）</td></tr>
+<tr><td>-Reasoning</td><td>移除矛盾检测器+阈值边界引擎</td><td>L2矛盾检测召回率↓, 阈值边界误判↑</td></tr>
+<tr><td>-Scheduling</td><td>固定路径（不使用adaptive_scheduler）</td><td>L3路径正确率↓, 耗时↑</td></tr>
+<tr><td>-Explanation</td><td>移除推理链生成（仅输出结论）</td><td>L4所有指标↓, L6接受率↓</td></tr>
+<tr><td>-Feedback</td><td>不使用专家反馈进行模型更新</td><td>L6迭代后提升=0</td></tr>
+<tr><td>-All AI</td><td>纯Snakemake pipeline（无任何AI）</td><td>退化到固定产线水平</td></tr>
+</table>
+
+<!-- ==================== Section 11 ==================== -->
+<h2 id="sec11">11. 实施路线图</h2>
+
+<table>
+<tr><th>阶段</th><th>时间</th><th>任务</th><th>交付物</th></tr>
+<tr>
+  <td><strong>P1: 数据集构建</strong></td>
+  <td>第1-4周</td>
+  <td>构建模拟数据生成管线；生成D1-D10共160个样本；创建ground truth；消融验证</td>
+  <td>数据集包（FASTQ+truth JSON），消融报告</td>
+</tr>
+<tr>
+  <td><strong>P2: 任务与Rubric设计</strong></td>
+  <td>第3-6周</td>
+  <td>设计60个任务；编写专家rubric；内部测试任务可解性</td>
+  <td>任务集+Rubric文档</td>
+</tr>
+<tr>
+  <td><strong>P3: 评估框架开发</strong></td>
+  <td>第5-8周</td>
+  <td>开发LLM grader；实现自动化评分脚本；搭建评估流水线</td>
+  <td>ViriBench评估框架代码</td>
+</tr>
+<tr>
+  <td><strong>P4: 专家评审</strong></td>
+  <td>第7-10周</td>
+  <td>邀请3-5名专家审查任务和rubric；迭代修改；独立验证</td>
+  <td>评审报告，修订后任务集</td>
+</tr>
+<tr>
+  <td><strong>P5: 基线评测</strong></td>
+  <td>第9-12周</td>
+  <td>在XvirMind系统上运行全部60个任务；收集结果；生成基线报告</td>
+  <td>基线评测报告</td>
+</tr>
+<tr>
+  <td><strong>P6: 消融与对比</strong></td>
+  <td>第11-14周</td>
+  <td>执行E1-E6实验；消融实验；多模型对比</td>
+  <td>实验分析报告</td>
+</tr>
+<tr>
+  <td><strong>P7: 迭代与发布</strong></td>
+  <td>第13-16周</td>
+  <td>根据评测结果优化系统；二次评测；撰写benchmark论文</td>
+  <td>ViriBench v1.0 发布，评测论文</td>
+</tr>
+</table>
+
+<!-- ==================== Section 12 ==================== -->
+<h2 id="sec12">12. 风险与应对</h2>
+
+<table>
+<tr><th>风险</th><th>概率</th><th>影响</th><th>应对措施</th></tr>
+<tr>
+  <td>模拟数据与真实数据偏差大</td>
+  <td>中</td>
+  <td>高</td>
+  <td>引入真实数据集作为校准锚点；定期与临床样本比对</td>
+</tr>
+<tr>
+  <td>LLM grader评分不稳定</td>
+  <td>中</td>
+  <td>中</td>
+  <td>多次评分取平均；与专家评分校准；设置grader一致性阈值</td>
+</tr>
+<tr>
+  <td>专家资源不足</td>
+  <td>中</td>
+  <td>中</td>
+  <td>优先使用模拟数据（减少人工标注需求）；分阶段评审</td>
+</tr>
+<tr>
+  <td>Benchmark过快饱和</td>
+  <td>低</td>
+  <td>中</td>
+  <td>设置难度梯度；保留hold-out集；定期更新困难案例</td>
+</tr>
+<tr>
+  <td>系统更新导致benchmark失效</td>
+  <td>低</td>
+  <td>高</td>
+  <td>Benchmark与系统解耦；版本化管理；定期回归测试</td>
+</tr>
+</table>
+
+<hr>
+
+<div class="callout callout-success">
+  <strong>总结：</strong>ViriBench 是一个面向AI驱动病毒鉴定系统的分层benchmark，其核心创新在于：
+  <ol style="margin-top:8px;">
+    <li><strong>六层评估架构</strong>：从pipeline完成度到人机协作，逐层递进，覆盖系统的每一个AI能力维度</li>
+    <li><strong>模拟数据+已知ground truth</strong>：借鉴GeneBench-Pro，精确控制矛盾案例与阈值边界</li>
+    <li><strong>专家rubric评分</strong>：借鉴LifeSciBench，细粒度评估"诊断意见书"的推理质量</li>
+    <li><strong>领域特异性扰动</strong>：借鉴BioAgent Bench，并扩展EVE诱饵、嵌合体等病毒学特有陷阱</li>
+    <li><strong>消融实验设计</strong>：系统性地量化每个AI组件的独立贡献</li>
+  </ol>
+  该benchmark不仅用于评估系统当前性能，更作为持续进化的度量尺，驱动XvirMind从"固定产线"向"AI协诊专家"的持续跃迁。
+</div>
+
+<div class="footnote">
+  <p><strong>参考文献：</strong></p>
+  <ol>
+    <li>Liu, A. et al. "LifeSciBench: Evaluating Language Models on Realistic, Expert-Level Tasks in the Life Sciences." OpenAI, 2026.</li>
+    <li>Li, J. & Ho, A. "GeneBench-Pro: Evaluating Multistage Statistical Reasoning in Genomics, Quantitative Biology, and Translational Biomedicine." OpenAI, 2026.</li>
+    <li>Fa, D. et al. "BioAgent Bench: An AI Agent Evaluation Suite for Bioinformatics." Entropic / FER, 2026.</li>
+  </ol>
+  <p><strong>系统设计文档：</strong>《宏转录组未知病毒自动鉴定系统研究方案：AI驱动的Harness工程与智能决策框架》v0616</p>
+</div>
+
+</body>
+</html>

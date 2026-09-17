@@ -1,0 +1,52 @@
+{
+  "pack_id": "20260911-demo",
+  "created_at": "2026-09-11T08:42:19.061254+00:00",
+  "status": "published",
+  "pipeline": [
+    "harvest",
+    "validate-jsonl",
+    "subset-families",
+    "hash",
+    "publish"
+  ],
+  "sources": {
+    "virus_taxonomy_kb": {
+      "path": "/data/user/wangdaxi/Projects/virus_taxonomy/data/kb/kb.jsonl",
+      "sha256": "2f09c7ee8c13589a7ed0e0fed819b84b079ce193ad7bcd1dfd7d2d3e85b6a9fe"
+    },
+    "rva_split": {
+      "path": "/data/user/wangdaxi/rna_virus_annotation/data/benchmarks/vertebrate_rna/intrafamily_split.json",
+      "exists": true
+    }
+  },
+  "artifacts": {
+    "kb.jsonl": {
+      "path": "/data/user/guojindan/Projects/XvirMind/knowledge/releases/20260911-demo/kb.jsonl",
+      "sha256": "07436a423e5098d8f49ed6f0074dfcd6e495e33acee1f55110c5952ec53d01d7",
+      "records": 19
+    },
+    "rva_families.json": {
+      "path": "/data/user/guojindan/Projects/XvirMind/knowledge/releases/20260911-demo/rva_families.json",
+      "sha256": "b80302672ecf94ff325e978fbf421aa8b16043f30f47ac5484530a63d34f207b"
+    }
+  },
+  "families": [
+    "Flaviviridae",
+    "Coronaviridae",
+    "Adenoviridae"
+  ],
+  "rva": {
+    "family_count": 26,
+    "matched": [
+      "Coronaviridae",
+      "Flaviviridae"
+    ],
+    "source": "/data/user/wangdaxi/rna_virus_annotation/data/benchmarks/vertebrate_rna/intrafamily_split.json",
+    "exists": true
+  },
+  "citation": {
+    "corpus": "ictv",
+    "knowledge_release": "knowledge/releases/20260911-demo/kb.jsonl",
+    "locator": "taxon.family"
+  }
+}

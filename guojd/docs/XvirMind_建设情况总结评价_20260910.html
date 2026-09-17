@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>XvirMind 建设情况总结与评价 · 2026-09-10</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1a2332; --muted: #5b6778; --accent: #0f6f73;
+  --accent-light: #e6f4f4; --border: #dce3ea; --card: #f6f8fa;
+  --code: #f1f5f9; --ok: #157a45; --warn: #b45309; --bad: #b42318;
+  --mid: #1d4ed8; --ink: #16324f;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  color: var(--fg); background: var(--bg); line-height: 1.78; font-size: 15px;
+  max-width: 980px; margin: 0 auto; padding: 40px 28px 96px;
+}
+h1 { font-size: 26px; line-height: 1.3; color: var(--ink); margin-bottom: 8px; }
+h2 { font-size: 20px; color: var(--ink); margin: 40px 0 14px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+h3 { font-size: 16px; color: var(--accent); margin: 24px 0 10px; }
+h4 { font-size: 14px; margin: 16px 0 8px; }
+p { margin-bottom: 12px; }
+ul, ol { margin: 8px 0 16px 22px; }
+li { margin-bottom: 6px; }
+code { background: var(--code); padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+a { color: var(--accent); }
+.meta { color: var(--muted); font-size: 13px; margin-bottom: 22px; }
+.banner {
+  background: var(--accent-light); border-left: 4px solid var(--accent);
+  padding: 16px 18px; margin: 18px 0 26px; border-radius: 0 8px 8px 0;
+}
+.banner strong { color: var(--ink); }
+.scoreboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 22px; }
+.score {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 12px 10px;
+}
+.score .k { font-size: 12px; color: var(--muted); }
+.score .v { font-size: 28px; font-weight: 700; color: var(--ink); line-height: 1.2; margin: 4px 0; }
+.score .s { font-size: 12px; color: var(--muted); }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13px; border: 1px solid var(--border); }
+th { background: #ecf3f4; text-align: left; padding: 8px 10px; color: var(--ink); font-weight: 600; }
+td { padding: 8px 10px; border-top: 1px solid var(--border); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfc; }
+.tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+.done { background: #dcfce7; color: var(--ok); }
+.part { background: #fef3c7; color: var(--warn); }
+.none { background: #fee2e2; color: var(--bad); }
+.note { background: #eff6ff; color: var(--mid); }
+.bar { height: 8px; background: #e8eef1; border-radius: 99px; overflow: hidden; margin-top: 6px; }
+.bar > span { display: block; height: 100%; background: var(--accent); }
+.callout { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin: 12px 0 18px; }
+.toc { background: var(--card); padding: 14px 18px; border-radius: 8px; margin: 12px 0 24px; font-size: 14px; }
+.toc a { text-decoration: none; }
+.toc li { margin-bottom: 4px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.card { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; background: #fff; }
+.card h4 { margin-top: 0; color: var(--ink); }
+.foot { margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+@media (max-width: 800px) {
+  .scoreboard, .two { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .scoreboard, .two { grid-template-columns: 1fr; }
+  body { padding: 24px 16px 64px; }
+}
+@media print {
+  body { padding: 0; max-width: none; font-size: 11pt; }
+  .score { break-inside: avoid; }
+  a { color: inherit; text-decoration: none; }
+  h2 { break-after: avoid; }
+}
+</style>
+</head>
+<body>
+<h1>XvirMind 建设情况总结与评价</h1>
+<p class="meta">
+  项目：宏转录组未知病毒自动鉴定系统（XvirMind / BioAgent）　|　评价日期：2026-09-10　|　口径：对照研究方案与现网代码，不含 Benchmark 专项
+</p>
+
+<div class="banner">
+  <strong>一句话结论：</strong>项目已经完成从「聊天演示」到「可审计的确定性生信执行器」的关键转向，计算产线和工作流适配是当前最扎实的部分；但对照研究方案中的「AI 协诊专家」，以及团队已达成的战略共识——壁垒在垂直知识库与本地模型、而非前端或通用 Agent 框架——知识层、本地数据库治理、多证据研判和私有化模型仍明显滞后。系统目前更接近「内部可用的固定分析执行器」，距离「可产业化交付的疾控本地化鉴定系统」仍有一整层领域内核没有建起来。
+</div>
+
+<div class="scoreboard">
+  <div class="score"><div class="k">相对研究方案终态</div><div class="v">42</div><div class="s">可交付疾控私有化系统 / 100</div><div class="bar"><span style="width:42%"></span></div></div>
+  <div class="score"><div class="k">相对内部执行器</div><div class="v">68</div><div class="s">可复现跑分析、出数值报告 / 100</div><div class="bar"><span style="width:68%"></span></div></div>
+  <div class="score"><div class="k">计算产线成熟度</div><div class="v">75</div><div class="s">W1–W6 已部署，W8/W9 在扩展</div><div class="bar"><span style="width:75%"></span></div></div>
+  <div class="score"><div class="k">知识与本地化壁垒</div><div class="v">15</div><div class="s">契约已有，资产几乎未落地</div><div class="bar"><span style="width:15%"></span></div></div>
+</div>
+
+<div class="toc">
+  <strong>目录</strong>
+  <ol>
+    <li><a href="#s1">评价口径与材料范围</a></li>
+    <li><a href="#s2">总体判断：走到了哪一步</a></li>
+    <li><a href="#s3">分层建设现状</a></li>
+    <li><a href="#s4">对照研究方案的模块完成度</a></li>
+    <li><a href="#s5">对照战略共识的偏差</a></li>
+    <li><a href="#s6">主要风险与建设评价</a></li>
+    <li><a href="#s7">下一步应把重心放在哪里</a></li>
+  </ol>
+</div>
+
+<h2 id="s1">1. 评价口径与材料范围</h2>
+<p>本次评价只回答「相对原规划，系统现在建成了什么、缺什么、方向是否跑偏」，不把 Benchmark 产品作为建设完成度的一部分。</p>
+<ul>
+  <li><strong>目标文档：</strong>《宏转录组未知病毒自动鉴定系统研究方案：AI 驱动的 Harness 工程与智能决策框架》（v0616，17 页）。目标是从固定产线升级为「专家级综合研判 + 应急智能调度 + 可解释人机互信」。</li>
+  <li><strong>运行与代码：</strong>计算产线 <code>/data/user/guojindan/Projects/Workflows</code>；最新 Agent 实现 <code>/data/user/liufangzhou/projects/bioagent</code>（源码核对 2026-09-09：agent <code>3ba16a0</code>）；cyclone 部署态 <code>/data/bioagent</code> 仍明显滞后；早期 Harness 原型已归档为 <code>XvirMind_old</code>。</li>
+  <li><strong>不算完成的标准：</strong>「源码里有模块」不等于「真实数据端到端验证通过」，更不等于「可对用户开放」。下文凡写「已实现」，均指代码存在；凡写「已生产可用」，才指部署并跑通。</li>
+</ul>
+
+<h2 id="s2">2. 总体判断：走到了哪一步</h2>
+<p>研究方案把实施分成五段：阶段 0 基线、阶段 1 推理与调度、阶段 2 可解释报告与专家反馈、阶段 3 自优化闭环、阶段 4 生产验证。若按这个尺子看：</p>
+<table>
+  <thead><tr><th>研究方案阶段</th><th>状态</th><th>实际落到了哪里</th></tr></thead>
+  <tbody>
+    <tr><td>0 基线搭建</td><td><span class="tag done">基本完成</span></td><td>双节点拓扑、Open WebUI 演示链路、W1–W6 部署、Dashboard 骨架均已存在。这是目前唯一接近「完成」的阶段。</td></tr>
+    <tr><td>1 推理引擎与调度器</td><td><span class="tag part">部分完成</span></td><td>调度只做成了规则式路径（auto / emergency / standard + 5% Kraken 初筛），没有推理引擎、没有矛盾检测、没有 MCP 调度器，也没有强化学习。</td></tr>
+    <tr><td>2 可解释报告与专家反馈</td><td><span class="tag part">工程版半完成</span></td><td>后端可确定性渲染数值诊断意见书（schema v4），禁止模型写 HTML。没有候选级研判、没有文献引用、没有专家打回。</td></tr>
+    <tr><td>3 自优化闭环</td><td><span class="tag none">未开始</span></td><td>无反馈数据集、无 prompt/规则迭代机制、无本地模型训练闭环。这与当前「先把事实管住」的工程原则一致，但领域壁垒因此还没开始积累。</td></tr>
+    <tr><td>4 生产验证与交付</td><td><span class="tag none">未开始</span></td><td>无私有化部署包、无本地量化模型、无参考库版本目录、无疾控侧交付手册。W9 基因组补齐仍在开发，不在 Agent 主链。</td></tr>
+  </tbody>
+</table>
+<p>更准确的阶段性描述是：<strong>工程上已经越过「让模型自己拼 Snakemake」的危险区，进入「确定性 runner + 类型化 workflow 适配」；业务上仍停在「能选文件、能编译方案、能出流程指标报告」；领域上几乎还没有「知识、本地库、研判、本地模型」这四块壁垒资产。</strong></p>
+
+<div class="callout">
+  这个判断不是否定现有工作。把执行权从模型手里收回、用 catalog / compiler / adapter 卡住输入契约，是后续做可信研判和本地小模型的前提。问题在于：这块正确的工程地基已经够用，继续加厚通用 Agent / 前端，边际收益会迅速下降；真正该加厚的是本地数据库、知识发布和研判规则。
+</div>
+
+<h2 id="s3">3. 分层建设现状</h2>
+
+<h3>3.1 计算层：最扎实，也最接近产业化</h3>
+<p>生产流水线在 172.24.195.66 的 <code>Workflows</code> 仓，是当前最可交付的资产。Agent 已为 W1–W6 编写类型化 adapter 与 artifact 契约；W7 为方法学对照，不进主鉴定链。</p>
+<table>
+  <thead><tr><th>流程</th><th>部署</th><th>Agent 适配</th><th>评价</th></tr></thead>
+  <tbody>
+    <tr><td>W1 上游质控 / 去 rRNA / 组装</td><td><span class="tag done">已部署</span></td><td><span class="tag done">已适配</span></td><td>主链入口，真实 run 已跑通；宿主序列去除仍未作为独立能力开放。</td></tr>
+    <tr><td>W2 病毒鉴定</td><td><span class="tag done">已部署</span></td><td><span class="tag done">已适配</span></td><td>当前指向 <code>workflow2_virusid_2026db</code>。NT/NR 库优化仍是后续事项。</td></tr>
+    <tr><td>W3 宿主鉴定</td><td><span class="tag done">已部署</span></td><td><span class="tag part">源码适配</span></td><td>BOLD 库更新待办；端到端验收不足。</td></tr>
+    <tr><td>W4 Kraken2 / Bracken</td><td><span class="tag done">已部署</span></td><td><span class="tag part">源码适配</span></td><td>初筛路由已依赖 Kraken；库选择与结果口径仍需固化。</td></tr>
+    <tr><td>W5 病毒定量</td><td><span class="tag done">已部署</span></td><td><span class="tag part">源码适配</span></td><td>流程本身较完整，缺与鉴定/注释的证据汇聚。</td></tr>
+    <tr><td>W6 病毒注释</td><td><span class="tag part">已部署待测</span></td><td><span class="tag part">源码适配</span></td><td>CheckV → VIGOR/Prodigal → DRAM-v 路径在，研究方案写明需继续测试。</td></tr>
+    <tr><td>W8 MetaPhlAn</td><td><span class="tag part">已有目录</span></td><td><span class="tag none">未接入 Agent</span></td><td>研究方案中「是否引入、如何与 Kraken 综合判定」仍未决策。</td></tr>
+    <tr><td>W9 基因组补齐</td><td><span class="tag part">开发中</span></td><td><span class="tag none">未接入</span></td><td>研究方案 3.3.7 原为待办，现已单独立项，不在 BioAgent 主链。</td></tr>
+    <tr><td>ICTV 分类资料</td><td><span class="tag part">独立仓</span></td><td><span class="tag part">仅查科</span></td><td><code>Workflows/ICTV</code> 与 TaxonAgent MCP 存在；还不能按科执行官方阈值计算。</td></tr>
+  </tbody>
+</table>
+<p>评价：计算层已经具备「标准流程插件化」的物理基础，但还没有被产品化成「带版本、带清单、带热切换的本地数据库 + 流程插件目录」。缺的不是再写一条 Snakemake，而是<strong>参考库发布、校验、回滚和与报告绑定</strong>。</p>
+
+<h3>3.2 Agent / 执行内核：方向正确，实现超前于部署</h3>
+<p>最新代码在 liufangzhou 仓，核心已经不是「通用对话 Agent」，而是一套受控编译—执行栈：</p>
+<ul>
+  <li><code>workflow_catalog.py</code>：公开生物学阶段与 typed artifact，对用户隐藏 Snakemake rule 名。</li>
+  <li><code>deterministic_planner.py</code> / <code>pipeline_spec.py</code>：依赖闭包、路径、配对、样本一致性由代码决定，不由模型决定。</li>
+  <li><code>workflow_adapters.py</code>：W1–W6 的复制、物化、config 改写、phase 目标。</li>
+  <li><code>analysis_runner.py</code> + SSH worker + 私有 tmux + flock：远端串行准入，本机停服务不杀远端任务。</li>
+  <li><code>adaptive_routing.py</code>：auto / emergency / standard；5% 抽样 + Kraken 门槛。当前 auto 在高置信时仍可能结束整条 pipeline（设计文档已要求改为「快报后继续」）。</li>
+  <li><code>conversation_contract.py</code>：模型只能 respond / clarify / propose_patch，不能直接启动计算。</li>
+  <li>报告：Open WebUI 后端按 telemetry 渲染，禁止模型输出可执行 HTML。</li>
+</ul>
+<p>同时存在明显的「两套运行态」：cyclone <code>/data/bioagent/agent</code> 仍是早期 adapter / runtime / config 三文件结构，README 还停留在「模型通过 Skill 两次确认后 Bash 调 Snakemake」。评测、演示、开发若走错目录，会看到完全不同的系统。</p>
+
+<h3>3.3 交互层：可用骨架，不是竞争力</h3>
+<p>Open WebUI fork 提供登录、聊天、分析页、Dashboard、System Status。分析页已能做远端文件选择、方案确认、模式切换；Dashboard 项目数组仍是静态示例；大文件上传未闭环；真实项目 / 成员 / 权限未建立。这些对内部试用足够，对疾控私有化不够，也<strong>不应再被当成核心建设对象</strong>——开源 WebUI 或 DeepSeek Harness 前端都可以替换。</p>
+
+<h3>3.4 知识层：最大缺口，也是战略上最不该空着的一层</h3>
+<p>研究方案把 ICTV 知识、陷阱库、规则层、文献引用写成系统差异点。现状是：</p>
+<ul>
+  <li>检索契约（Citation / RetrievalAdapter）已定义，但 <code>ConversationAction.validate_action</code> 会清空 citations。</li>
+  <li>TaxonAgent 仅暴露 <code>ictv_family_info</code>，本机默认关闭，首次调用很慢，且不是本地知识快照。</li>
+  <li><code>XvirMind_old/knowledge</code> 与 <code>knowledge_graph</code> 只是 2026-04 的 YAML/Markdown 占位，不能当知识库。</li>
+  <li>没有 SQLite 资料包、没有 FTS 索引、没有审核发布流、没有知识版本与报告绑定。</li>
+</ul>
+<p>也就是说：系统现在能「算出一些数」，还不能「用本地、可追溯的专业知识解释这些数」。</p>
+
+<h3>3.5 模型层：开发期云端模型，生产期本地化未立项</h3>
+<p>开发链路固定为 Claude Agent SDK → MiniMax-M3。没有 provider 解耦，没有量化本地模型，没有在算力受限条件下的结构化输出评测，更没有用专家反馈做微调的数据管道。疾控私有化部署的核心难点——小显存、量化、断网、结构化动作稳定——目前都还停留在设计文档里。</p>
+
+<h2 id="s4">4. 对照研究方案的模块完成度</h2>
+<table>
+  <thead><tr><th>研究方案模块</th><th>完成度</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>双节点架构（交互层 + 计算层）</td><td><span class="tag done">高</span></td><td>cyclone 编排、195.66 计算，方向正确。桥接目前是 SSH worker，不是方案里的 MCP 远程 runner。</td></tr>
+    <tr><td>Open WebUI 官方前端</td><td><span class="tag part">中</span></td><td>已 fork 并做分析页。Dashboard / 权限 / 上传仍缺。战略上应视为可替换壳。</td></tr>
+    <tr><td>Snakemake W1–W6</td><td><span class="tag done">高</span></td><td>部署完成；Agent 适配代码存在；全链路真实验收与库版本证明不足。</td></tr>
+    <tr><td>确定性执行 / 不再让模型写命令</td><td><span class="tag done">高</span></td><td>这是相对 2026-06 演示版最大的实质进展，也是后续本地小模型能落地的前提。</td></tr>
+    <tr><td>应急智能调度（路径 A/B/C）</td><td><span class="tag part">中低</span></td><td>规则基线有；deep 路由已取消；智能模式快报后继续未改完；无 RL，也不应优先做 RL。</td></tr>
+    <tr><td>专家级综合研判</td><td><span class="tag none">低</span></td><td>无矛盾检测、无阈值边界引擎、无 EVE/嵌合陷阱库、无四层结论。报告仍是流程指标说明书。</td></tr>
+    <tr><td>诊断意见书 + 推理链</td><td><span class="tag part">中低</span></td><td>有确定性 HTML 报告和内部技术报告，缺知识引用、冲突项、完整性分析、审核清单。</td></tr>
+    <tr><td>专家打回与持续进化</td><td><span class="tag none">低</span></td><td>无 ReviewEvent、无 pitfall_log、无规则/知识发布闭环。</td></tr>
+    <tr><td>ICTV 子 Agent</td><td><span class="tag part">低</span></td><td>能查科级条目，不能按官方标准计算并判定。知识检索应先于「再做一个 Agent」。</td></tr>
+    <tr><td>注释 Agent / 风险评估 Agent</td><td><span class="tag none">未做</span></td><td>W6 生信流程优先；研究方案中的 AI 扫描仍是展望。</td></tr>
+    <tr><td>Harness Rule/Skill/MCP 回迁 XvirMind</td><td><span class="tag none">已放弃回迁</span></td><td><code>XvirMind_old</code> 保留早期骨架；实现中心已转到 bioagent。这是务实选择，但规范仓与实现仓仍分裂。</td></tr>
+    <tr><td>本地化模型（prod-local）</td><td><span class="tag none">低</span></td><td>仍用 MiniMax。CDC 场景所需的量化、离线、微调尚未开工。</td></tr>
+    <tr><td>≤20 小时 / 紧急 ≤25 分钟验收</td><td><span class="tag none">无正式验收</span></td><td>有资源历史估算，没有按研究方案指标做生产验收。</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s5">5. 对照战略共识的偏差</h2>
+<p>上次讨论已经把竞争力说清楚了。用那四条回看建设，偏差比「功能没做完」更值得重视。</p>
+<table>
+  <thead><tr><th>共识</th><th>建设现实</th><th>评价</th></tr></thead>
+  <tbody>
+    <tr><td>前端和通用 Agent 框架不是壁垒，可替换，甚至可直接接 DeepSeek Harness</td><td>大量工作仍绑在 Open WebUI fork 与 Claude Agent SDK 上；领域逻辑和会话运行时耦合</td><td>工程可用，战略危险。应尽快把「对话运行时」收成可替换 provider，而不是继续加深对某一 Harness 的依赖。</td></tr>
+    <tr><td>真正壁垒是垂直知识库 + 本地模型微调</td><td>知识只有接口空壳；微调数据管道不存在</td><td>与共识相反：当前最弱的恰是被认定最该强的。</td></tr>
+    <tr><td>Agent 与计算服务器分离，用插件 / MCP 接标准流程</td><td>SSH worker + 复制 workflow 目录已经分离进程，但还不是「标准流程插件目录」；MCP 只用于 TaxonAgent 查询</td><td>分离这件事做对了。下一步是把 W1–W6 收成带版本的计算插件，而不是让 Agent 进程长在计算节点里。</td></tr>
+    <tr><td>CDC 私有化：量化本地模型 + 用评测反馈微调</td><td>未进入实施；默认仍是云端 MiniMax</td><td>必须先有任务契约和本地知识快照，再谈微调。否则会在错误接口上训练。</td></tr>
+    <tr><td>交互：选文件 → 自动配对 → 方案 → 报告；标准 / 紧急自适应</td><td>选文件、预检、模式切换、方案编译已有；自动配对仍不够确定；上传、项目权限、快报后继续未完成</td><td>主路径轮廓在，离「产业级流水线」差在可靠性和权限，不差在再做一个聊天技能。</td></tr>
+    <tr><td>多证据研判：计算结果 + 文献 + 知识库；身份、完整性、矛盾检测</td><td>只有计算结果的数值报告</td><td>研判产品尚未诞生。工具库和知识图谱如何支撑报告，目前只有设计，没有数据流实现。</td></tr>
+  </tbody>
+</table>
+
+<div class="two">
+  <div class="card">
+    <h4>做对了、应保留</h4>
+    <ul>
+      <li>模型只提案、确定性服务编译和执行。</li>
+      <li>原始 FASTQ 不搬、不改；产物进独立 run。</li>
+      <li>计算与交互分节点，本机停服务不杀任务。</li>
+      <li>报告由模板渲染，杜绝模型编造数字。</li>
+      <li>W1–W6 用 typed artifact 接入，而不是让模型发明 rule。</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>不该继续加厚的</h4>
+    <ul>
+      <li>把 Open WebUI 做成不可替换的产品本体。</li>
+      <li>在 Claude Agent SDK 上堆更多自主 subagent。</li>
+      <li>强化学习调度、未校准的总概率融合。</li>
+      <li>在知识库为空时先做「更聪明的对话」。</li>
+      <li>把 Dashboard 地图、静态统计当成交付物。</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="s6">6. 主要风险与建设评价</h2>
+<h3>6.1 风险</h3>
+<ol>
+  <li><strong>双运行态分裂。</strong>最新能力在 liufangzhou，cyclone 部署仍是旧演示链路。对外演示或联调很容易测到过时行为。</li>
+  <li><strong>把可替换层当成壁垒。</strong>界面和 Harness 继续加深耦合，后续接 DeepSeek Harness 或纯本地 OpenAI 兼容接口会很痛。</li>
+  <li><strong>本地数据库不可治理。</strong>NT/NR/Kraken/CheckV/rRNA 路径散落在 workflow 配置中，缺少发布清单、哈希、兼容矩阵。私有化交付时无法回答「现场跑的是哪一版库」。</li>
+  <li><strong>知识空心化。</strong>没有审核过的本地语料，研判模块一旦上马，只能让模型背诵参数或外呼云端，直接打穿 CDC 约束。</li>
+  <li><strong>文档领先代码。</strong>顶层设计与实施清单已经写到阶段 5，容易造成「规划即完成」的错觉。本次评价把它们视为目标，不视为现状。</li>
+</ol>
+<h3>6.2 综合评价</h3>
+<p>若把研究方案终态设为 10 分：</p>
+<ul>
+  <li><strong>工程执行力 7/10。</strong>在「不要让模型碰执行真相」这件事上，团队判断准确，落地也快。</li>
+  <li><strong>领域壁垒 2/10。</strong>垂直知识、本地库、本地模型几乎还没进入建设主航道。</li>
+  <li><strong>产业化准备 3/10。</strong>有分节点和 workflow 源码，没有版本化资产包、权限闭环、离线安装和更新通道。</li>
+  <li><strong>产品完成度 4/10。</strong>内部人员可以走通部分分析；疾控用户不能独立完成「项目—上传—标准/紧急—报告—审核」。</li>
+</ul>
+<p>总评：<strong>地基选对了，房子还没往该高的地方盖。</strong>下一阶段如果仍把精力放在通用 Agent 框架或前端交互上，会与已形成的战略共识相悖。</p>
+
+<h2 id="s7">7. 下一步应把重心放在哪里</h2>
+<p>建议建设主轴从「把 Agent 做完整」转为「把可本地交付的领域系统做完整」。顺序不是再堆模型能力，而是：</p>
+<ol>
+  <li><strong>先同步运行态。</strong>以 liufangzhou 的确定性执行栈为唯一实现，对齐 cyclone 部署，避免第三套逻辑。</li>
+  <li><strong>把计算产线收成可迭代插件。</strong>W1–W6（及以后 W9）以 capability + 参考库快照 + 适配器版本发布；Agent 只通过目录调用，计算节点可独立更新。</li>
+  <li><strong>把本地数据库当成一等产品。</strong>为 NT/NR/Kraken/CheckV/rRNA 等建立离线发布、校验、切换、回滚；报告绑定库版本。这是私有化的硬条件。</li>
+  <li><strong>立即启动知识底座，而不是等业务 CRUD 全部做完。</strong>ICTV、工具文档、流程技能、合法文献先做成可审核、可版本化、可断网检索的本地包。</li>
+  <li><strong>在数值报告之上补多证据研判。</strong>身份鉴定、完整性、矛盾检测必须引用计算证据 + 知识/文献；模型只写受校验的说明。</li>
+  <li><strong>把 Harness 降为适配器。</strong>Claude SDK、DeepSeek Harness、本地 vLLM/OpenAI 兼容接口走同一 provider；领域规则不进会话框架。</li>
+  <li><strong>本地小模型只做四类窄任务。</strong>意图、受控改参、带引用问答、证据说明。用冻结任务集和专家修订做评测与后续微调，失败则降级到表单，不自动回云端。</li>
+</ol>
+<p>配套的顶层设计与实施清单已按上述主轴修订为 v1.1，关键词固定为：<strong>本地化、产业化、易迭代更新、本地数据库</strong>。</p>
+
+<div class="foot">
+  评价依据：研究方案 PDF（v0616）；<code>Workflows</code> 目录现状（含 W1–W9、ICTV）；<code>/data/user/liufangzhou/projects/bioagent</code> 源码与 2026-09-09 设计核对；cyclone <code>/data/bioagent</code> 部署目录；<code>XvirMind_old</code> 早期 Harness 原型。不含 Benchmark 专项进展。<br />
+  配套文档：<a href="bioagent-top-level-design.html">系统顶层设计 v1.1</a>　·　<a href="bioagent-implementation-roadmap.md">分阶段实施清单 v1.1</a>
+</div>
+</body>
+</html>

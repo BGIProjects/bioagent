@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>Benchmark 评估体系总结与下一步安排</title><style>
+:root{--bg:#fff;--fg:#1a1a2e;--muted:#555;--accent:#2563eb;--bd:#e2e8f0;--card:#f8fafc;--red:#dc2626;--green:#16a34a;--orange:#ea580c;--purple:#7c3aed}
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;background:var(--bg);color:var(--fg);line-height:1.72;font-size:14.5px;max-width:1080px;margin:0 auto;padding:36px 22px 90px}
+h1{font-size:26px;font-weight:700;margin-bottom:6px}h2{font-size:19px;font-weight:700;margin:34px 0 12px;padding-bottom:7px;border-bottom:2px solid var(--accent)}
+h3{font-size:15.5px;font-weight:600;margin:20px 0 8px;color:var(--accent)}p,li{margin-bottom:6px}ul,ol{margin:6px 0 14px 22px}
+table{width:100%;border-collapse:collapse;margin:10px 0 16px;font-size:12.5px;border:1px solid var(--bd)}
+th{background:var(--accent);color:#fff;padding:8px 9px;text-align:left;font-weight:600}td{padding:7px 9px;border-bottom:1px solid var(--bd);vertical-align:top}
+tr:nth-child(even){background:#f8fafc}
+.callout{padding:12px 14px;border-radius:0 8px 8px 0;margin:12px 0;border-left:4px solid var(--accent)}
+.callout-key{background:#ede9fe;border-left-color:var(--purple)}.callout-warn{background:#fef3c7;border-left-color:var(--orange)}
+.callout-fail{background:#fee2e2;border-left-color:var(--red)}.callout-ok{background:#d1fae5;border-left-color:var(--green)}
+.meta{color:var(--muted);font-size:13px;margin-bottom:14px}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}
+.b-done{background:#d1fae5;color:#065f46}.b-partial{background:#fef3c7;color:#92400e}.b-gap{background:#fee2e2;color:#991b1b}.b-plan{background:#dbeafe;color:#1e40af}
+.kpi{display:inline-block;border:1px solid var(--bd);border-radius:8px;padding:9px 12px;margin:4px;min-width:110px;text-align:center;background:var(--card)}
+.kpi .n{font-size:22px;font-weight:700;color:var(--accent)}.kpi.bad .n{color:var(--red)}.kpi .l{font-size:11px;color:var(--muted)}
+.phase{border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin:10px 0;background:var(--card)}
+.phase h4{margin:0 0 6px;font-size:14px;color:var(--accent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:800px){.grid2{grid-template-columns:1fr}}
+.foot{font-size:11.5px;color:var(--muted);margin-top:28px;border-top:1px solid var(--bd);padding-top:12px}
+code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px}
+pre{background:#0f172a;color:#e2e8f0;padding:12px;border-radius:8px;overflow:auto;font-size:12px}
+</style></head><body>
+<h1>Benchmark 评估体系总结与下一步工作安排</h1>
+<p style="font-size:16px;color:var(--accent);font-weight:600">面向 XvirMind Agent 的全流程、全架构、可版本对比评测 — 整合 VAS-2.0、benchmark_lhy rubric 与公共数据集调研</p>
+<div class="meta">生成时间 2026-08-22 18:08　|　依据：
+<a href="./ViriBench_VAS2_全局评估方案.html">VAS-2.0 全局方案</a>、
+<code>benchmark_lhy/rubric.yaml</code>、
+<code>docs/benchmark数据集.xlsx</code>、
+<code>benchmark/</code> 初版实现
+</div>
+
+<div class="callout callout-key">
+<strong>项目目标（重申）：</strong>对 Agent 的<strong>整体性能、架构设计与计算过程</strong>进行全方位打分，而非仅关注生信结果准确性。
+评估体系应参照 BioAgent Bench、GeneBench-Pro、PMC Agent、τ-Bench、LifeSciBench 等市面方法，构建<strong>数百至上千指标</strong>的六层框架（L1–L6），
+并最终落地为<strong>可自动运行用例、输出多维得分与弱项分析的评估 Agent</strong>。
+</div>
+
+<h2>一、现有工作总览与评价</h2>
+<div class="kpi bad"><div class="n">17.9</div><div class="l">当前 liufangzhou VAS（正式口径）</div></div>
+<div class="kpi"><div class="n">93</div><div class="l">VAS-2.0 指标目录</div></div>
+<div class="kpi"><div class="n">25</div><div class="l">benchmark_lhy 可执行 criteria</div></div>
+<div class="kpi"><div class="n">8</div><div class="l">已调研公共 Benchmark</div></div>
+<div class="kpi"><div class="n">~26 GB</div><div class="l">预计首轮数据下载量</div></div>
+
+<h3>1.1 三条工作线及其定位</h3>
+<table>
+<tr><th>工作线</th><th>产物</th><th>成熟度</th><th>评价</th></tr>
+<tr>
+  <td><strong>VAS-2.0 全局方案</strong><br><code>docs/ViriBench_VAS2_*.html</code></td>
+  <td>六层 × 93 条指标；层权重；正式口径「未测=0」；每层绑定市面模板</td>
+  <td><span class="badge b-partial">方案完成</span></td>
+  <td><strong>优点：</strong>与 XvirMind 总体规划对齐，覆盖 W1–W6、evidence、调度、鲁棒、人机闭环；可防止「单次样本成功虚高」。<br>
+  <strong>不足：</strong>多为目录级指标，缺 case 级证据契约、scorer 实现与金标；需与可执行 rubric 合并，否则难以自动化。</td>
+</tr>
+<tr>
+  <td><strong>benchmark_lhy 可执行 Rubric</strong><br><code>benchmark_lhy/rubric.yaml</code></td>
+  <td>25 条 criteria；每条含 scorer 类型、required_files、metric 公式、0/1/2 分档；case 族协议</td>
+  <td><span class="badge b-partial">规范完成</span></td>
+  <td><strong>优点：</strong>工程可落地性显著高于 VAS-2.0——明确 script/hybrid/llm_grader 分工、证据目录、硬门禁；工作流无关（workflow-agnostic）设计正确。<br>
+  <strong>不足：</strong>21 个 <code>score_*.py</code> 尚未实现；尚无 case 实例库；指标粒度（25）距「数百至上千」仍有数量级差距。</td>
+</tr>
+<tr>
+  <td><strong>公共 Benchmark 数据集调研</strong><br><code>docs/benchmark数据集.xlsx</code></td>
+  <td>8 项已发表工作；下载路径、体量、用途备注</td>
+  <td><span class="badge b-done">调研完成</span></td>
+  <td><strong>优点：</strong>覆盖 L1–L6 所需外部证据源，体量可控（首轮 ~26 GB）；与 rubric 参考文献 [R1]–[R8] 一致。<br>
+  <strong>不足：</strong>尚未下载、未映射到本项目 case；单细胞 benchmark 领域邻近但非病毒宏转录组主场景，需筛选子集。</td>
+</tr>
+<tr>
+  <td><strong>benchmark/ 初版实现</strong><br><code>XvirMind/benchmark/</code></td>
+  <td><code>probe + artifact + simulate</code> 三模式；HTML/JSON 报告；默认评 liufangzhou</td>
+  <td><span class="badge b-partial">原型可用</span></td>
+  <td><strong>优点：</strong>已证明「Agent 更新 → 一键出分」闭环；正式口径下当前 VAS≈17.9 不及格，符合预期。<br>
+  <strong>不足：</strong>未接 benchmark_lhy rubric；L5/L6 多为声明式 0 分；未驱动 plan/execute live run。</td>
+</tr>
+</table>
+
+<h3>1.2 与项目目标的对齐度</h3>
+<div class="grid2">
+<div class="callout callout-ok" style="margin:0">
+<strong>已对齐</strong>
+<ul>
+<li>六层评估框架（执行、推理、调度、解释、鲁棒、人机协作）与目标一致</li>
+<li>强调过程忠实度、证据审计、扰动测试，而非只看生物学对错</li>
+<li>benchmark_lhy 的 case 协议支持「一个数据项 = 一个可独立评分 case」</li>
+<li>scorer 三分法（script / LLM / hybrid）符合业界实践（BioAgent Bench + GeneBench-Pro）</li>
+<li>公共数据集清单为 L3/L6 等薄弱层提供了可迁移评测素材</li>
+</ul>
+</div>
+<div class="callout callout-fail" style="margin:0">
+<strong>关键缺口</strong>
+<ul>
+<li><strong>指标规模：</strong>93（目录）+ 25（可执行）远未达「数百至上千」；需指标展开（每个 criterion 拆多条 metric + 多 case 实例）</li>
+<li><strong>评估 Agent：</strong>尚无独立 Evaluator Agent 自动跑 case、调 scorer、写弱项分析</li>
+<li><strong>金标与 case 库：</strong>virus_list、reasoning_truth、扰动对、跨会话反馈 episode 均未建成</li>
+<li><strong>Live harness：</strong>未像 bioagent-bench 那样驱动 plan→confirm→execute 全链路</li>
+<li><strong>两套体系未统一：</strong>VAS-2.0 百分制权重 vs rubric 0/1/2 分档 + 层内均值，需单一权威计分协议</li>
+</ul>
+</div>
+</div>
+
+<h2>二、benchmark_lhy Rubric 深度评价</h2>
+<p><code>rubric.yaml</code>（schema v2）是当前<strong>最接近可落地</strong>的评分标准，其核心设计优于早期粗粒度 VAS-1.0：</p>
+
+<table>
+<tr><th>层</th><th>Criteria 数</th><th>评测对象</th><th>Scorer 构成</th><th>代表指标形式</th></tr>
+<tr><td>L1 Pipeline Completion</td><td>6</td><td>plan→confirm→execute 全生命周期</td><td>6× script</td><td>stage_coverage、readiness、confirmation_gate、execution_fidelity、artifact_acceptance、report_handoff</td></tr>
+<tr><td>L2 Reasoning Accuracy</td><td>4</td><td>生物学判断（报告呈现之前）</td><td>2 script + 2 hybrid</td><td>interpretation_field_accuracy、conflict_resolution、boundary_triplet、biological_trap</td></tr>
+<tr><td>L3 Scheduling Intelligence</td><td>4</td><td>紧急度策略 + CPU/GPU 调度</td><td>4× script</td><td>urgency_tier、policy_delta、resource_allocation、deadline_met</td></tr>
+<tr><td>L4 Explanation Quality</td><td>4</td><td>成功后的 HTML 报告质量</td><td>2 script + 1 hybrid + 1 llm</td><td>grounding、evidence_citation、checklist、actionability</td></tr>
+<tr><td>L5 Robustness</td><td>3</td><td>paired clean/perturbed</td><td>3× script</td><td>corruption_response、decoy_rejection、prompt_inflation_retention</td></tr>
+<tr><td>L6 Human-AI Collaboration</td><td>4</td><td>跨会话记忆/skill</td><td>3 script + 1 hybrid</td><td>feedback_extraction、memory_distillation、cross_session_application、learning_gain</td></tr>
+</table>
+
+<p><strong>Scorer 统计：</strong>script 20 · hybrid 4 · llm_grader 1（纯 LLM 仅 L4.4 actionability；其余语义分均在 hybrid 子评分中）。</p>
+
+<div class="callout callout-warn">
+<strong>评价结论：</strong>benchmark_lhy rubric 是<strong>「可执行规范层」</strong>，应作为 VAS-2.0 的落地骨架。
+VAS-2.0 的 93 条指标应映射为：① rubric 的 25 criteria；② 每个 criterion 下的 metric 子项；③ 每个 metric 在多个 case 上的实例化（case × metric → 可达数百至上千评分点）。
+<strong>禁止</strong>维护两套独立、不可互操作的评分体系。
+</div>
+
+<h3>2.1 每条 Criterion 的结构（已实现规范，待实现代码）</h3>
+<pre>Criterion = 评测内容(name)
+          + 打分方式(scorer: script | hybrid | llm_grader)
+          + 需要的文件(required_files[])
+          + 评分方法(score 0/1/2 档位 + hard-fail)
+          + 评分指标(metric: formula + form)
+          + case_family + implementation(score_*.py)</pre>
+
+<h2>三、公共 Benchmark 数据集评价与映射</h2>
+<p>来源：<code>benchmark数据集.xlsx</code>（均为已发表工作）。建议按<strong>与本项目 Agent 能力的相关性</strong>和<strong>落地成本</strong>分优先级。</p>
+<table>
+<tr><th>Benchmark</th><th>主要服务层</th><th>体量</th><th>可提取能力</th><th>获取方式</th><th>优先级</th></tr>
+<tr><td><strong>BioAgent Bench</strong></td><td>L1/L5</td><td>~1.1 GB</td><td>生信 Agent 端到端 + 三类扰动</td><td><code>git + OSF viral-metagenomics</code></td><td><span class='badge b-done'>高</span></td></tr><tr><td><strong>GeneBench-Pro</strong></td><td>L2/L4</td><td>~16 MB</td><td>多阶段统计推理 + 确定性金标</td><td><code>HuggingFace</code></td><td><span class='badge b-done'>高</span></td></tr><tr><td><strong>Semantic Scheduling</strong></td><td>L3</td><td>~0.3 MB</td><td>语义调度/优先级约束</td><td><code>git clone</code></td><td><span class='badge b-plan'>中</span></td></tr><tr><td><strong>DynaSchedBench</strong></td><td>L3</td><td>~121 MB</td><td>动态调度 Agent + 可观测性悖论</td><td><code>git clone</code></td><td><span class='badge b-plan'>中</span></td></tr><tr><td><strong>单细胞 Agent Benchmark</strong></td><td>L1/L2/L4</td><td>~24.4 GB</td><td>50 真实单细胞分析任务</td><td><code>git + Zenodo</code></td><td><span class='badge b-plan'>中（领域邻近）</span></td></tr><tr><td><strong>LongMemEval</strong></td><td>L6</td><td>~294 MB</td><td>长期交互记忆</td><td><code>git + HF</code></td><td><span class='badge b-done'>高</span></td></tr><tr><td><strong>LoCoMo</strong></td><td>L6</td><td>~7.7 MB</td><td>超长对话记忆</td><td><code>git clone</code></td><td><span class='badge b-plan'>中</span></td></tr><tr><td><strong>MemoryAgentBench</strong></td><td>L6</td><td>~79 MB</td><td>增量多轮记忆</td><td><code>git + HF</code></td><td><span class='badge b-done'>高</span></td></tr>
+</table>
+
+<h3>3.1 数据集 → 层/指标 映射策略</h3>
+<table>
+<tr><th>外部 Benchmark</th><th>转化为本项目 case 的方式</th><th>服务 criteria / VAS 指标</th></tr>
+<tr><td>BioAgent Bench</td><td>viral-metagenomics 任务 → clean_end_to_end + perturbation_pair cases；复用其 corrupted/decoy/bloat 生成逻辑</td><td>L1.*, L5.1–L5.3；对齐 VAS L1.VER/SCR、L5.COR/DEC/PBR</td></tr>
+<tr><td>GeneBench-Pro</td><td>多阶段推理题 → reasoning_challenge cases；确定性数值金标 → script scorer</td><td>L2.1–L2.4；VAS L2.REC/PREC/F1/BND/CAL</td></tr>
+<tr><td>Semantic Scheduling + DynaSchedBench</td><td>紧急/资源约束场景 → urgency_pair cases；对接 adaptive_routing 决策日志</td><td>L3.*；VAS L3.RAC/EHR/TBR/RUT/DDL</td></tr>
+<tr><td>LongMemEval / LoCoMo / MemoryAgentBench</td><td>跨会话 episode → cross_session_feedback_episode；映射 pitfall/skill 持久化</td><td>L6.*；VAS L6.ACC/FIX/PIT/FSW/UI</td></tr>
+<tr><td>单细胞 Agent Benchmark</td><td>筛选与「宏转录组流程编排」相近的 5–10 个任务作泛化测试（非主赛道）</td><td>L1 工作流无关性验证、L4 报告 rubric 校准</td></tr>
+</table>
+
+<div class="callout callout-key">
+<strong>原则：</strong>不强行把外部工作流改写成 Cyclone Snakemake；每个 case 保留来源任务的输入、流程契约与金标（benchmark_lhy README 原则 1–3）。
+本项目的 W1–W6 仅作为<strong>一类 case 族</strong>，而非评测全集。
+</div>
+
+<h2>四、统一评估架构（推荐终态）</h2>
+<pre>
+┌─────────────────────────────────────────────────────────────────┐
+│                    Evaluation Agent (目标)                       │
+│  调度 case → 驱动被测 Agent → 收集 evidence → 调用 scorers        │
+│  → 聚合 VAS → 生成弱项分析 HTML/JSON                              │
+└─────────────────────────────────────────────────────────────────┘
+         ▲                    ▲                    ▲
+         │                    │                    │
+   case registry        scorer registry      metric catalog
+ (fixtures/cases/*)   (score_*.py + LLM)   (vas2.json ↔ rubric.yaml)
+         ▲                    ▲
+         │                    │
+  公共 benchmark 适配层          证据契约 evidence/&lt;case_id&gt;/&lt;run_id&gt;/
+  (BioAgent/GeneBench/...)     (rubric common_required_files)
+</pre>
+
+<h3>4.1 统一计分协议（建议 VAS-3.0）</h3>
+<ol>
+<li><strong>原子分：</strong>每个 criterion 在单个 case 上得 0/1/2（rubric 既有定义）</li>
+<li><strong>Criterion 数据集分：</strong><code>100 × Σcase_score / (2 × applicable_cases)</code>（rubric 既有公式）</li>
+<li><strong>层分 Li：</strong>层内 criterion 数据集分的<strong>未加权均值</strong>（rubric）或按 VAS-2.0 层内权重加权（需二选一，推荐：层内用 rubric 均值，层间用 VAS-2.0 权重）</li>
+<li><strong>总分 VAS：</strong><code>0.18·L1 + 0.28·L2 + 0.10·L3 + 0.18·L4 + 0.16·L5 + 0.10·L6</code></li>
+<li><strong>正式口径：</strong>缺证据文件 → 该 criterion 在 case 上得 0；未实现 scorer → 整 criterion 标记 <code>blocked</code> 且计 0（禁止 NA 重归一化）</li>
+<li><strong>指标展开：</strong>每个 criterion 的 metric 子项 × case 数 = 可报告细粒度指标（可达 500–2000 条）</li>
+</ol>
+
+<h2>五、当前 Agent（liufangzhou）阶段性结论</h2>
+<div class="callout callout-fail">
+基于 <code>benchmark/</code> 正式口径冒烟评测（v120 案例，不具代表性）：<strong>VAS ≈ 17.9，不及格</strong>。
+层分：L1≈58 · L2≈7.5 · L3≈40 · L4≈8 · <strong>L5=0 · L6=0</strong>。
+这与「仅接通 W1+W2、无研判引擎、无扰动套件、无反馈闭环」的现状一致——<strong>评估体系正确地惩罚了全局能力缺口</strong>，不应被单次 e2e 成功掩盖。
+</div>
+<table>
+<tr><th>能力域</th><th>现状</th><th>对应薄弱 criteria / 指标</th></tr>
+<tr><td>流程执行 L1</td><td>W1/W2 可跑通；W3–W6、evidence.json、断点续跑未证明</td><td>L1.4–L1.6；VAS L1.W3–W6/EVJ/BPR</td></tr>
+<tr><td>推理 L2</td><td>无四层结论、矛盾引擎、virus_list 金标比对</td><td>L2.2–L2.4 全部；VAS L2.*</td></tr>
+<tr><td>调度 L3</td><td>规则路由 B 可工作；无紧急通道收益、RL 调度</td><td>L3.2–L3.4；VAS L3.EHR/TBR/RLB</td></tr>
+<tr><td>解释 L4</td><td>确定性报告部分可追溯；推理链/清单/多格式不足</td><td>L4.2–L4.4；VAS L4.COT/CHK/AGG</td></tr>
+<tr><td>鲁棒 L5</td><td>未跑扰动对</td><td>L5.1–L5.3 全部</td></tr>
+<tr><td>人机 L6</td><td>无 pitfall_log、反馈 UI、跨会话记忆评测</td><td>L6.1–L6.4 全部</td></tr>
+</table>
+
+<h2>六、下一步工作安排（分阶段）</h2>
+
+<div class="phase"><h4>阶段 0 · 体系合并（1–2 周）<span class="badge b-plan">P0</span></h4>
+<ul>
+<li>建立 <code>metrics/vas2_rubric_map.yaml</code>：93 条 VAS 指标 ↔ 25 条 rubric criteria ↔ scorer 实现文件</li>
+<li>在 <code>benchmark/</code> 中引入 rubric schema v2 解析器，替换当前硬编码 probe 逻辑</li>
+<li>统一输出：<code>report.html</code> 同时展示 VAS 总分、六维层向量、criteria 0/1/2 明细、blocked 清单</li>
+<li>产出：<code>Benchmark评估体系总结与下一步安排.html</code>（本文）+ 合并后的 <code>DESIGN.md</code></li>
+</ul></div>
+
+<div class="phase"><h4>阶段 1 · 数据集与 case 工厂（2–4 周）<span class="badge b-plan">P0</span></h4>
+<ul>
+<li><strong>优先下载（~1.5 GB）：</strong>BioAgent Bench viral-metagenomics + GeneBench-Pro + LongMemEval oracle</li>
+<li><strong>次优先（~200 MB）：</strong>Semantic Scheduling、DynaSchedBench、MemoryAgentBench、LoCoMo</li>
+<li><strong>暂缓：</strong>单细胞 benchmark 全量 24 GB → 先抽 5–10 case</li>
+<li>实现 <code>scripts/import_external_case.py</code>：外部任务 → <code>case/task_contract.yaml</code> + <code>gold_contract.yaml</code></li>
+<li>首批目标：<strong>30 cases</strong>（L1×10, L2×6, L3×4, L4×4, L5×3, L6×3）覆盖 25 criteria</li>
+</ul></div>
+
+<div class="phase"><h4>阶段 2 · Scorer 实现（4–8 周）<span class="badge b-plan">P0</span></h4>
+<ul>
+<li>按 rubric 实现 21 个 <code>score_*.py</code>（先 L1/L5 script-only，再 L2/L4 hybrid，最后 L6）</li>
+<li>建立 <code>evaluator/grader_manifest.yaml</code>：冻结 LLM provider、prompt hash、temperature=0、三轮 median</li>
+<li>实现 evidence 收集器：每次 run 自动落盘至 <code>evidence/&lt;case_id&gt;/&lt;run_id&gt;/</code>（对齐 rubric common_required_files）</li>
+<li>里程碑：L1+L5 全 script scorer 跑通 → 可对 Agent 版本做<strong>可重复回归</strong></li>
+</ul></div>
+
+<div class="phase"><h4>阶段 3 · Live Harness + 评估 Agent（6–10 周）<span class="badge b-plan">P1</span></h4>
+<ul>
+<li>扩展 <code>benchmark/harness/run_case.py</code>：进程内调用 liufangzhou <code>SessionManager</code>（参考 bioagent-bench）</li>
+<li>支持 case_family：clean_end_to_end、perturbation_pair、urgency_pair、cross_session_feedback_episode</li>
+<li>构建 <strong>Evaluator Agent</strong>：读取 rubric → 调度 case → 调用 scorers → 聚合 → 输出弱项分析（按层/按 criterion 排序 Top gaps）</li>
+<li>弱项分析模板：「缺证据」「hard-fail 原因」「较上版退化 Δ」「建议优先修复项」</li>
+</ul></div>
+
+<div class="phase"><h4>阶段 4 · 指标展开与 CI 门禁（持续）<span class="badge b-plan">P1</span></h4>
+<ul>
+<li>case 库扩展至 <strong>100+ cases</strong>，细粒度指标点 500–2000（criterion × case × metric 子项）</li>
+<li>Agent 每次发版跑 <code>./run_eval.sh --suite full</code>；VAS 与六维向量入库对比</li>
+<li>及格线：VAS≥60 且 L5、L6 不得为 0（正式发布门禁）</li>
+<li>对标文献：补充 PMC Agent / τ-Bench pass^k / LifeSciBench rubric calibration（κ≥0.70）</li>
+</ul></div>
+
+<h2>七、优先级矩阵（资源有限时的执行顺序）</h2>
+<table>
+<tr><th>顺序</th><th>任务</th><th>产出</th><th>解锁能力</th></tr>
+<tr><td>1</td><td>合并 VAS-2.0 + rubric.yaml 计分协议</td><td>单一权威 metrics 目录</td><td>版本间可比</td></tr>
+<tr><td>2</td><td>实现 L1 script scorers + evidence 落盘</td><td>plan/execute 过程可审计打分</td><td>过程评测（非结果）</td></tr>
+<tr><td>3</td><td>下载 BioAgent Bench + 建 10 个 L1/L5 cases</td><td>扰动对 + clean e2e</td><td>L5 从 0 起步</td></tr>
+<tr><td>4</td><td>GeneBench-Pro → L2 reasoning cases</td><td>确定性推理金标</td><td>L2 可信打分</td></tr>
+<tr><td>5</td><td>LongMemEval → L6 episodes</td><td>跨会话反馈 case</td><td>L6 从 0 起步</td></tr>
+<tr><td>6</td><td>Live harness + Evaluator Agent</td><td>全自动评测报告</td><td>发版门禁</td></tr>
+</table>
+
+<h2>八、总结</h2>
+<div class="callout callout-ok">
+<strong>总体评价：</strong>团队已完成从「想法」到「可执行规范」的关键跃迁——
+<code>benchmark_lhy/rubric.yaml</code> 提供了业界水准的 criterion 级评分标准；
+<code>benchmark数据集.xlsx</code> 提供了可复用的公共证据源；
+<code>VAS-2.0</code> 提供了与 XvirMind 全局规划对齐的百分制框架；
+<code>benchmark/</code> 验证了「一键出分」工程闭环。
+<strong>当前最大短板</strong>不是标准不够细，而是<strong>case 库、scorer 实现、live harness、评估 Agent 四条执行链路尚未打通</strong>。
+下一步应<strong>以 rubric.yaml 为唯一可执行真相源</strong>，将 VAS-2.0 作为聚合视图，按阶段 0→2 快速形成可回归评测能力，再向数百指标与评估 Agent 演进。
+</div>
+
+<div class="foot">
+相关文件：
+<a href="./ViriBench_VAS2_全局评估方案.html">VAS-2.0 全局方案</a> ·
+<a href="./Agent实评报告_v120_VAS2.html">v120 案例实评</a> ·
+<code>../benchmark_lhy/rubric.yaml</code> ·
+<code>../benchmark/README.md</code> ·
+<code>./benchmark数据集.xlsx</code>
+</div>
+</body></html>
