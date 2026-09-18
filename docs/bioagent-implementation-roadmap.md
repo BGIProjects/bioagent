@@ -1,6 +1,6 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.8；修订日期：2026-09-13；原始源码基线：2026-09-09。
+> 版本：1.9；修订日期：2026-09-18；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
 > M1 第一轮推进资产检查、离线验证与开发评测；第二轮推进最小项目与权限，第三轮完成项目入口和页面体验收尾，第四轮推进 A2 元信息与背景版本，第五轮补技术重复确认，第六轮推进 A3 三模式、智能续跑与阶段报告，见第 1.3、1.5–1.9 节及六轮实施记录。完整 M0／M1 均不勾选验收。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
@@ -137,6 +137,18 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 
 实际命令、产物、测试结果、限制与回退见[第七轮记录](m1-07-standard-delivery-report-implementation-record.md)。
 
+### 1.11 M1 第八轮范围与实际状态（2026-09-18，用户确认）
+
+本轮只推进 **A2 受控需求／参数、B1 最小 CapabilityManifest 与 C1 受控改参评测切片**，不宣称完整 A2、B1 或 C1 完成。没有新增数据库表或迁移；复用方案 JSON、proposal 与 revision。
+
+- 已完成：Workflow 1 发布 `read_qc`、`rrna_filter`、`sample_merge`、`assembly`、`contig_filter` 五个交付终点；确定性编译最小依赖闭包，排除必要步骤时返回依赖冲突，已有 contigs 时可以跳过 assembly。
+- 已完成：fastp manifest v1 发布六个白名单参数与 `workflow_default`；execution spec／planner 升至 v3，冻结规范化参数、manifest v1、adapter v1 与方案哈希。远端 worker 排队前复验；旧能力契约必须重编。
+- 已完成：proposal 在登记前确定性预编译，合法提案展示目标、排除、参数 before／after、影响和重编步骤；冲突提案不保存。`/analysis` 使用“更改需求”，公开能力目录来自 `GET /api/v1/analysis/capabilities`。
+- 已完成：五个固定受控需求开发案例与离线宿主验证。经显式授权运行三例真实 MiniMax smoke，但 SDK 报 `MiniMax-M3` 未识别；两例 `MODEL_UNAVAILABLE`、一例 `MODEL_TIMEOUT`，均未生成越权提案，不记为通过。
+- Cyclone：`read_qc`、`rrna_filter` 及带 `length_required=50` 的 DAG dry-run 均通过；实际 fastp run 最终完成，仅选择 fastp，输入指纹复核不变，遥测登记 fastp 1.3.2。前两次 run 分别暴露 YAML 作用域误替换和 wrapper 布尔字面量问题，修复后保留失败记录。
+
+完整实现、验证、限制和回退见[第八轮记录](m1-08-controlled-requirements-implementation-record.md)。上传、标准／宽松审核预设、其他工具参数、完整 ReleaseSet／参考库身份、专家语义审核和本地模型比较仍延期，**完整 A2、B1、C1、M0／M1 均不勾选验收**。
+
 ## 2. 当前基线、职责与契约
 
 ### 2.1 源码与运行验证边界
@@ -147,20 +159,20 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 | agent           | `13956ba`   | 动作契约、编译、Workflow 1–6 适配、初筛、worker、runner 和证据 |
 | open-webui      | `fdea57fcb` | Dashboard、AnalysisPage、业务模型、报告与数值校验              |
 
-| 当前代码基础                                               | 待补能力或限制                                                                    |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Dashboard 静态项目数组；分析对象已有 user／chat 关联       | 真实项目、成员、权限与统计                                                        |
-| 远端文件、typed artifact、预检、revision、symlink 双重指纹 | 浏览器到计算节点的专用大文件上传闭环、完整样本／批次元信息                        |
-| ConversationAction 支持回答、追问、goals／viral_type 提议  | 受控参数预设；模型不得直接启动计算                                                |
-| Workflow 1–6 的目录、DAG 与执行适配                        | 逐项真实数据验证、可交付插件与参考库快照；代码存在不证明所有库可用                |
-| auto／emergency／standard；智能模式初筛后续跑完整 DAG      | 持久队列、waiting_resources 与受控恢复；真实多样本及完整流程仍待验证              |
-| Workflow 1 去 rRNA；Workflow 3 宿主识别                    | 宿主序列去除为独立能力，不能与前两者混用                                          |
-| 私有 tmux、flock 串行准入、reconciliation、资源历史        | 显式优先级队列和受控续跑；锁竞争不保证业务排序                                    |
-| schema v4 数值证据、复算和模板报告                         | 候选级规则、知识引用、研判及审核                                                  |
-| Citation／RetrievalResult／RetrievalAdapter 已定义         | 本地语料、索引和可信引用闭环；ConversationAction 当前会清空 citations             |
-| MiniMax-M3 经 Claude Agent SDK；本机 TaxonAgent 关闭       | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
+| 当前代码基础                                                                 | 待补能力或限制                                                                    |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Dashboard 静态项目数组；分析对象已有 user／chat 关联                         | 真实项目、成员、权限与统计                                                        |
+| 远端文件、typed artifact、预检、revision、symlink 双重指纹                   | 浏览器到计算节点的专用大文件上传闭环、完整样本／批次元信息                        |
+| ConversationAction 支持回答、追问、交付终点、排除步骤及 fastp 白名单参数提议 | 其他工具参数与审核预设；模型仍不得直接启动计算                                    |
+| Workflow 1–6 的目录、DAG 与执行适配                                          | 逐项真实数据验证、可交付插件与参考库快照；代码存在不证明所有库可用                |
+| auto／emergency／standard；智能模式初筛后续跑完整 DAG                        | 持久队列、waiting_resources 与受控恢复；真实多样本及完整流程仍待验证              |
+| Workflow 1 去 rRNA；Workflow 3 宿主识别                                      | 宿主序列去除为独立能力，不能与前两者混用                                          |
+| 私有 tmux、flock 串行准入、reconciliation、资源历史                          | 显式优先级队列和受控续跑；锁竞争不保证业务排序                                    |
+| schema v4 数值证据、复算和模板报告                                           | 候选级规则、知识引用、研判及审核                                                  |
+| Citation／RetrievalResult／RetrievalAdapter 已定义                           | 本地语料、索引和可信引用闭环；ConversationAction 当前会清空 citations             |
+| MiniMax-M3 经 Claude Agent SDK；本机 TaxonAgent 关闭                         | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-本轮复核相关代码、自动测试和受限 Cyclone DAG dry-run；未执行生信 shell command、模型评测或远端参考库检查。任务完成状态分别记录：代码存在、自动测试通过、demo 通过、真实分析验证通过、可私有化交付；对用户开放范围另行记录。
+截至第八轮已复核相关代码、自动测试、Cyclone DAG dry-run 与一次 W1 fastp 实跑，并按显式授权执行受控需求 MiniMax smoke；模型 smoke 因 provider 不可用／超时未通过。未执行其他 workflow 全流程或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、demo 通过、真实分析验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 
@@ -293,8 +305,10 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 - [ ] 完成后原子提交到项目数据根，复用 resolve／preflight／fingerprints；未完成文件不能进入 dataset 或分析方案，不在应用内存保存整份 FASTQ。
 - [ ] 保存样本、测序批次、宿主背景、类型、可选表型及对照关系；技术重复合并需确认。计算相关变化产生新 dataset／plan revision，纯报告背景修订单独版本化。
 - [ ] 从 B1 的参数 schema 开放具名预设。首期审核 fastp 标准／宽松预设，模型只提 preset_id 或白名单字段，用户看到数值差异和受影响步骤，确认后重新编译。
+- [x] **第八轮切片：**发布 fastp manifest v1、`workflow_default` 与六个精确值白名单；模糊数值必须追问，合法提案在保存前预编译并展示参数差异与影响。标准／宽松审核预设仍未发布。
 - [ ] 区分 rRNA 去除、宿主序列去除和宿主识别。宿主过滤只有参考库、artifact、合法依赖变体和验证案例齐全才开放；不能跳过必需步骤后伪造 clean reads 类型。
 - [ ] 方案冻结展开参数、插件／工具、参考库、规则及执行 spec 版本。旧计划可读，但未知版本不自动补写，新启动要求重新编译确认。
+- [x] **第八轮切片：**execution spec v3 冻结 fastp 展开值、manifest v1、adapter v1 和方案哈希；旧能力契约可读但禁止启动。参考库、规则与完整 ReleaseSet 冻结仍未完成。
 
 **产物／接口：**uploads 创建／状态／分块／完成／终止接口；dataset 元信息；受控 ProposedPatch／options 与 ReleaseSet。**验收：**分块重复、断线、摘要不符、路径越界、配对错、非法参数、预设未发布、输入变化和缺依赖均有明确结果。合法表单和自然语言预设编译成同一方案。**回退：**关闭新增参数或上传入口，保留已提交文件；执行 spec 不兼容时升级版本，不为旧配置启动隐式兼容流程。
 
@@ -354,10 +368,12 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 **负责人：**执行工程＋生信维护者。**依赖：**S0；可与 B0 并行。**代码落点：**`workflow_catalog.py`、`pipeline_spec.py`、`workflow_adapters.py`、`analysis_runner.py` 和 worker 发布模块。
 
 - [ ] 将已有 Workflow 1–6 适配包装为 CapabilityManifest，登记 artifact、参数、资源、软件／参考库、解析器和验证状态。现有 catalog／adapter 保持执行能力的唯一来源，不重写一套通用插件引擎。
+- [x] **第八轮切片：**建立最小通用 manifest 结构，登记 W1 公开交付终点及 fastp 的 stage、输入／输出 artifact、参数 schema、版本、验证状态和影响；W2–W6 及其他工具尚未逐项发布。
 - [ ] 计算节点只执行已注册、版本允许且参数合格的适配器。workflow 源码、run-local 变更与解析器版本进入执行清单；未通过验证的能力对用户不可选。
 - [ ] 将实际参考库登记为不可变版本目录，记录来源、许可、下载或发布日期、索引格式、构建命令、工具版本、清单和哈希；未知版本不能包装成已校验 release。
 - [ ] 工具与参考库兼容关系进入 ReleaseSet。编译时绑定，执行前核对；产物携带真实使用的版本，不随默认库切换而改变历史记录。
 - [ ] 按数据集预检→DAG dry-run→登记真实 run 的顺序逐项验证，所有产物进入 run root；原始 FASTQ 与源 workflow 不就地修改。大型库完整校验安排在发布环节，正常任务不重复扫描全库。
+- [x] **第八轮切片：**W1 `read_qc`／`rrna_filter` dry-run 与 fastp `length_required=50` 实跑完成；wrapper 和配置仅写 run-local 副本，完成后输入双重指纹一致。其他 workflow 的 manifest 验收仍未完成。
 
 **产物／接口：**CapabilityManifest、参考库 release、兼容清单和执行快照；编译／启动接口接受已验证的版本组合。**验收：**缺库、索引不兼容、插件未注册、参数非法及执行前版本改变被拒绝；合法输入可在配置的计算节点产生可核验 artifact。**回退：**切回已验证插件与库组合；在途任务保留原 release，旧产物解析器继续可定位，不用新版本静默重解读旧报告。
 
@@ -428,6 +444,7 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 **负责人：**模型工程＋领域专家。**依赖：**C0、B0；真实 proposal 的最终联调使用 A2，不阻塞冻结契约上的独立评测。**代码落点：**现有 conversation benchmark、provider 测试及新增离线评测／审核样例工具。
 
 - [ ] 分别评测意图／追问、受控改参、引用问答、证据说明；前两类可用能力目录和动作样例先行，后两类使用 B0 的固定资料／证据包，不等待所有类群收录。
+- [x] **第八轮切片：**新增五个受控需求固定案例，覆盖只做质控、`length_required=50`、模糊长度追问、assembly 依赖冲突及命令／路径拒绝；离线宿主契约通过，真实 MiniMax 三例因 provider 不可用／超时未通过。
 - [ ] 比较时使用相同任务、schema、知识／规则快照与推理预算；有显式授权才运行 MiniMax-M3 云端基线，未获授权则记录当前可得本地基线。
 - [ ] 影子输出只写独立评测记录，不注册真实 proposal、不修改正式报告、不启动计算。模型返回字段、耗时、错误和遗漏分别统计，专家审核语义适用性。
 - [ ] 按四类任务收集审核过的输入、合格输出、不合格输出与修订理由，保留证据和知识快照。A4 上线前采用结构化审核文件，之后接入同一导出契约。
