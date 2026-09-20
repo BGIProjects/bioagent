@@ -156,6 +156,7 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 - 已完成：Agent 固定 `claude-agent-sdk==0.2.103`／Claude Code 2.1.179，使用 MiniMax 中国大陆端点与 `MiniMax-M3[1m]` SDK 映射；health 校验并公开非敏感 SDK 版本。有效 UUID 保留 resume，缺失或非 UUID ID 使用单次临时 session。
 - 已完成：authenticated capabilities 不再被 project guard 误拦；首次聊天 UUID 到下游模型 metadata 的链路有回归测试。宿主三服务、health、Backend capabilities 与一次带 UUID 的代理对话均验证正常。
 - 实际 smoke：三例均不再出现 unavailable、timeout 或 unrecognized model；`vague-length` 通过，`qc-only` 与 `fastp-length-50` 被严格 schema 拒绝为 `MODEL_SCHEMA_INVALID`，未登记 proposal、未自动补跑。
+- Dashboard 后续修复：一般聊天改用 message-only 契约，并安全接收通过该 schema 的 MiniMax 自然文字；只有 `source=analysis` 使用 action／proposal 契约。authenticated streaming smoke 返回正文且无错误，Analysis 严格边界保持不变。
 - 诊断约束：Codex 沙箱可能无法访问宿主 tmux socket／loopback；冲突时必须在沙箱外复核服务状态。TaxonAgent、正式知识库、专家语义审核、本地模型和完整 C1 继续延期。
 
 根因、配置、测试、实际耗时、限制与回退见[第九轮记录](m1-09-conversation-service-recovery-implementation-record.md)。第八轮失败记录保留，**完整 C1、M0／M1 仍不勾选验收**。

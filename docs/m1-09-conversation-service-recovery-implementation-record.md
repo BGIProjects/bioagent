@@ -55,10 +55,19 @@
 
 三例均完成 provider 往返，不再出现 `MODEL_UNAVAILABLE`、`MODEL_TIMEOUT` 或 `unrecognized_model`，说明本轮的 SDK／端点／模型身份故障已恢复。前两例模型候选未通过既有严格 schema，因此没有 proposal 被登记，也没有自动修复或补跑；这属于后续 C1 输出质量／专家语义评测，不放宽宿主 schema 来掩盖失败。
 
+## Dashboard streaming 后续修复
+
+同日浏览器复核发现 `/analysis` 正常，但 Dashboard streaming 仍返回 `MODEL_UNAVAILABLE`。对应 SDK transcript 显示 MiniMax 已生成自然语言正文，却没有只返回 `StructuredOutput`；Agent 当时让 Dashboard 与 Analysis 共用 `ConversationAction` schema，并把单轮只有文字的终态误分类为 provider unavailable。
+
+- Dashboard 现在使用独立的 message-only 契约和精简 prompt，只产生文字回复，不生成 action trace 或 proposal；涉及数据集、方案、参数和执行变更时引导用户进入 `/analysis`。
+- 只有 `chat_meta.source=analysis` 才启用原有严格 `ConversationAction`。MiniMax 的普通 `TextBlock` 可包装为 message 后继续接受调用方 schema 与输出预算校验；synthetic／API error 不会成为回复，Analysis 纯文字仍被 schema 拒绝。
+- 没有新增模型调用、修复重试、HTTP 接口、数据库迁移或 Open WebUI 代码。Agent 全量 pytest 为 161 passed、2 skipped；Backend metadata／首次聊天 11 项及 Dashboard Vitest 4 项通过。
+- 重启后三个本机服务与 Cyclone SSH 正常。使用合成文本经 authenticated Open WebUI proxy 执行一次 `local:dashboard:` streaming smoke，返回 200、有正文、正常结束且无错误事件；未发送 FASTQ、私有路径或密钥，也未重复 `/analysis` 云端 smoke。
+
 ## 未完成事项与回退
 
 - `qc-only` 与 `fastp-length-50` 尚未形成合格结构化 proposal；完整 C1、专家语义审核、本地模型比较和上线门槛仍未完成。
 - TaxonAgent、正式知识库及项目授权检索仍关闭；确定性表单、方案编译与执行边界不变。
 - 如需回退，先停止本机服务，将 Agent requirements 与 provider 配置恢复到上一版本，再重启三个服务。无数据库状态需要回滚；SDK transcript 与第八／九轮结果保留作审计。
 
-建议提交信息：Agent `fix: restore MiniMax conversation availability`；Open WebUI `fix: expose analysis capabilities without project context`；根仓库 `docs: record conversation service recovery`。
+本次后续修复建议提交信息：Agent `fix: accept plain dashboard conversation replies`；根仓库 `docs: record dashboard chat recovery`。Open WebUI 没有代码变更，不需要提交。
