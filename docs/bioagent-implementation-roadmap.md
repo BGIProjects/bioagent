@@ -149,6 +149,17 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 
 完整实现、验证、限制和回退见[第八轮记录](m1-08-controlled-requirements-implementation-record.md)。上传、标准／宽松审核预设、其他工具参数、完整 ReleaseSet／参考库身份、专家语义审核和本地模型比较仍延期，**完整 A2、B1、C1、M0／M1 均不勾选验收**。
 
+### 1.12 M1 第九轮范围与实际状态（2026-09-21，用户确认）
+
+本轮只恢复 Dashboard／Analysis 对话与 capabilities 读取，不扩展知识、执行或数据库范围。
+
+- 已完成：Agent 固定 `claude-agent-sdk==0.2.103`／Claude Code 2.1.179，使用 MiniMax 中国大陆端点与 `MiniMax-M3[1m]` SDK 映射；health 校验并公开非敏感 SDK 版本。有效 UUID 保留 resume，缺失或非 UUID ID 使用单次临时 session。
+- 已完成：authenticated capabilities 不再被 project guard 误拦；首次聊天 UUID 到下游模型 metadata 的链路有回归测试。宿主三服务、health、Backend capabilities 与一次带 UUID 的代理对话均验证正常。
+- 实际 smoke：三例均不再出现 unavailable、timeout 或 unrecognized model；`vague-length` 通过，`qc-only` 与 `fastp-length-50` 被严格 schema 拒绝为 `MODEL_SCHEMA_INVALID`，未登记 proposal、未自动补跑。
+- 诊断约束：Codex 沙箱可能无法访问宿主 tmux socket／loopback；冲突时必须在沙箱外复核服务状态。TaxonAgent、正式知识库、专家语义审核、本地模型和完整 C1 继续延期。
+
+根因、配置、测试、实际耗时、限制与回退见[第九轮记录](m1-09-conversation-service-recovery-implementation-record.md)。第八轮失败记录保留，**完整 C1、M0／M1 仍不勾选验收**。
+
 ## 2. 当前基线、职责与契约
 
 ### 2.1 源码与运行验证边界
@@ -170,9 +181,9 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 | 私有 tmux、flock 串行准入、reconciliation、资源历史                          | 显式优先级队列和受控续跑；锁竞争不保证业务排序                                    |
 | schema v4 数值证据、复算和模板报告                                           | 候选级规则、知识引用、研判及审核                                                  |
 | Citation／RetrievalResult／RetrievalAdapter 已定义                           | 本地语料、索引和可信引用闭环；ConversationAction 当前会清空 citations             |
-| MiniMax-M3 经 Claude Agent SDK；本机 TaxonAgent 关闭                         | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
+| MiniMax-M3 经固定 Claude Agent SDK；本机 TaxonAgent 关闭                     | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-截至第八轮已复核相关代码、自动测试、Cyclone DAG dry-run 与一次 W1 fastp 实跑，并按显式授权执行受控需求 MiniMax smoke；模型 smoke 因 provider 不可用／超时未通过。未执行其他 workflow 全流程或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、demo 通过、真实分析验证通过、可私有化交付；对用户开放范围另行记录。
+截至第九轮已复核相关代码、自动测试、Cyclone DAG dry-run 与一次 W1 fastp 实跑，并按显式授权执行受控需求 MiniMax smoke。模型可用性已恢复；三例中一例通过、两例被严格 schema 拒绝，尚不构成语义验收。未执行其他 workflow 全流程或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、demo 通过、真实分析验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 
@@ -445,6 +456,7 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 
 - [ ] 分别评测意图／追问、受控改参、引用问答、证据说明；前两类可用能力目录和动作样例先行，后两类使用 B0 的固定资料／证据包，不等待所有类群收录。
 - [x] **第八轮切片：**新增五个受控需求固定案例，覆盖只做质控、`length_required=50`、模糊长度追问、assembly 依赖冲突及命令／路径拒绝；离线宿主契约通过，真实 MiniMax 三例因 provider 不可用／超时未通过。
+- [x] **第九轮恢复：**固定 SDK／CLI、MiniMax 中国大陆端点与模型映射，恢复对话可用性；真实三例不再 unavailable／timeout，其中一例通过、两例由严格 schema 安全拒绝，未算作完整 C1。
 - [ ] 比较时使用相同任务、schema、知识／规则快照与推理预算；有显式授权才运行 MiniMax-M3 云端基线，未获授权则记录当前可得本地基线。
 - [ ] 影子输出只写独立评测记录，不注册真实 proposal、不修改正式报告、不启动计算。模型返回字段、耗时、错误和遗漏分别统计，专家审核语义适用性。
 - [ ] 按四类任务收集审核过的输入、合格输出、不合格输出与修订理由，保留证据和知识快照。A4 上线前采用结构化审核文件，之后接入同一导出契约。

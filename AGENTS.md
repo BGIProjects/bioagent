@@ -39,6 +39,7 @@
 - data root 内可使用 allowlisted 文件或目录 symlink；保存 logical path，执行前解析 canonical target 并验证 link/target 双重指纹。
 - 远端 fingerprint 暂时无法验证时保持 dataset 原状态并返回 retryable 503；只有确认不一致才标记 `stale`。
 - 本机服务日志仅在创建新 tmux session（包括 `restart`）时截断，不自动 rotation；`status` 会显示大小、`/tmp` 可用空间并在 100 MiB 告警。
+- Codex 沙箱可能无权连接宿主 `/private/tmp/tmux-*` socket 与 loopback；若 `./dev-services.sh status` 与 listener 或用户终端结果矛盾，必须在沙箱外重新执行该命令后再判断，不得直接推断服务已停止。
 
 ## 验证顺序
 

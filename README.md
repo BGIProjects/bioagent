@@ -62,8 +62,7 @@ git submodule status --recursive
 
 ```bash
 conda create -n adapter python=3.11 -y
-conda run -n adapter python -m pip install \
-  claude-agent-sdk fastapi uvicorn pytest jsonschema typer
+conda run -n adapter python -m pip install -r agent/requirements.txt
 
 conda create -n open-webui python=3.11 -y
 conda run -n open-webui python -m pip install -U \
@@ -162,6 +161,8 @@ cp open-webui/.env.example open-webui/.env
 ### 7. 可选启用 MiniMax
 
 默认 `BIOAGENT_MODEL_POLICY=local_only`，未配置本地模型时对话不可用，表单、方案编译和执行仍可使用。当前 M0 开发实例已获显式云端授权，在忽略提交的 `agent/.env` 中设置 `BIOAGENT_MODEL_POLICY=minimax_explicit` 后使用 MiniMax；没有自动云端回退。仅启用确定性功能时可跳过本节。
+
+Agent requirements 固定 `claude-agent-sdk==0.2.103`（内嵌 Claude Code 2.1.179）。provider 使用中国大陆 `https://api.minimax.cn/anthropic` 端点，并在 SDK 子进程内将默认 Claude 模型映射为 `MiniMax-M3[1m]`；对外模型名称仍为 `MiniMax-M3`。
 
 只在本机 `~/.zshrc` 中加入密钥，不要写入仓库、`.env`、命令输出或日志：
 
