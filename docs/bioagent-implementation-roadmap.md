@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.9；修订日期：2026-09-18；原始源码基线：2026-09-09。
+> 版本：1.10；修订日期：2026-09-23；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> M1 第一轮推进资产检查、离线验证与开发评测；第二轮推进最小项目与权限，第三轮完成项目入口和页面体验收尾，第四轮推进 A2 元信息与背景版本，第五轮补技术重复确认，第六轮推进 A3 三模式、智能续跑与阶段报告，见第 1.3、1.5–1.9 节及六轮实施记录。完整 M0／M1 均不勾选验收。
+> M1 已按十轮小切片推进资产、项目、数据元信息、三模式、交付报告、受控需求、对话恢复及工程引用，见第 1.3、1.5–1.13 节与各轮记录。完整 M0／M1 均不勾选验收。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -161,6 +161,18 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 
 根因、配置、测试、实际耗时、限制与回退见[第九轮记录](m1-09-conversation-service-recovery-implementation-record.md)。第八轮失败记录保留，**完整 C1、M0／M1 仍不勾选验收**。
 
+### 1.13 M1 第十轮范围与实际状态（2026-09-23，用户确认）
+
+本轮只推进 **B2 小型工程知识引用闭环**，并重跑 C1 四类开发 smoke；不扩展分类学／领域知识，不新增数据库表、migration、向量库、环境变量或 Dashboard 检索。
+
+- 已完成：发布 8,283 bytes 的 `engineering-knowledge-v1` 与 release registry，由 capability catalog 身份和文件 SHA-256 双重校验；只包含能力、交付目标、artifact、fastp 白名单参数及版本，使用内存 SQLite FTS5。
+- 已完成：`/analysis` 对工程问题最多检索 4 段、每段 512 字；模型只能在 `respond` 引用本轮 snapshot ID。缺失、重复、伪造、跨 snapshot 或被篡改引用在输出前拒绝；ICTV 与 12 段 `pending` M0 资料仍不上线。
+- 已完成：引用以 `analysis_knowledge_citations@v1` 随既有项目会话保存，不建独立表；Backend 与前端都执行大小／来源校验，历史对话在桌面及窄屏显示来源、版本、定位、snapshot 和“非生物学审核”提示。
+- 验证：Agent 全量 168 passed、2 skipped；相关 Backend 107 项、Vitest 53 项、Chrome/Cypress 19 项通过。MiniMax 16 例真实 smoke 为 schema 12/16、工程校验 7/16；引用问答 4/4，通过以外的输出均被既有边界拒绝，不自动修复或补跑。
+- 容量：tracked 工程 release 共 8,283 bytes；远端评测 8 文件、544,310 bytes。业务 SQLite 只增加每条回答至多 4 个受限短摘录，没有另建知识数据库。
+
+命令、结果、哈希、限制与回退见[第十轮复现记录](m1-10-engineering-citations-reproduction.md)。正式领域知识、专家语义审核、claim 级领域引用、向量召回和完整 B2／C1／M0／M1 继续延期。
+
 ## 2. 当前基线、职责与契约
 
 ### 2.1 源码与运行验证边界
@@ -181,10 +193,10 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 | Workflow 1 去 rRNA；Workflow 3 宿主识别                                      | 宿主序列去除为独立能力，不能与前两者混用                                          |
 | 私有 tmux、flock 串行准入、reconciliation、资源历史                          | 显式优先级队列和受控续跑；锁竞争不保证业务排序                                    |
 | schema v4 数值证据、复算和模板报告                                           | 候选级规则、知识引用、研判及审核                                                  |
-| Citation／RetrievalResult／RetrievalAdapter 已定义                           | 本地语料、索引和可信引用闭环；ConversationAction 当前会清空 citations             |
+| 工程知识 release、SQLite FTS5、受控引用与项目会话展示                        | 正式领域语料、专家审核、领域 claim 引用与向量召回                                 |
 | MiniMax-M3 经固定 Claude Agent SDK；本机 TaxonAgent 关闭                     | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-截至第九轮已复核相关代码、自动测试、Cyclone DAG dry-run 与一次 W1 fastp 实跑，并按显式授权执行受控需求 MiniMax smoke。模型可用性已恢复；三例中一例通过、两例被严格 schema 拒绝，尚不构成语义验收。未执行其他 workflow 全流程或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、demo 通过、真实分析验证通过、可私有化交付；对用户开放范围另行记录。
+截至第十轮已复核相关代码、自动测试、Cyclone DAG dry-run、一次 W1 fastp 实跑及小型工程引用闭环，并按显式授权执行四类 MiniMax 开发 smoke。模型结果仍未经过专家语义审核；未执行其他 workflow 全流程或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、demo 通过、真实分析验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 
@@ -407,6 +419,7 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 - [ ] 建立服务端引用注册、解析和可信标记后，再修改 ConversationAction 清空 citations 的逻辑。模型只能返回本次检索包的 ID，不能自行声明 verified；越项目、越快照或未知 ID 拒绝。
 - [ ] 保存查询、资产版本、命中片段和 claim→citation 映射；经业务授权 API 查询／展示，不向浏览器暴露知识文件系统。只有当前项目允许的上下文进入模型。
 - [ ] 区分 KNOWLEDGE_INSUFFICIENT 与 RETRIEVAL_UNAVAILABLE；冲突来源共同返回。检索文本不能改变工具白名单、权限和规则，不把资料中的指令当作系统指令。
+- [x] **第十轮切片：**发布 capability catalog 派生的工程契约小包，完成 `/analysis` 项目授权检索、snapshot／ID 校验、受限引用持久化与历史卡片；领域资料、专家审核与 claim 级正式引用仍未完成。
 
 **产物／接口：**知识 release、带快照及审核来源的 Citation／RetrievalResult、引用 resolve／verify 与后端持久化。**验收：**类群、别名、中英文、版本、定位和授权正确；空检索、冲突、仅摘要、伪造引用与资料越权指令不进入可信结论。**回退：**回到旧快照，旧报告不自动补写文献；索引可由资料包重建，历史引用不依赖当前默认索引。
 
