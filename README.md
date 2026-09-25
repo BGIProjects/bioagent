@@ -8,7 +8,7 @@
 Chrome :5173 → Open WebUI Backend :8080 → BioAgent :8001
                                               │
                                               └─ SSH alias Cyclone
-                                                 ├─ remote worker / private tmux
+                                                 ├─ remote worker / private queue scheduler
                                                  ├─ /data/user/liufangzhou/datasets
                                                  ├─ /data/user/liufangzhou/runs
                                                  └─ Workflow 1–6
@@ -20,7 +20,7 @@ BioAgent 使用 `ssh -o ClearAllForwardings=yes`，因此不会启用 SSH config
 /data/user/liufangzhou/.bioagent/worker/releases/<sha256>
 ```
 
-RPC 控制进程、私有 tmux supervisor 与 analysis runner 共用 Cyclone 本机 NVMe 上的 `/home/liufangzhou/.pixi/envs/snakemake/bin/python`；Snakemake 与 SeqKit 分别使用 `/home/liufangzhou/.pixi/bin/snakemake`、`/home/liufangzhou/.pixi/bin/seqkit`。当前验证版本为 Python 3.12.14、Snakemake 9.26.1 与 SeqKit 2.13.0，不需要另建或迁移 adapter 环境，也不会回退 `/data` 上的旧环境。
+RPC 控制进程、每个 run root 的单一私有 tmux scheduler 与 analysis runner 共用 Cyclone 本机 NVMe 上的 `/home/liufangzhou/.pixi/envs/snakemake/bin/python`；Snakemake 与 SeqKit 分别使用 `/home/liufangzhou/.pixi/bin/snakemake`、`/home/liufangzhou/.pixi/bin/seqkit`。当前验证版本为 Python 3.12.14、Snakemake 9.26.1 与 SeqKit 2.13.0，不需要另建或迁移 adapter 环境，也不会回退 `/data` 上的旧环境。
 
 Workflow 1 的源配置仍可保留原工具路径；worker 复制到 run root 后会只在 run-local `config.yaml` 中把 `software.seqkit` 改为 Pixi 入口，不修改 Cyclone 上的 Workflow 源码。
 
@@ -151,7 +151,7 @@ cp open-webui/.env.example open-webui/.env
 默认模板已经对应当前 Cyclone。若更换远端账号或存储位置，至少同步修改下列变量：
 
 - SSH 与 worker：`BIOAGENT_SSH_HOST`、`BIOAGENT_REMOTE_PYTHON`、`BIOAGENT_REMOTE_CONTROL_PYTHON`、`BIOAGENT_REMOTE_TMUX`、`BIOAGENT_REMOTE_WORKER_ROOT`
-- 数据与产物：`BIOAGENT_DATA_ROOT`、`BIOAGENT_DATA_ALLOWED_ROOTS`、`BIOAGENT_RUN_ROOT`
+- 数据、产物与队列：`BIOAGENT_DATA_ROOT`、`BIOAGENT_DATA_ALLOWED_ROOTS`、`BIOAGENT_RUN_ROOT`、`BIOAGENT_QUEUE_AGING_HOURS`（默认 `24`，只接受正数）
 - 工具：`BIOAGENT_SNAKEMAKE`、`BIOAGENT_SEQKIT`
 - Workflow：`BIOAGENT_WORKFLOW1_SOURCE` 至 `BIOAGENT_WORKFLOW6_SOURCE`
 - Open WebUI：`BIOAGENT_DATA_ROOT`、`BIOAGENT_RUN_ROOT` 与需要时的 `PORT`
@@ -239,7 +239,7 @@ Agent 由 login zsh 启动并继承 `~/.zshrc` 中的 `MINIMAX_API_KEY`；脚本
 
 ## 远端任务与恢复
 
-每个 run 使用 `/data/user/liufangzhou/bin/tmux -L bioagent-worker` 创建 `bioagent-<run_id>`。所有 session 先等待 `/data/user/liufangzhou/runs/.bioagent/analysis.lock`，所以同一时间最多一个分析进入 `running`，其余显示为 `queued`。
+每个 run root 使用 `/data/user/liufangzhou/bin/tmux -L bioagent-worker` 维护唯一的 `bioagent-scheduler-<run-root-hash>`。scheduler 从 run-local state 读取持久队列，按 aging、冻结的项目优先级、紧急路由及入队时间排序；`analysis.lock` 只作为最终互斥。同一时间最多一个分析进入 `running`，其余显示为“排队中”或“等待资源”。
 
 查看远端 session：
 
@@ -248,10 +248,10 @@ ssh -o ClearAllForwardings=yes Cyclone \
   /data/user/liufangzhou/bin/tmux -L bioagent-worker list-sessions
 
 ssh -o ClearAllForwardings=yes -t Cyclone \
-  /data/user/liufangzhou/bin/tmux -L bioagent-worker attach-session -t bioagent-<run_id>
+  /data/user/liufangzhou/bin/tmux -L bioagent-worker attach-session -t bioagent-scheduler-<run-root-hash>
 ```
 
-SSH 暂时失联只会显示缓存状态和「连接暂时不可用」，不会把任务标记为失败。重连后以远端 state、tmux、PID、boot ID 为准：仍存活则继续；消失的 queued session 会安全重建；已进入 running 但进程消失或主机重启则标记 `interrupted`，保留产物且不自动重跑。
+SSH 暂时失联只会显示缓存状态和「连接暂时不可用」，不会把任务标记为失败。重连后以远端 state、scheduler、PID、boot ID 与 runner 命令为准：queued／waiting 会重新纳管；仍存活的 runner 只监看，不重复启动；已进入 running 但进程消失或主机重启则标记 `interrupted`，保留产物且不自动重跑。资源不足会登记 `waiting_stage`、原因与检查时间并释放准入，auto 已生成的初筛报告和完整流程 checkpoint 会保留。
 
 Dataset fingerprint 也遵循同样语义：Cyclone 暂时不可用时返回可重试错误并保持当前 dataset 状态；只有远端确认 logical link 或 canonical target 的指纹改变时才标记为 `stale`。历史上已标记 stale 的 revision 不会被自动改写，应重新选择文件建立新 revision。
 
@@ -272,7 +272,7 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 
 ## 项目分析
 
-管理员在 `/dashboard` 页首的“项目设置”对话框创建项目、登记既有数据路径并设置成员；创建项目不会自动加入，需明确勾选“将自己加入并授予分析权限”或另行加入成员。成员在两页原页首选择项目，通过“进入分析”／“项目看板”保留选择并切换页面，查看共享历史，在自己的会话中分析。审核权限目前只登记，优先级不影响排序。
+管理员在 `/dashboard` 页首的“项目设置”对话框创建项目、登记既有数据路径并设置成员；创建项目不会自动加入，需明确勾选“将自己加入并授予分析权限”或另行加入成员。成员在两页原页首选择项目，通过“进入分析”／“项目看板”保留选择并切换页面，查看共享历史，在自己的会话中分析。审核权限目前只登记；项目优先级在确认执行时由后端重新鉴权并冻结到 queue，新设置只影响之后提交的任务。
 
 继续使用 SQLite；首次升级前先做一致性备份。迁移、权限操作与回退见 [M1 第二轮记录](docs/m1-02-projects-implementation-record.md)。本轮页首整合、浏览器验证与仅前端回退见 [M1 第三轮记录](docs/m1-03-project-ui-implementation-record.md)。无需新增环境变量；沿用 `BIOAGENT_DATA_ROOT`、`BIOAGENT_REMOTE_DATA` 和原有 Cyclone 连接配置。
 
@@ -281,6 +281,8 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 数据集建立者可在“修订配对与角色”检查样本分组并逐项确认技术重复，保存新数据版本后另行生成方案；新版本背景不自动继承。见 [M1 第五轮记录](docs/m1-05-sample-grouping-implementation-record.md)，无需新增配置。
 
 `/analysis` 提供智能、标准、紧急三种模式：智能模式先生成 5% 初筛快报，再继续已确认完整流程；标准模式直接执行完整流程；紧急模式只完成 5% 初筛。没有成对 reads 时智能／紧急会明确降为标准。任务区按状态提供初筛报告、带人工审核清单的诊断意见书、标准交付报告 HTML/PDF 与运行审计报告。交付报告只覆盖 W1–W6，确定性生成并写入 run-local `reports/standard/`；配置入口为 `agent/.env.example` 中三个 `BIOAGENT_REPORT_*` 变量。详见 [M1 第六轮记录](docs/m1-06-adaptive-routing-implementation-record.md)与 [M1 第七轮记录](docs/m1-07-standard-delivery-report-implementation-record.md)。
+
+任务区会显示队列位置、冻结的项目／任务优先级、等待阶段及可读资源原因；继续使用现有轮询，没有新增队列管理页、取消或人工 resume。队列复现与限制见 [M1 第十一轮记录](docs/m1-11-persistent-queue-reproduction.md)。
 
 `/analysis` 可对已发布的工程能力、artifact 与 fastp 白名单参数显示受控引用卡片；每条回答最多保存 4 个短摘录，随项目会话隔离并可在历史对话重开。该入口只使用 capability catalog 派生的工程契约，不开放待审核分类学资料，也不代表生物学审核；无需新增配置或数据库迁移。复现与限制见 [M1 第十轮记录](docs/m1-10-engineering-citations-reproduction.md)。
 

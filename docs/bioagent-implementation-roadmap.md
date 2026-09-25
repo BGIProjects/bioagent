@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.10；修订日期：2026-09-23；原始源码基线：2026-09-09。
+> 版本：1.11；修订日期：2026-09-25；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> M1 已按十轮小切片推进资产、项目、数据元信息、三模式、交付报告、受控需求、对话恢复及工程引用，见第 1.3、1.5–1.13 节与各轮记录。完整 M0／M1 均不勾选验收。
+> M1 已按十一轮小切片推进资产、项目、数据元信息、三模式、交付报告、受控需求、对话恢复、工程引用及持久队列，见第 1.3、1.5–1.14 节与各轮记录。完整 M0／M1 均不勾选验收。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -173,15 +173,28 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 
 命令、结果、哈希、限制与回退见[第十轮复现记录](m1-10-engineering-citations-reproduction.md)。正式领域知识、专家语义审核、claim 级领域引用、向量召回和完整 B2／C1／M0／M1 继续延期。
 
+### 1.14 M1 第十一轮范围与实际状态（2026-09-25，用户确认）
+
+本轮只完成 **A3 的持久排队切片**，不做数据上传、M2、模型／知识资产扩充或新的 FASTQ 计算。没有新增业务数据表、migration 或独立 queue database；队列事实继续保存在 Cyclone run root 的既有 state。
+
+- 已完成：每个 run root 使用唯一的私有 tmux scheduler；`analysis.lock` 只保留最终互斥，不再由多个 per-run supervisor 竞争决定顺序。旧 queued state 缺少 queue metadata 时按 normal 和既有 `queued_at` 纳管。
+- 已完成：queue policy v1 冻结权威 `project_id`／`project_priority`、路由级别与入队时间；排序依次为超过 aging 阈值的最老任务、项目 `high → normal → low`、同级 emergency、入队时间及 run ID。`BIOAGENT_QUEUE_AGING_HOURS` 默认 24，只接受正数，运行中任务不抢占。
+- 已完成：准入资源不足转为 `waiting_resources`，登记阶段、原因和检查时间并继续检查其他任务。auto 初筛完成后若完整流程等待资源，会保留初筛报告及 full-analysis checkpoint，恢复时不重跑初筛。
+- 已完成：重复 start 幂等；scheduler／控制连接／WebUI 恢复时重新纳管 queued／waiting。已启动 runner 以 PID、boot ID 和命令行核对，存活时只监看；确认消失时转 `interrupted`，不自动重跑。
+- 已完成：执行前重新核对项目分析权限与 dataset／chat 的权威项目关系，优先级只从项目记录冻结。status 公开具名 queue 字段，资源摘要统计 waiting，`/analysis` 显示简体中文状态、位置、冻结优先级、等待阶段与可读原因。
+- 验证：Agent 全套 178 passed、2 skipped；相关 Backend 165 项、Vitest 43 项、Cypress 3 项通过。Cyclone 隔离 diagnostic-only run 验证 `high+emergency → high → low`、资源等待恢复及 scheduler 中止后接管；4 个任务均只启动一次，主诊断目录共 72 KiB，未读写 FASTQ、调用模型或生信工具。
+
+产物级一致性检查、attempt 历史与人工 resume 继续延期，因此不宣称 A3 或 M1 完整完成；上传、完整 ReleaseSet、正式领域知识、专家语义评测和本地模型也仍未完成。本轮命令、诊断状态和回退见[第十一轮复现记录](m1-11-persistent-queue-reproduction.md)。
+
 ## 2. 当前基线、职责与契约
 
 ### 2.1 源码与运行验证边界
 
 | 仓库            | Commit      | 核对范围                                                       |
 | --------------- | ----------- | -------------------------------------------------------------- |
-| bioagent 根仓库 | `24019dc`   | AGENTS.md、README、roadmap 与部署约定                          |
-| agent           | `13956ba`   | 动作契约、编译、Workflow 1–6 适配、初筛、worker、runner 和证据 |
-| open-webui      | `fdea57fcb` | Dashboard、AnalysisPage、业务模型、报告与数值校验              |
+| bioagent 根仓库 | `2ac50b8`   | AGENTS.md、README、roadmap 与部署约定                          |
+| agent           | `6060316`   | 动作契约、编译、Workflow 1–6 适配、初筛、worker、runner 和证据 |
+| open-webui      | `72bd8d086` | Dashboard、AnalysisPage、业务模型、报告与数值校验              |
 
 | 当前代码基础                                                                 | 待补能力或限制                                                                    |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -189,14 +202,14 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 | 远端文件、typed artifact、预检、revision、symlink 双重指纹                   | 浏览器到计算节点的专用大文件上传闭环、完整样本／批次元信息                        |
 | ConversationAction 支持回答、追问、交付终点、排除步骤及 fastp 白名单参数提议 | 其他工具参数与审核预设；模型仍不得直接启动计算                                    |
 | Workflow 1–6 的目录、DAG 与执行适配                                          | 逐项真实数据验证、可交付插件与参考库快照；代码存在不证明所有库可用                |
-| auto／emergency／standard；智能模式初筛后续跑完整 DAG                        | 持久队列、waiting_resources 与受控恢复；真实多样本及完整流程仍待验证              |
+| auto／emergency／standard；智能模式初筛后续跑完整 DAG                        | 产物级 interrupted resume；真实多样本及完整流程仍待验证                           |
 | Workflow 1 去 rRNA；Workflow 3 宿主识别                                      | 宿主序列去除为独立能力，不能与前两者混用                                          |
-| 私有 tmux、flock 串行准入、reconciliation、资源历史                          | 显式优先级队列和受控续跑；锁竞争不保证业务排序                                    |
+| 单一私有 scheduler、持久优先级队列、waiting_resources、reconciliation        | attempt／产物级一致性检查和人工 resume；尚不支持受控续跑                          |
 | schema v4 数值证据、复算和模板报告                                           | 候选级规则、知识引用、研判及审核                                                  |
 | 工程知识 release、SQLite FTS5、受控引用与项目会话展示                        | 正式领域语料、专家审核、领域 claim 引用与向量召回                                 |
 | MiniMax-M3 经固定 Claude Agent SDK；本机 TaxonAgent 关闭                     | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-截至第十轮已复核相关代码、自动测试、Cyclone DAG dry-run、一次 W1 fastp 实跑及小型工程引用闭环，并按显式授权执行四类 MiniMax 开发 smoke。模型结果仍未经过专家语义审核；未执行其他 workflow 全流程或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、demo 通过、真实分析验证通过、可私有化交付；对用户开放范围另行记录。
+截至第十一轮已复核相关代码、自动测试、Cyclone DAG dry-run、一次 W1 fastp 实跑、小型工程引用闭环及隔离持久队列诊断，并按显式授权执行四类 MiniMax 开发 smoke。模型结果仍未经过专家语义审核；未执行其他 workflow 全流程或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、demo 通过、真实分析验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 
@@ -343,10 +356,10 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 - [x] auto 初筛后继续已确认目标，不因门槛通过将剩余步骤置为 skipped。保留 5% 抽样及采样种子为现有待验证基线，记录实际 read pairs、过滤过程和 Kraken2 库；门槛只用于初筛提示。
 - [x] emergency 明确为首期“5% 抽样＋质控＋去 rRNA＋Kraken2”范围；auto／emergency 成对 reads 不可用时明确降为 standard。auto 在不适用初筛时明确展示标准流程；standard 继续执行目标依赖闭包。
 - [x] 初筛复核后发布不可变 preliminary 报告，与 execution status 分离。完整分析失败或资源不足时仍可下载原范围快报；初筛子集不能替代完整流程的全量输入。
-- [ ] 建立远端持久化队列和单一调度者，默认一个重型任务准入。flock 保留作最终互斥，不以多个 supervisor 竞争锁来决定顺序。
-- [ ] 按项目优先级、项目内紧急级、入队时间排序；工程初始采用可配置的 24 小时等待提升，超过阈值的可准入任务按入队时间优先选择。策略版本可追溯，运行中 job 不抢占。
-- [ ] 阶段边界核查 CPU、内存、磁盘空间与负载。资源不足进入 waiting_resources，保留目标与快报并释放准入资格；其他具备资源条件的任务可以运行。
-- [ ] 事务／唯一身份保证重复启动、控制进程重启和重复恢复不产生第二次计算。重连联合 state、tmux、PID、boot ID 核对；已运行进程消失保留 interrupted，不自动重跑。
+- [x] 建立远端持久化队列和单一调度者，默认一个重型任务准入。flock 保留作最终互斥，不以多个 supervisor 竞争锁来决定顺序。
+- [x] 按项目优先级、项目内紧急级、入队时间排序；工程初始采用可配置的 24 小时等待提升，超过阈值的可准入任务按入队时间优先选择。策略版本可追溯，运行中 job 不抢占。
+- [x] 阶段边界核查 CPU、内存、磁盘空间与负载。资源不足进入 waiting_resources，保留目标与快报并释放准入资格；其他具备资源条件的任务可以运行。
+- [x] 事务／唯一身份保证重复启动、控制进程重启和重复恢复不产生第二次计算。重连联合 state、tmux、PID、boot ID 核对；已运行进程消失保留 interrupted，不自动重跑。
 - [ ] 显式恢复前核对输入、冻结方案、插件、软件、参考库、worker 执行条件和完整输出。同条件追加 attempt，保留旧状态／日志；变更条件时新建 plan／run，仅按 artifact 契约引用可复用产物。
 
 **产物／接口：**版本化 routing policy、reports 列表、queue／attempt／waiting_reason／observed_at，以及授权的优先级和恢复动作。**验收：**auto 的高／低信号及多样本情况均继续目标；快报不被当作完整完成；SSH 断线、主机重启、排队 session 消失、指纹暂不可验、版本改变和重复请求均有回归测试。**回退：**新队列接管前清空或登记旧队列，禁止双调度；回退先停止新准入并处理在途任务，不静默恢复 auto 提前结束语义。
