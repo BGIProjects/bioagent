@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.11；修订日期：2026-09-25；原始源码基线：2026-09-09。
+> 版本：1.12；修订日期：2026-09-26；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> M1 已按十一轮小切片推进资产、项目、数据元信息、三模式、交付报告、受控需求、对话恢复、工程引用及持久队列，见第 1.3、1.5–1.14 节与各轮记录。完整 M0／M1 均不勾选验收。
+> M1 已按十二轮小切片推进资产、项目、数据元信息、三模式、交付报告、受控需求、对话恢复、工程引用、持久队列及受控中断恢复，见第 1.3、1.5–1.15 节与各轮记录。完整 M0／M1 均不勾选验收。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -186,15 +186,28 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 
 产物级一致性检查、attempt 历史与人工 resume 继续延期，因此不宣称 A3 或 M1 完整完成；上传、完整 ReleaseSet、正式领域知识、专家语义评测和本地模型也仍未完成。本轮命令、诊断状态和回退见[第十一轮复现记录](m1-11-persistent-queue-reproduction.md)。
 
+### 1.15 M1 第十二轮范围与实际状态（2026-09-25，用户确认）
+
+本轮只收敛 **A3 的受控中断恢复切片**，不做数据上传，也不开始 M2。没有新增数据库表、migration、queue／attempt database 或配置项；attempt 事实与恢复契约保存在 Cyclone run-local state，业务库只追加既有 AnalysisEvent。
+
+- 已完成：state v3 additive `recovery_contract` 与 `attempts`；新 run 从 attempt 1 开始，冻结方案／execution spec、能力契约、dataset 双重指纹、worker release、run-local workflow 及已登记工具／参考资产身份。每次 attempt 的小型控制产物位于 `.bioagent/attempts/<序号>/`，大型结果不复制。
+- 已完成：Agent resume 只接受 `interrupted`、具备恢复契约且 runner 已消失的同一 run；在 run-local lock 内重验上下文、输入、worker、依赖及完成 phase 的 SHA-256 checkpoint，再原子追加 attempt 并以原项目优先级、当前入队时间重新排队。重复请求幂等；旧 state、身份不完整、任何变化或缺失均拒绝，暂时不可验证映射为 retryable 503 并保持中断状态。
+- 已完成：恢复跳过已验证的完整 phase；中断 phase 使用 `--rerun-incomplete` 并强制重跑受控 rules。已发布 preliminary report 不改写；未发布初筛只允许在原 run 内重建。本轮只有 diagnostic 与 Workflow 1 `read_qc` 能形成完整依赖身份，其他真实 workflow 明确不可恢复。
+- 已完成：Backend 新增 plan revision resume 入口，重验 owner、当前项目分析权、chat／dataset／project、最新 revision 和待处理 proposal，复用原 execution row 并追加 requested／accepted／rejected 事件。status 只公开精简 recovery 字段；运行审计报告列出 attempt 历史，不公开 PID 或实体依赖路径。
+- 已完成：`/analysis` 仅向可写成员的合格 `interrupted` 任务显示“检查并恢复”，复用确认组件，显示次数、处理中状态和简体中文阻挡原因；成功后立即刷新排队状态。唯读、旧 state 或依赖不合格时没有可操作入口。
+- 验证边界：Agent 195 passed、2 skipped；Backend 171 项、Vitest 45 项、Cypress 5 项通过。Cyclone 补跑 32 KiB diagnostic-only run：精确终止专用 runner／scheduler 后由 reconciliation 标记 `interrupted`，人工恢复为 attempt 2 并完成，attempt 1 保留。首次连接超时发生在建 run 前，也已如实记录；diagnostic 成功不视为真实 workflow 恢复验收。命令与状态见[第十二轮复现记录](m1-12-interrupted-run-recovery-reproduction.md)。
+
+**受控恢复切片已完成；A3／M1 仍未完成。** 尚缺 Workflow 2–6 及 Workflow 1 非 `read_qc` 阶段的完整工具／参考库身份、auto 初筛两种发布边界与真实多样本恢复、主机重启实演和真实 workflow 验收。B1、B2、C1 及 M0 的既有缺口不变。
+
 ## 2. 当前基线、职责与契约
 
 ### 2.1 源码与运行验证边界
 
 | 仓库            | Commit      | 核对范围                                                       |
 | --------------- | ----------- | -------------------------------------------------------------- |
-| bioagent 根仓库 | `2ac50b8`   | AGENTS.md、README、roadmap 与部署约定                          |
-| agent           | `6060316`   | 动作契约、编译、Workflow 1–6 适配、初筛、worker、runner 和证据 |
-| open-webui      | `72bd8d086` | Dashboard、AnalysisPage、业务模型、报告与数值校验              |
+| bioagent 根仓库 | `51b469a`   | AGENTS.md、README、roadmap 与部署约定                          |
+| agent           | `386bb64`   | 动作契约、编译、Workflow 1–6 适配、初筛、worker、runner 和证据 |
+| open-webui      | `f4533d0df` | Dashboard、AnalysisPage、业务模型、报告与数值校验              |
 
 | 当前代码基础                                                                 | 待补能力或限制                                                                    |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -202,14 +215,14 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 | 远端文件、typed artifact、预检、revision、symlink 双重指纹                   | 浏览器到计算节点的专用大文件上传闭环、完整样本／批次元信息                        |
 | ConversationAction 支持回答、追问、交付终点、排除步骤及 fastp 白名单参数提议 | 其他工具参数与审核预设；模型仍不得直接启动计算                                    |
 | Workflow 1–6 的目录、DAG 与执行适配                                          | 逐项真实数据验证、可交付插件与参考库快照；代码存在不证明所有库可用                |
-| auto／emergency／standard；智能模式初筛后续跑完整 DAG                        | 产物级 interrupted resume；真实多样本及完整流程仍待验证                           |
+| auto／emergency／standard；智能模式初筛后续跑完整 DAG                        | 真实多样本恢复及 auto 初筛发布边界仍待远端验证                                    |
 | Workflow 1 去 rRNA；Workflow 3 宿主识别                                      | 宿主序列去除为独立能力，不能与前两者混用                                          |
-| 单一私有 scheduler、持久优先级队列、waiting_resources、reconciliation        | attempt／产物级一致性检查和人工 resume；尚不支持受控续跑                          |
+| 单一私有 scheduler、持久队列、run-local attempt／checkpoint 与人工 resume    | Workflow 2–6 及 W1 非 read_qc 的完整依赖身份与真实恢复验收                        |
 | schema v4 数值证据、复算和模板报告                                           | 候选级规则、知识引用、研判及审核                                                  |
 | 工程知识 release、SQLite FTS5、受控引用与项目会话展示                        | 正式领域语料、专家审核、领域 claim 引用与向量召回                                 |
 | MiniMax-M3 经固定 Claude Agent SDK；本机 TaxonAgent 关闭                     | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-截至第十一轮已复核相关代码、自动测试、Cyclone DAG dry-run、一次 W1 fastp 实跑、小型工程引用闭环及隔离持久队列诊断，并按显式授权执行四类 MiniMax 开发 smoke。模型结果仍未经过专家语义审核；未执行其他 workflow 全流程或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、demo 通过、真实分析验证通过、可私有化交付；对用户开放范围另行记录。
+截至第十二轮已复核相关代码、自动测试、Cyclone DAG dry-run、一次 W1 fastp 实跑、小型工程引用闭环、隔离持久队列与受控中断恢复诊断，并按显式授权执行四类 MiniMax 开发 smoke。本轮受控恢复仍只是 diagnostic 工程切片，不是实际 workflow 验收。模型结果仍未经过专家语义审核；未执行其他 workflow 全流程或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、demo 通过、真实分析验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 
@@ -361,6 +374,7 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 - [x] 阶段边界核查 CPU、内存、磁盘空间与负载。资源不足进入 waiting_resources，保留目标与快报并释放准入资格；其他具备资源条件的任务可以运行。
 - [x] 事务／唯一身份保证重复启动、控制进程重启和重复恢复不产生第二次计算。重连联合 state、tmux、PID、boot ID 核对；已运行进程消失保留 interrupted，不自动重跑。
 - [ ] 显式恢复前核对输入、冻结方案、插件、软件、参考库、worker 执行条件和完整输出。同条件追加 attempt，保留旧状态／日志；变更条件时新建 plan／run，仅按 artifact 契约引用可复用产物。
+- [x] **第十二轮切片：**仅为具备完整恢复契约的 `interrupted` run 提供受控 resume、attempt 历史、完整 phase checkpoint 与重复请求幂等；当前只覆盖 diagnostic 和 Workflow 1 `read_qc`。其余 workflow 因工具／参考资产身份不完整而拒绝恢复，上一项保持未完成。
 
 **产物／接口：**版本化 routing policy、reports 列表、queue／attempt／waiting_reason／observed_at，以及授权的优先级和恢复动作。**验收：**auto 的高／低信号及多样本情况均继续目标；快报不被当作完整完成；SSH 断线、主机重启、排队 session 消失、指纹暂不可验、版本改变和重复请求均有回归测试。**回退：**新队列接管前清空或登记旧队列，禁止双调度；回退先停止新准入并处理在途任务，不静默恢复 auto 提前结束语义。
 
