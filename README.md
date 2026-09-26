@@ -253,6 +253,8 @@ ssh -o ClearAllForwardings=yes -t Cyclone \
 
 SSH 暂时失联只会显示缓存状态和「连接暂时不可用」，不会把任务标记为失败。重连后以远端 state、scheduler、PID、boot ID 与 runner 命令为准：queued／waiting 会重新纳管；仍存活的 runner 只监看，不重复启动；已进入 running 但进程消失或主机重启则标记 `interrupted`，保留产物且不自动重跑。资源不足会登记 `waiting_stage`、原因与检查时间并释放准入，auto 已生成的初筛报告和完整流程 checkpoint 会保留。
 
+新建的 Workflow 1 run 使用 recovery contract v2 冻结所选阶段的 workflow 源码闭包、软件和参考索引身份；任务中断后可在 `/analysis` 通过“检查并恢复”重新核对依赖并追加 attempt。已验证的完整 phase 可复用，依赖变化、旧恢复契约或 Workflow 2–6 会拒绝原地恢复；当前尚未完成真实 Workflow 1 中断恢复验收。
+
 Dataset fingerprint 也遵循同样语义：Cyclone 暂时不可用时返回可重试错误并保持当前 dataset 状态；只有远端确认 logical link 或 canonical target 的指纹改变时才标记为 `stale`。历史上已标记 stale 的 revision 不会被自动改写，应重新选择文件建立新 revision。
 
 ## 数据路径与 symlink
@@ -282,7 +284,7 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 
 `/analysis` 提供智能、标准、紧急三种模式：智能模式先生成 5% 初筛快报，再继续已确认完整流程；标准模式直接执行完整流程；紧急模式只完成 5% 初筛。没有成对 reads 时智能／紧急会明确降为标准。任务区按状态提供初筛报告、带人工审核清单的诊断意见书、标准交付报告 HTML/PDF 与运行审计报告。交付报告只覆盖 W1–W6，确定性生成并写入 run-local `reports/standard/`；配置入口为 `agent/.env.example` 中三个 `BIOAGENT_REPORT_*` 变量。详见 [M1 第六轮记录](docs/m1-06-adaptive-routing-implementation-record.md)与 [M1 第七轮记录](docs/m1-07-standard-delivery-report-implementation-record.md)。
 
-任务区会显示队列位置、冻结的项目／任务优先级、等待阶段及可读资源原因；继续使用现有轮询，没有新增队列管理页、取消或人工 resume。队列复现与限制见 [M1 第十一轮记录](docs/m1-11-persistent-queue-reproduction.md)。
+任务区会显示队列位置、冻结的项目／任务优先级、等待阶段及可读资源原因；继续使用现有轮询，没有新增队列管理页或取消操作。合格的 `interrupted` 任务提供受控人工恢复，详见 [M1 第十二轮记录](docs/m1-12-interrupted-run-recovery-reproduction.md)与[第十三轮记录](docs/m1-13-workflow1-identity-b3-contract-reproduction.md)；队列复现与限制见 [M1 第十一轮记录](docs/m1-11-persistent-queue-reproduction.md)。
 
 `/analysis` 可对已发布的工程能力、artifact 与 fastp 白名单参数显示受控引用卡片；每条回答最多保存 4 个短摘录，随项目会话隔离并可在历史对话重开。该入口只使用 capability catalog 派生的工程契约，不开放待审核分类学资料，也不代表生物学审核；无需新增配置或数据库迁移。复现与限制见 [M1 第十轮记录](docs/m1-10-engineering-citations-reproduction.md)。
 
