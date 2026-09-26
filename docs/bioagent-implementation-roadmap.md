@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.13；修订日期：2026-09-26；原始源码基线：2026-09-09。
+> 版本：1.14；修订日期：2026-09-26；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> M1 已按十三轮小切片推进资产、项目、数据元信息、三模式、交付报告、受控需求、对话恢复、工程引用、持久队列、受控中断恢复及 Workflow 1 依赖身份；M2/B3 只开始内部证据契约基础，见第 1.3、1.5–1.16 节与各轮记录。完整 M0／M1／M2 均不勾选验收。
+> M1 已按十四轮小切片推进资产、项目、数据元信息、三模式、交付报告、受控需求、对话恢复、工程引用、持久队列、受控中断恢复及 Workflow 1–2 能力身份；M2/B3 已开始内部证据契约与 Workflow 2 候选解析，见第 1.3、1.5–1.17 节与各轮记录。完整 M0／M1／M2 均不勾选验收。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -210,7 +210,20 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 - **B3 契约基础：**保留 CandidateEvidence v1 读取，新增内部 CandidateEvidence v2，表达 run／attempt、初筛或全量范围、候选类型、单位／population、缺失与零值、artifact 定位与 SHA-256、工具／参考身份、受限派生操作、输入 evidence IDs、来源分组及冲突／缺失／限制。使用 M0 冻结初筛数值新增不足 5 KiB 的小型 fixture 与负向案例；不生成 Assessment，不接报告、UI、持久化或领域结论。
 - **验证：**Agent 210 passed、2 skipped（另有 90 subtests）；相关 Backend 69 项与 Vitest 50 项通过。Ruff、Prettier 与一次 8 GiB 前端 build 结果见[第十三轮复现记录](m1-13-workflow1-identity-b3-contract-reproduction.md)。
 
-**M1/M2 均不勾选完整验收。** B1 仍缺 Workflow 2–6 manifest、不可变参考 release、许可和正式兼容组合；A3 仍缺真实 Workflow 1 中断恢复、auto 发布边界与主机重启实演；B3 仍缺真实 workflow 候选解析、规则、知识、Assessment、专家冻结集及业务接入。
+**M1/M2 均不勾选完整验收。** B1 仍缺 Workflow 3–6 manifest、Workflow 2 不可变参考 release、许可和正式兼容组合；A3 仍缺真实 Workflow 1 中断恢复、auto 发布边界与主机重启实演；B3 仍缺 Workflow 2 原始多表 provenance、规则、知识、Assessment、专家冻结集及业务接入。
+
+### 1.17 M1 第十四轮与 M2/B3 Workflow 2 解析范围及实际状态（2026-09-26，用户确认）
+
+本轮不做数据上传、FASTQ 重算、模型调用、专家审核、UI、后端 API 或数据库变更。先把 Workflow 2 五阶段登记为正式 capability contract，再以既有完成 run 对内部 CandidateEvidence v2 parser 做唯读聚合验证；候选列没有传回本机或写入新文件。
+
+- **M1/B1：**Workflow 2 的序列准备、HMM 候选搜索、候选提取、证据工具链和结果汇总均登记 manifest v1，包含软件、参考资产、资源、parser 和验证状态。execution spec／planner 升至 v5，新方案冻结所选 W1／W2 manifests；v4 方案保留读取但启动前必须重新编译。
+- **DAG dry-run：**首次 dry-run 发现 adapter 把 source workflow 不产生的 `taxonomy.tsv` 列为 target，Snakemake 以 `MissingRuleException` 返回 1；修正完成边界后在新目录展开 21 个 jobs 并返回 0，没有执行显示的 shell command。五个 W2 manifest 因此标记 `dry_run_validated`，不是实际运行或参考库发布验证。
+- **工程知识：**保留不可变 `engineering-knowledge-v1`，新增并启用 v2；只说明 W2 工程能力、依赖和验证边界，不把 NT、NR、CheckV、病毒宿主库或 HMM 视为已核准领域资产。
+- **M2/B3：**新增只读 W2 候选解析器，从完成 phase 定位 `virus_candidates.csv`，支持现行与历史样本结构；输出 `virus_contig` CandidateEvidence v2 的长度、HMM coverage、CheckV、NR 和基因计数等观测，并保存相对路径、行列、SHA-256、来源分组、分母和未知身份限制。缺值不当作 0；重复候选、样本无法对应、schema／数值／路径／读取变化均 fail closed。
+- **真实聚合验证：**既有 W1＋W2 run 的 8 行候选全部解析为 8 个候选、72 项 observation；登记 8 个缺值 issue 和 8 个历史依赖身份 limitation。来源表为 3,269 bytes，SHA-256 `43b4c12f36838261c896ce481d8166314dcfa495a93faad7d1029f9e508e8551`。CLI 只提供 aggregate summary，不输出候选内容。
+- **自动验证：**Agent 226 passed、2 skipped（另有 90 subtests）；根目录 4 项、Backend 69 项及 Vitest 52 项通过，Ruff 通过。Prettier 与最终 build 见[第十四轮复现记录](m1-14-workflow2-manifest-b3-parser-reproduction.md)。
+
+**M1/M2 仍未完成。** B1 尚缺 Workflow 3–6 manifests、Workflow 2 不可变参考 release／许可／完整哈希和正式兼容组合；A3 尚缺真实 Workflow 1 中断恢复与主机重启实演；B3 尚缺原始 W2 多表 provenance 链、领域规则、知识引用、Assessment、专家冻结集、持久化及业务接入。Workflow 2 仍不可受控恢复。
 
 ## 2. 当前基线、职责与契约
 
@@ -218,9 +231,9 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 
 | 仓库            | Commit      | 核对范围                                                       |
 | --------------- | ----------- | -------------------------------------------------------------- |
-| bioagent 根仓库 | `b5d58bf`   | AGENTS.md、README、roadmap 与部署约定                          |
-| agent           | `95d1b0c`   | 动作契约、编译、Workflow 1–6 适配、初筛、worker、runner 和证据 |
-| open-webui      | `d8f5eaabc` | Dashboard、AnalysisPage、业务模型、报告与数值校验              |
+| bioagent 根仓库 | `2b206b7`   | AGENTS.md、README、roadmap 与部署约定                          |
+| agent           | `03d7ce7`   | 动作契约、编译、Workflow 1–6 适配、初筛、worker、runner 和证据 |
+| open-webui      | `6cece2ff3` | Dashboard、AnalysisPage、业务模型、报告与数值校验              |
 
 | 当前代码基础                                                                 | 待补能力或限制                                                                    |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -231,11 +244,11 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 | auto／emergency／standard；智能模式初筛后续跑完整 DAG                        | 真实多样本恢复及 auto 初筛发布边界仍待远端验证                                    |
 | Workflow 1 去 rRNA；Workflow 3 宿主识别                                      | 宿主序列去除为独立能力，不能与前两者混用                                          |
 | 单一私有 scheduler、持久队列、run-local attempt／checkpoint 与人工 resume    | Workflow 2–6 依赖身份及 Workflow 1 真实中断恢复验收                               |
-| schema v4 数值报告；内部 CandidateEvidence v1/v2 契约与冻结初筛 fixture      | 真实 workflow 候选解析、规则、知识引用、Assessment、研判及审核                    |
+| schema v4 数值报告；CandidateEvidence v1/v2 与只读 W2 候选解析               | 原始多表 provenance、规则、知识引用、Assessment、研判及审核                       |
 | 工程知识 release、SQLite FTS5、受控引用与项目会话展示                        | 正式领域语料、专家审核、领域 claim 引用与向量召回                                 |
 | MiniMax-M3 经固定 Claude Agent SDK；本机 TaxonAgent 关闭                     | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-截至第十三轮已复核相关代码、自动测试、Cyclone DAG dry-run、一次 W1 fastp 实跑、Workflow 1 全阶段依赖身份、小型工程引用闭环、隔离持久队列与受控中断恢复诊断，并按显式授权执行四类 MiniMax 开发 smoke。Workflow 1 本轮只通过依赖计算和全阶段 dry-run，不是实际中断恢复或完整分析验收。模型结果仍未经过专家语义审核；未执行其他 workflow 全流程或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
+截至第十四轮已复核相关代码、自动测试、Workflow 1–2 DAG dry-run、一次 W1 fastp 实跑、Workflow 1 全阶段依赖身份、W2 历史候选只读解析、小型工程引用闭环、隔离持久队列与受控中断恢复诊断，并按显式授权执行四类 MiniMax 开发 smoke。W2 本轮只通过当前 adapter 的 DAG dry-run 和历史结果解析，不是新增实际运行、参考库发布或受控恢复验收。模型结果仍未经过专家语义审核；未执行 W3–W6 全流程或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 
@@ -441,6 +454,7 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 - [ ] 按数据集预检→DAG dry-run→登记真实 run 的顺序逐项验证，所有产物进入 run root；原始 FASTQ 与源 workflow 不就地修改。大型库完整校验安排在发布环节，正常任务不重复扫描全库。
 - [x] **第八轮切片：**W1 `read_qc`／`rrna_filter` dry-run 与 fastp `length_required=50` 实跑完成；wrapper 和配置仅写 run-local 副本，完成后输入双重指纹一致。其他 workflow 的 manifest 验收仍未完成。
 - [x] **第十三轮切片：**W1 五阶段统一登记 manifest，按阶段冻结软件、parser、资源、源码闭包与六文件 rRNA 索引身份；完整目标 DAG dry-run 及索引 SHA-256 通过。`read_qc` 保持 validated，`rrna_filter` 仅标记 dry-run 已验证，其余仍为 code exists；未提升为正式发布。
+- [x] **第十四轮切片：**W2 五阶段登记 manifest 并由 execution spec v5 冻结；修正不存在的 summary target 后，当前 adapter 全 DAG 21 jobs dry-run 通过。状态只提升到 `dry_run_validated`；工具／参考库版本、许可、完整哈希、ReleaseSet、真实运行和恢复身份仍未完成。
 
 **产物／接口：**CapabilityManifest、参考库 release、兼容清单和执行快照；编译／启动接口接受已验证的版本组合。**验收：**缺库、索引不兼容、插件未注册、参数非法及执行前版本改变被拒绝；合法输入可在配置的计算节点产生可核验 artifact。**回退：**切回已验证插件与库组合；在途任务保留原 release，旧产物解析器继续可定位，不用新版本静默重解读旧报告。
 
@@ -478,6 +492,7 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 - [ ] 证据齐全后允许生成待审核研判；关键计算或知识一侧不足时只发布可验证数值和不足说明，不虚构分类依据。模型故障明确“未生成研判”，不阻断已验证计算报告。
 - [ ] 发布回归案例，覆盖样本错配、来源被改、错误单位／分母、引用冲突、相关证据、阈值边界和缺失项；来源授权、专家标注及数据划分随案例版本保存。
 - [x] **第十三轮契约基础：**保留 v1 读取并新增内部 CandidateEvidence v2 与 M0 冻结初筛 fixture，覆盖范围、run／attempt、单位／population、零值／缺失、来源哈希与定位、工具／参考身份、受限派生和 evidence 引用图；负向测试拒绝任意公式、非法哈希、未知／循环引用与重复 ID。本切片不含真实 workflow 解析、领域规则、Assessment、专家标注、API 或持久化，B3 保持未完成。
+- [x] **第十四轮解析切片：**新增只读 W2 parser，以最终候选表生成 8 个真实 `virus_contig` CandidateEvidence v2，并为来源直接给出的 ratio／percent 记录明确分母说明；路径、schema、重复 ID、样本映射、非法数值和读取变化 fail closed。当前只追溯最终汇总表，工具／参考版本保留 unknown limitation；不接规则、Assessment、API、报告或持久化。
 
 **产物／接口：**完整 CandidateEvidence、Assessment、规则包与回归集；Assessment 保存分类、支持／反对、冲突、缺失、引用、限制、建议及模型／知识／规则版本。**验收：**正式结论可追溯，模型不得新增观测或删除冲突，未达到类群判读条件时保持不足；候选性能用专家冻结集评估。**回退：**旧 schema v4 数值报告保持可读，错误研判追加更正版本并保留替代关系，不删除旧输出。
 
