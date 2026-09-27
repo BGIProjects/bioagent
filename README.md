@@ -288,6 +288,8 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 
 `/analysis` 可对已发布的工程能力、artifact 与 fastp 白名单参数显示受控引用卡片；每条回答最多保存 4 个短摘录，随项目会话隔离并可在历史对话重开。该入口只使用 capability catalog 派生的工程契约，不开放待审核分类学资料，也不代表生物学审核；无需新增配置或数据库迁移。复现与限制见 [M1 第十轮记录](docs/m1-10-engineering-citations-reproduction.md)。
 
+Workflow 2 的只读工程研判入口为 `agent/candidate_assessment.py --state <run>/.bioagent/state.json --summary`。它只输出 evidence／finding／assessment 聚合计数；在领域资产与正式 reference release 未核准时不会生成研判草稿、写回 run 或新增数据库记录。实现边界与 Cyclone 实证见 [M1 第十七轮记录](docs/m1-17-release-contract-m2-assessment-reproduction.md)。
+
 ## 验证
 
 M1 第一轮开发检查入口为 `m1-check.py assets|offline|evaluate`，复现命令、固定输入、评测结果与未来专家审核流程见 [M1 实施记录](docs/m1-01-assets-evaluation-implementation-record.md)。该开发工具不新增配置或数据库；模型评测只有传入 `--allow-cloud` 才调用 MiniMax，输出仅写入 run root 下新的 `m1-*` 目录。
