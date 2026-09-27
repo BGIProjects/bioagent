@@ -27,6 +27,7 @@
 - `BIOAGENT_SSH_HOST=Cyclone`，SSH 调用固定使用 `ClearAllForwardings=yes`。
 - `BIOAGENT_DATA_ROOT=/data/user/liufangzhou/datasets`，额外 symlink allowlist 为 `/data/user/guojindan/Projects/flu_tgs_ngs/rawdata/NGS`。
 - `BIOAGENT_RUN_ROOT=/data/user/liufangzhou/runs`。
+- 涉及 Cyclone 的工作开始前先执行只读 SSH 连通性检查；失败时提醒使用者恢复 VPN／网络连接，不把失联视为 workflow 失败，也不静默跳过远端验收。
 - Cyclone control worker、每个 run root 的单一持久 tmux scheduler 与 runner 共用 `/home/liufangzhou/.pixi/envs/snakemake/bin/python`，Snakemake 与 SeqKit 分别使用 `/home/liufangzhou/.pixi/bin/snakemake`、`/home/liufangzhou/.pixi/bin/seqkit`；不得恢复多个 per-run supervisor 竞争排序，也不回退 `/data` 上的旧环境。
 - W1–W6 标准交付报告固定使用 `/home/liufangzhou/.pixi/bin/bioagent-report-python`、`/home/liufangzhou/.pixi/bin/bioagent-rscript` 与 `/home/liufangzhou/.pixi/bin/bioagent-weasyprint`；报告只能写入 run root 的 `reports/standard/`。
 - 报告运行时不得依赖 XvirMind/XvirBench；共用提取 helper、确定性模板与绘图脚本必须随 Agent worker 版本部署。
