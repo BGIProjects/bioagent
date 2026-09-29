@@ -1,5 +1,5 @@
 __pycache__/
 *.py[cod]
 
-/docs/bioagent-top-level-design*.html
+/docs/*.html
 /docs/design.md

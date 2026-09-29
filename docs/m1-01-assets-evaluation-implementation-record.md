@@ -1,6 +1,6 @@
 # M1 第一轮：轻量资产准备与开发评测
 
-日期：2026-09-12。依据：[实施路线图第 1.3 节](bioagent-implementation-roadmap.md#13-m1-本轮范围调整2026-09-12用户确认)及本轮用户确认。
+日期：2026-09-12。依据：[实施历史第 1 轮](bioagent-implementation-history.md#m1-round-1)及本轮用户确认。
 
 实施顺序：本篇为第一轮历史记录；后续见[第二轮：最小项目与权限](m1-02-projects-implementation-record.md)。以下保留第一轮日期、结果及审核约定。
 

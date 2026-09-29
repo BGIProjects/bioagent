@@ -1,6 +1,6 @@
 # M1 第二轮：最小项目与权限
 
-日期：2026-09-13。依据：[实施路线图第 1.5 节](bioagent-implementation-roadmap.md#15-m1-第二轮范围与实际状态2026-09-13用户确认)。前一轮为[第一轮：轻量资产准备与开发评测](m1-01-assets-evaluation-implementation-record.md)，其中日期、结果、哈希和[未来专家审核操作（待 M2 网页实现）](m1-01-assets-evaluation-implementation-record.md#未来专家审核操作待-m2-网页实现)保持原记录。
+日期：2026-09-13。依据：[实施历史第 2 轮](bioagent-implementation-history.md#m1-round-2)。前一轮为[第一轮：轻量资产准备与开发评测](m1-01-assets-evaluation-implementation-record.md)，其中日期、结果、哈希和[未来专家审核操作（待 M2 网页实现）](m1-01-assets-evaluation-implementation-record.md#未来专家审核操作待-m2-网页实现)保持原记录。
 
 ## 范围与入口
 

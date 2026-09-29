@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.17；修订日期：2026-09-27；原始源码基线：2026-09-09。
+> 版本：1.18；修订日期：2026-09-29；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> M1 已按十七轮小切片推进资产、项目、数据元信息、三模式、交付报告、受控需求、对话恢复、工程引用、持久队列、受控中断恢复及 Workflow 1–6 能力契约；M2/B3 已开始内部证据契约、Workflow 2 多表候选追溯与确定性工程 findings，见第 1.3、1.5–1.20 节与各轮记录。完整 M0／M1／M2 均不勾选验收。
+> 十七轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -38,229 +38,33 @@
 
 **2026-09-12 本轮实施范围调整（用户确认）：**当前机器不部署小模型，使用显式授权的 MiniMax-M3 验证 provider 与报告链路；不等待专家，先建设约 16 KiB 的待审核资料与工程规则包。已完成真实初筛冻结、关键指标原始产物复算、SQLite 检索、引用校验、开发报告和断网降级验证。S0／A0／B0／C0 的工程完成项与 D0 未完成项分别记录；不把 MiniMax 草稿或模拟异常算作本地模型／生物学验收。详细命令、依赖缺失项和产物见 [实施记录](m0-implementation-record.md)。
 
-### 1.3 M1 本轮范围调整（2026-09-12，用户确认）
-
-本轮只推进 **B1 工程准备、B2 离线检索验证、C1 开发评测基础**，不以完成完整 M1 为目标。用户确认专家实际审核与审核工具留到 M2 网页实现；本轮不建立离线审核交接系统。知识、规则、评测案例与模型输出均保持待审核，不发布可信领域结论。
-
-- 本机新增知识／评测资产控制在 100 MiB 内；沿用小 JSON 包与 SQLite 内存索引，不新增业务数据库、向量库或本地模型。
-- 大型参考库留在 Cyclone；仅检查登记路径、小文件哈希和有限索引元信息，不扫描全库、不复制索引、不重跑 FASTQ。当前观察不能补证历史版本，缺少完整身份时明确“不具备发布条件”。
-- B1 的生产执行绑定、正式参考库发布与真实计算验收，B2 的审核发布／项目鉴权／正式引用持久化，以及 A1–A3 留待后续。当前 CLI 不改变生产可选能力或准入。
-- C1 固定四类各四个开发案例，用相同契约与预算执行一轮显式授权的 MiniMax-M3 评测，每例最多调用一次，保留失败，不自动修复或补跑。没有专家真值、本地模型基线、训练／验证／最终测试集，也不据此设置上线门槛。
-- M2 专家网页的预期操作步骤记录在 [M1 实施记录](m1-01-assets-evaluation-implementation-record.md#未来专家审核操作待-m2-网页实现)，不是当前可用功能。
-
-| 任务   | 本轮实际状态                                                                                                                    | 完整验收仍缺少                                                                             |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| B1     | 隔离资产检查 CLI、catalog／适配器／解析器源码哈希、run-local SeqKit 身份、真实远端依赖观察和异常测试通过                        | 完整 workflow 源码闭包、参考库版本／许可／完整哈希与兼容组合、编译／执行绑定、真实运行验收 |
-| B2     | 复用小包与 SQLite；中英文、类群、快照、冲突共存、待审核排除、空检索及来源损坏回归通过                                           | 专家审核、正式发布、项目鉴权、业务引用持久化                                               |
-| C1     | 16 个冻结开发案例、单轮评测 CLI、逐例输出／错误／耗时与工程校验；真实 MiniMax schema 14/16、工程校验 8/16，通过率不代表语义正确 | 专家语义审核、修订积累、隔离的数据划分、本地模型比较与上线门槛                             |
-| M0／M1 | **均未全部完成**；真实 M0 数值回放的 74 条原证据和 7 个候选指标复算通过                                                         | M0 原有本地后端／离线生成／领域审核缺口，以及本表和 A1–A3 未完成项                         |
-
-以上区分代码、自动测试、真实结果回放和真实模型评测，不将模拟异常或历史初筛回放计为新增 FASTQ 分析验收。命令、产物、容量、实际模型失败和复现步骤见 [M1 实施记录](m1-01-assets-evaluation-implementation-record.md)。
-
-### 1.4 新版 HTML 的未同步项
+### 1.3 新版 HTML 的未同步项
 
 2026-09-10 对比确认：三张 SVG 与旧版完全相同，仍使用 Cyclone 等开发部署名称；页脚仍为 1.0；路线正文写三轨并行，表格仍保留旧阶段结构；“阶段 0 做 demo”和“本地或 5090”未写入 HTML。引用的 `XvirMind_建设情况总结评价_20260910.html` 当前不在 docs 目录中，不作为本清单的实施依据。
 
 本轮保持两份 HTML 原样，将上述差异记录在此。后续若更新顶层设计，应同步部署图、版本信息、模式范围、demo 与训练安排；不能把新文案视为对应代码已经完成。
 
-### 1.5 M1 第二轮范围与实际状态（2026-09-13，用户确认）
+### 1.4 当前实施状态
 
-本轮只实施 **A1 的最小项目、成员权限、数据授权与必要页面**。继续使用 SQLite，不新增参考库、模型、云端评测或重型计算。上传、队列、专家审核动作、正式知识发布及引用持久化继续延期；审核开关只登记，优先级尚不影响调度。Dashboard 保留布局和品牌，将静态地图、统计与告警标为“演示数据”，真实项目列表独立展示，研判／审核显示“未接入”。
+核心任务按“整条描述全部满足才勾选”的严格标准维护；局部切片、测试数量、产物位置和回退记录统一见[实施历史](bioagent-implementation-history.md)及各轮复现记录。
 
-| 项目       | 本轮实际完成与证据                                                                                                               | 限制                                               |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| 项目与归属 | Project／ProjectMember、Chat／dataset 权威 project_id、管理表单；管理员未入项目不能读取内容，成员默认查看，分析／审核独立        | 不提供审核动作或独立管理系统                       |
-| 授权检查   | 分析、共享历史、文件、方案、执行、状态、报告及通用聊天／生成／导出／任务控制接入检查；封闭分享、克隆、文件夹绕过，项目会话只归档 | 既有权限测试和工程验证通过，不代表正式生产安全审计 |
-| 数据范围   | 保存 logical／canonical 边界和根指纹；仅展示获准入口，创建／修订／执行重新授权；替换拒绝、暂时不可验返回 retryable 503           | 不扩容数据；原有远端 worker 不随成员撤权中止       |
-| 历史迁移   | 隔离副本先升级，正式库一致性备份后迁移；1 个历史项目、1 名原用户、3 个 dataset、2 条文件授权；方案和执行路径保持                 | 未授权异常归属不开放；回退需配对旧代码与迁移前备份 |
-| 页面与测试 | 项目选择、只读历史、项目共享数据入口、分页列表；隔离多用户测试、切换迟到回应测试及前端构建                                       | 未进行人工多浏览器验收；研判／审核统计仍未接入     |
+| 任务               | 已完成能力                                                       | 仍缺少                                                 |
+| ------------------ | ---------------------------------------------------------------- | ------------------------------------------------------ |
+| S0                 | Workflow 1–6 能力映射、Cyclone 依赖盘点、真实结果包与基础契约    | 本地模型资源基线、完整数据划分与领域评测指标           |
+| D0                 | 真实结果回放、证据复算、知识／规则加载、限制降级及独立报告       | 本地模型生成、经专家审核的正常支持案例与完整离线生成   |
+| A0                 | 隔离回放入口及不覆盖生产记录的 demo 输出                         | 无；其依赖任务仍未全部完成                             |
+| A1                 | 项目、成员权限、数据授权、历史迁移与真实项目入口                 | 正式生产安全审计不在本阶段完成范围                     |
+| A2                 | 背景版本、技术重复确认、fastp 白名单参数与方案冻结切片           | 上传闭环、对照关系、审核预设及完整 ReleaseSet          |
+| A3                 | 三种模式、阶段报告、持久队列、资源等待与受控恢复切片             | 真实 Workflow 1 中断恢复、W2–W6 恢复身份及主机重启实演 |
+| B0                 | 小型版本化知识包、SQLite／FTS5、离线检索与引用校验               | 类群特异领域资料、专家审核及正式发布                   |
+| B1                 | Workflow 1–6 全部公开 stage 的 CapabilityManifest 与 DAG dry-run | 正式参考 release／许可／完整哈希、真实运行和兼容组合   |
+| B2                 | 工程知识 release、RetrievalAdapter、授权引用校验与会话持久化     | 正式领域知识、专家审核及 claim 级领域引用              |
+| B3                 | CandidateEvidence v2、W2 四来源追溯与确定性工程 findings         | 核准领域规则／知识、正向 Assessment、报告与业务接入    |
+| C0                 | 统一 provider 契约、MiniMax 适配、受控上下文与失败降级           | 本地推理后端、模型权重身份与未微调本地基线             |
+| C1                 | 四类冻结开发案例与 MiniMax 工程 smoke                            | 专家语义审核、数据划分、本地模型比较与上线门槛         |
+| A4／A5／B4／C2／C3 | 尚未开始完整交付                                                 | 专家闭环、私有化部署、资产升级、微调与现场模型验收     |
 
-本机真实 GET 验证中项目、历史会话、方案、3 个 dataset 共 8 项返回 200，未获准路径返回 403；已有双端文件的 quick preflight 返回 ready，仅检查前 1,000 对记录，未启动分析 workflow。迁移前 864,256 字节，迁移后 888,832 字节，一致性备份 864,256 字节。具体测试数量、命令、产物与回退步骤见[第二轮记录](m1-02-projects-implementation-record.md)；[第一轮记录](m1-01-assets-evaluation-implementation-record.md)保留原日期、模型结果、哈希及未来专家操作约定。
-
-A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0 本地模型／领域审核缺口继续保留，**M0／M1 整体未完成**。
-
-### 1.6 M1 第三轮范围与实际状态（2026-09-13，用户确认）
-
-本轮只收尾 A1 项目入口与页面体验。Dashboard 原页首统一选择项目、进入分析及管理员项目设置；Analysis 使用同一原页首呈现项目权限和返回看板入口，移除重复顶栏。新增控件采用局部深色圆角样式，桌面使用自动页首与剩余内容高度，窄屏自然滚动。
-
-- 已完成：复用 Modal 的项目／路径／成员表单，关闭丢弃草稿并返回焦点，失败保留输入，保存后重读列表与权限；不改变后台授权。
-- 已完成：显式无权项目不回退到其他项目，跨页保留 `project`，项目切换清除 `chat` 并重建内容，列表／分页／设置通过请求序号隔离迟到响应。他人会话只读提示放在会话标题旁。
-- 验证：项目权限 Python 11 项、Vitest 36 项通过；Chrome 152／Cypress 13.17.0 的 18 项浏览器用例覆盖四种尺寸、125% 等效视口／DPR、底部可达、空状态、快速切换、分页、设置草稿及刷新。真实环境仅 GET 项目、历史和 dataset 列表，均为 200；修改情境均使用 API 桩。
-- 本轮不新增 API、数据库表或迁移，不备份业务库，不引入模型或参考资料，不调用云端模型或提交计算。A2／A3、专家审核、正式发布及原 B1／B2／C1 缺口继续延期，**M0／M1 整体未完成**。
-
-构建、截图、容量、命令及限制见[第三轮记录](m1-03-project-ui-implementation-record.md)。前两轮历史与专家审核约定保持原样；本轮浏览器桩验证不替代真实多用户端到端授权验收。
-
-### 1.7 M1 第四轮范围与实际状态（2026-09-13，用户确认）
-
-本轮只推进 **A2 元信息与背景版本追溯**：按 dataset ID／资料 revision 保存使用者背景，与计算输入分离。样本名称、批次备注、宿主背景、样本类型、表型、对照及数据集备注均为可选纯文字，不参与分类、模型指令或参数编译。
-
-- 已完成：独立背景版本表及 GET／PUT／分页历史接口；项目成员可读，有分析权者可改；64 KiB 请求限制、字段／样本校验、并发 409、相同内容不重复追加。新数据版本不自动继承背景。
-- 已完成：新方案冻结背景快照，去重比较背景版本但不改变计算 hash；下载报告按实际执行对应的方案 revision 显示转义背景。旧方案缺失快照仍为未记录，不读取最新背景回填。
-- 已完成：数据集卡片内可收合表单与历史，取消丢弃草稿、失败保留输入、重新载入解决冲突，迟到回应隔离；窄屏复用卡片并保持输入框可达。他人会话保持只读。
-- 验证：Python 主回归 36 项、报告／回放 7 项、Vitest 38 项及 Cypress 23 项通过；隔离升级与本机迁移均比对 53 张旧表的原字段数据不变。真实环境只读项目、数据集、背景与历史，均为 200。实际格式、构建及归档证据见[第四轮记录](m1-04-dataset-metadata-implementation-record.md)。
-- 延期：上传、计算分组／技术重复确认、fastp 审核预设、完整资产绑定、A3、专家审核及前几轮缺口；指定本机 NGS 文件留待未来上传验收，本轮没有传输或分析。**完整 A2、M0／M1 均不勾选验收**。
-
-第四轮随后补修背景表单裁切：桌面卡片增加最高占文件区 60% 的独立滚动区与局部细滚动条，窄屏维持自然滚动。Vitest 34 项及 Cypress 27 项通过，新增原生滚轮验证，纠正此前仅靠 `scrollIntoView()` 无法证明使用者可滚动的验收缺口。构建与新归档见[第四轮补修记录](m1-04-dataset-metadata-implementation-record.md#第四轮补修背景表单滚动2026-09-13)，不涉及 API 或数据库变更。
-
-### 1.8 M1 第五轮范围与实际状态（2026-09-13，用户确认）
-
-本轮只补 **A2 样本分组与技术重复确认**，沿用 run_id → sample_id，不处理病例／对照分组。仍由数据集建立者在具有项目分析权时修订，他人会话只读。
-
-- 已完成：按样本预览修改前后 run／配对文件，逐个确认多 run 样本；字段变更清除确认、取消丢弃、失败保留及切换隔离。修订表单复用第四轮滚动区，移除重复高度限制。
-- 已完成：PATCH 精确确认清单、两条正规化路径的 run 唯一性检查；确认摘要／哈希／操作者／时间存入既有 revision checks，预检保留。无需新表或迁移。
-- 已完成：编译与执行检查确切数据版本；未确认历史多 run 数据须保存确认后重新编译。旧方案、报告、已启动执行不改写；新数据 revision 背景不继承。
-- 验证：Python 90 项、adapter 映射 1 项、Vitest 36 项及 Cypress 34 项通过。只用小型合成资料、隔离数据库及 API 桩，无真实 FASTQ 计算；格式、构建、产物容量和限制见[第五轮记录](m1-05-sample-grouping-implementation-record.md)。
-- 本机只读：健康、项目及数据集列表 200；详情因数据授权暂不可验证返回 retryable 503（本机 Agent 8001 无监听），未列为远端验证成功。Ruff／Prettier 与一次 8 GiB build 通过；归档约 1.71 MiB，无业务迁移或真实修订。
-- 延期：上传、fastp 预设、完整资产绑定、A3、专家审核及前几轮缺口。**完整 A2、M0／M1 不勾选验收**。
-
-### 1.9 M1 第六轮范围与实际状态（2026-09-13，用户确认）
-
-本轮只推进 **A3 前三项**，不扩展上传、持久化优先级队列、`waiting_resources`、恢复操作或大型知识库。execution spec 保持 v2，planner 与 routing policy 升至 v2；没有新增数据库表、迁移、模型或环境变量。
-
-- 已完成：`auto` 对高／低信号均先原子发布不可变初筛快报，再检查完整流程资源并继续已确认 DAG；A／B 只表达初筛判断。完整资源不足时 execution 为 `blocked`，快报仍可下载。
-- 已完成：`emergency` 只做 5% 初筛并结束，`standard` 不初筛并直接执行完整流程；auto／emergency 没有成对 reads 时统一降为 standard。新方案用 `routing_policy_version=2` 与 `completion_behavior` 表达语义，旧 policy 启动时返回 `PLAN_ROUTING_OBSOLETE`。
-- 已完成：state v3 使用轻量 `reports` 登记 preliminary／final；初筛写入 `.bioagent/preliminary-telemetry.json`，固定生成时间、证据路径和 SHA-256，完整流程不得覆盖。旧 state 的单一 `report` 读取时按 `report_kind` 映射。
-- 已完成：`/analysis` tab 直接建立对 `routingMode` 的响应式依赖；连续切换以请求序号隔离迟到回应，历史对话恢复已保存模式。任务区按状态分别展示“下载初筛报告”和“下载诊断意见书”。
-- 验证：Agent 68 项（2 skip）、Backend 66 项、相关 Vitest 34 项及新增 Cypress 2 项通过；Cyclone 只完成 health、两条 logical source 解析、1,000 对 reads quick preflight 与 Workflow 1 单一 fastp DAG dry-run。未执行初筛、workflow shell command、完整分析或模型调用。
-- 容量与限制：远端新 dry-run 目录 13 文件、224,759 bytes；资源历史 SQLite 仅只读核对且无迁移。持久化队列、重新排队／恢复、多样本真实运行、完整 A3 与前几轮缺口继续延期，**完整 M0／M1 仍不勾选验收**。
-
-接口、测试命令、容量、限制与回退见[第六轮记录](m1-06-adaptive-routing-implementation-record.md)。
-
-### 1.10 M1 第七轮范围与实际状态（2026-09-17，用户确认）
-
-本轮新增 W1–W6 标准交付报告，不合并现有诊断意见书：后者保留证据索引、结果边界及人工审核清单；用户不关心的一般文件清单移至改名后的“运行审计报告”。
-
-- 已完成：run-local 提取、样本主表、低深度标记、分组非参数统计、R/ggplot2 图、自包含 HTML、同源 A4 横向 PDF、manifest 与 state `standard_delivery` 登记；只覆盖 W1–W6，使用确定性模板。
-- 已完成：Agent／WebUI 经鉴权与 SHA-256 校验下载 HTML/PDF；状态接口公开可用格式，UI 分别显示交付报告、诊断意见书及运行审计报告。
-- 已完成：方案冻结的样本背景传入远端 state；报告失败不改写计算结果，CLI 可独立 report-only 重建。
-- 已完成：Cyclone 以既有 W1+W2 run 验证，W3–W6 正确跳过；报告未出现绝对路径、一般文件清单或 checklist，诊断意见书 checklist 回归保留。
-
-实际命令、产物、测试结果、限制与回退见[第七轮记录](m1-07-standard-delivery-report-implementation-record.md)。
-
-### 1.11 M1 第八轮范围与实际状态（2026-09-18，用户确认）
-
-本轮只推进 **A2 受控需求／参数、B1 最小 CapabilityManifest 与 C1 受控改参评测切片**，不宣称完整 A2、B1 或 C1 完成。没有新增数据库表或迁移；复用方案 JSON、proposal 与 revision。
-
-- 已完成：Workflow 1 发布 `read_qc`、`rrna_filter`、`sample_merge`、`assembly`、`contig_filter` 五个交付终点；确定性编译最小依赖闭包，排除必要步骤时返回依赖冲突，已有 contigs 时可以跳过 assembly。
-- 已完成：fastp manifest v1 发布六个白名单参数与 `workflow_default`；execution spec／planner 升至 v3，冻结规范化参数、manifest v1、adapter v1 与方案哈希。远端 worker 排队前复验；旧能力契约必须重编。
-- 已完成：proposal 在登记前确定性预编译，合法提案展示目标、排除、参数 before／after、影响和重编步骤；冲突提案不保存。`/analysis` 使用“更改需求”，公开能力目录来自 `GET /api/v1/analysis/capabilities`。
-- 已完成：五个固定受控需求开发案例与离线宿主验证。经显式授权运行三例真实 MiniMax smoke，但 SDK 报 `MiniMax-M3` 未识别；两例 `MODEL_UNAVAILABLE`、一例 `MODEL_TIMEOUT`，均未生成越权提案，不记为通过。
-- Cyclone：`read_qc`、`rrna_filter` 及带 `length_required=50` 的 DAG dry-run 均通过；实际 fastp run 最终完成，仅选择 fastp，输入指纹复核不变，遥测登记 fastp 1.3.2。前两次 run 分别暴露 YAML 作用域误替换和 wrapper 布尔字面量问题，修复后保留失败记录。
-
-完整实现、验证、限制和回退见[第八轮记录](m1-08-controlled-requirements-implementation-record.md)。上传、标准／宽松审核预设、其他工具参数、完整 ReleaseSet／参考库身份、专家语义审核和本地模型比较仍延期，**完整 A2、B1、C1、M0／M1 均不勾选验收**。
-
-### 1.12 M1 第九轮范围与实际状态（2026-09-21，用户确认）
-
-本轮只恢复 Dashboard／Analysis 对话与 capabilities 读取，不扩展知识、执行或数据库范围。
-
-- 已完成：Agent 固定 `claude-agent-sdk==0.2.103`／Claude Code 2.1.179，使用 MiniMax 中国大陆端点与 `MiniMax-M3[1m]` SDK 映射；health 校验并公开非敏感 SDK 版本。有效 UUID 保留 resume，缺失或非 UUID ID 使用单次临时 session。
-- 已完成：authenticated capabilities 不再被 project guard 误拦；首次聊天 UUID 到下游模型 metadata 的链路有回归测试。宿主三服务、health、Backend capabilities 与一次带 UUID 的代理对话均验证正常。
-- 实际 smoke：三例均不再出现 unavailable、timeout 或 unrecognized model；`vague-length` 通过，`qc-only` 与 `fastp-length-50` 被严格 schema 拒绝为 `MODEL_SCHEMA_INVALID`，未登记 proposal、未自动补跑。
-- Dashboard 后续修复：一般聊天改用 message-only 契约，并安全接收通过该 schema 的 MiniMax 自然文字；只有 `source=analysis` 使用 action／proposal 契约。authenticated streaming smoke 返回正文且无错误，Analysis 严格边界保持不变。
-- 诊断约束：Codex 沙箱可能无法访问宿主 tmux socket／loopback；冲突时必须在沙箱外复核服务状态。TaxonAgent、正式知识库、专家语义审核、本地模型和完整 C1 继续延期。
-
-根因、配置、测试、实际耗时、限制与回退见[第九轮记录](m1-09-conversation-service-recovery-implementation-record.md)。第八轮失败记录保留，**完整 C1、M0／M1 仍不勾选验收**。
-
-### 1.13 M1 第十轮范围与实际状态（2026-09-23，用户确认）
-
-本轮只推进 **B2 小型工程知识引用闭环**，并重跑 C1 四类开发 smoke；不扩展分类学／领域知识，不新增数据库表、migration、向量库、环境变量或 Dashboard 检索。
-
-- 已完成：发布 8,283 bytes 的 `engineering-knowledge-v1` 与 release registry，由 capability catalog 身份和文件 SHA-256 双重校验；只包含能力、交付目标、artifact、fastp 白名单参数及版本，使用内存 SQLite FTS5。
-- 已完成：`/analysis` 对工程问题最多检索 4 段、每段 512 字；模型只能在 `respond` 引用本轮 snapshot ID。缺失、重复、伪造、跨 snapshot 或被篡改引用在输出前拒绝；ICTV 与 12 段 `pending` M0 资料仍不上线。
-- 已完成：引用以 `analysis_knowledge_citations@v1` 随既有项目会话保存，不建独立表；Backend 与前端都执行大小／来源校验，历史对话在桌面及窄屏显示来源、版本、定位、snapshot 和“非生物学审核”提示。
-- 验证：Agent 全量 168 passed、2 skipped；相关 Backend 107 项、Vitest 53 项、Chrome/Cypress 19 项通过。MiniMax 16 例真实 smoke 为 schema 12/16、工程校验 7/16；引用问答 4/4，通过以外的输出均被既有边界拒绝，不自动修复或补跑。
-- 容量：tracked 工程 release 共 8,283 bytes；远端评测 8 文件、544,310 bytes。业务 SQLite 只增加每条回答至多 4 个受限短摘录，没有另建知识数据库。
-
-命令、结果、哈希、限制与回退见[第十轮复现记录](m1-10-engineering-citations-reproduction.md)。正式领域知识、专家语义审核、claim 级领域引用、向量召回和完整 B2／C1／M0／M1 继续延期。
-
-### 1.14 M1 第十一轮范围与实际状态（2026-09-25，用户确认）
-
-本轮只完成 **A3 的持久排队切片**，不做数据上传、M2、模型／知识资产扩充或新的 FASTQ 计算。没有新增业务数据表、migration 或独立 queue database；队列事实继续保存在 Cyclone run root 的既有 state。
-
-- 已完成：每个 run root 使用唯一的私有 tmux scheduler；`analysis.lock` 只保留最终互斥，不再由多个 per-run supervisor 竞争决定顺序。旧 queued state 缺少 queue metadata 时按 normal 和既有 `queued_at` 纳管。
-- 已完成：queue policy v1 冻结权威 `project_id`／`project_priority`、路由级别与入队时间；排序依次为超过 aging 阈值的最老任务、项目 `high → normal → low`、同级 emergency、入队时间及 run ID。`BIOAGENT_QUEUE_AGING_HOURS` 默认 24，只接受正数，运行中任务不抢占。
-- 已完成：准入资源不足转为 `waiting_resources`，登记阶段、原因和检查时间并继续检查其他任务。auto 初筛完成后若完整流程等待资源，会保留初筛报告及 full-analysis checkpoint，恢复时不重跑初筛。
-- 已完成：重复 start 幂等；scheduler／控制连接／WebUI 恢复时重新纳管 queued／waiting。已启动 runner 以 PID、boot ID 和命令行核对，存活时只监看；确认消失时转 `interrupted`，不自动重跑。
-- 已完成：执行前重新核对项目分析权限与 dataset／chat 的权威项目关系，优先级只从项目记录冻结。status 公开具名 queue 字段，资源摘要统计 waiting，`/analysis` 显示简体中文状态、位置、冻结优先级、等待阶段与可读原因。
-- 验证：Agent 全套 178 passed、2 skipped；相关 Backend 165 项、Vitest 43 项、Cypress 3 项通过。Cyclone 隔离 diagnostic-only run 验证 `high+emergency → high → low`、资源等待恢复及 scheduler 中止后接管；4 个任务均只启动一次，主诊断目录共 72 KiB，未读写 FASTQ、调用模型或生信工具。
-
-产物级一致性检查、attempt 历史与人工 resume 继续延期，因此不宣称 A3 或 M1 完整完成；上传、完整 ReleaseSet、正式领域知识、专家语义评测和本地模型也仍未完成。本轮命令、诊断状态和回退见[第十一轮复现记录](m1-11-persistent-queue-reproduction.md)。
-
-### 1.15 M1 第十二轮范围与实际状态（2026-09-25，用户确认）
-
-本轮只收敛 **A3 的受控中断恢复切片**，不做数据上传，也不开始 M2。没有新增数据库表、migration、queue／attempt database 或配置项；attempt 事实与恢复契约保存在 Cyclone run-local state，业务库只追加既有 AnalysisEvent。
-
-- 已完成：state v3 additive `recovery_contract` 与 `attempts`；新 run 从 attempt 1 开始，冻结方案／execution spec、能力契约、dataset 双重指纹、worker release、run-local workflow 及已登记工具／参考资产身份。每次 attempt 的小型控制产物位于 `.bioagent/attempts/<序号>/`，大型结果不复制。
-- 已完成：Agent resume 只接受 `interrupted`、具备恢复契约且 runner 已消失的同一 run；在 run-local lock 内重验上下文、输入、worker、依赖及完成 phase 的 SHA-256 checkpoint，再原子追加 attempt 并以原项目优先级、当前入队时间重新排队。重复请求幂等；旧 state、身份不完整、任何变化或缺失均拒绝，暂时不可验证映射为 retryable 503 并保持中断状态。
-- 已完成：恢复跳过已验证的完整 phase；中断 phase 使用 `--rerun-incomplete` 并强制重跑受控 rules。已发布 preliminary report 不改写；未发布初筛只允许在原 run 内重建。本轮只有 diagnostic 与 Workflow 1 `read_qc` 能形成完整依赖身份，其他真实 workflow 明确不可恢复。
-- 已完成：Backend 新增 plan revision resume 入口，重验 owner、当前项目分析权、chat／dataset／project、最新 revision 和待处理 proposal，复用原 execution row 并追加 requested／accepted／rejected 事件。status 只公开精简 recovery 字段；运行审计报告列出 attempt 历史，不公开 PID 或实体依赖路径。
-- 已完成：`/analysis` 仅向可写成员的合格 `interrupted` 任务显示“检查并恢复”，复用确认组件，显示次数、处理中状态和简体中文阻挡原因；成功后立即刷新排队状态。唯读、旧 state 或依赖不合格时没有可操作入口。
-- 验证边界：Agent 195 passed、2 skipped；Backend 171 项、Vitest 45 项、Cypress 5 项通过。Cyclone 补跑 32 KiB diagnostic-only run：精确终止专用 runner／scheduler 后由 reconciliation 标记 `interrupted`，人工恢复为 attempt 2 并完成，attempt 1 保留。首次连接超时发生在建 run 前，也已如实记录；diagnostic 成功不视为真实 workflow 恢复验收。命令与状态见[第十二轮复现记录](m1-12-interrupted-run-recovery-reproduction.md)。
-
-**受控恢复切片已完成；A3／M1 仍未完成。** 尚缺 Workflow 2–6 及 Workflow 1 非 `read_qc` 阶段的完整工具／参考库身份、auto 初筛两种发布边界与真实多样本恢复、主机重启实演和真实 workflow 验收。B1、B2、C1 及 M0 的既有缺口不变。
-
-### 1.16 M1 第十三轮与 M2/B3 基础范围及实际状态（2026-09-26，用户确认）
-
-本轮不做数据上传，先完成 Workflow 1 的能力与依赖身份切片；本机测试、六文件索引哈希和 Cyclone 全阶段 DAG dry-run 通过后，才开始 M2/B3 的纯内部契约基础。没有新增数据库表、migration、向量库、环境变量、后端 API、审核页面或模型调用，也没有复制 FASTQ、参考库或大型结果。
-
-- **程序存在：**Workflow 1 五个阶段进入同一 capability catalog，manifest 登记软件、参考资产、parser、资源和实际验证状态；execution spec／planner 升至 v4 并冻结全部所选阶段 manifest。旧 v3 方案仍可读取，但启动必须重新编译。
-- **受控恢复：**新 Workflow 1 run 使用 recovery contract v2，按所选阶段最小化冻结 Snakemake、fastp、Bowtie2 wrapper 与两个 align binary、samtools、SeqKit、MEGAHIT 入口与现有 core binary、六个 rRNA Bowtie2 索引及排除结果／cache 后的 workflow 源码闭包。缺失依赖拒绝建立可恢复契约，暂时不可读返回 retryable unavailable；resume 时内容变化返回 dependency changed 并保持 `interrupted`。旧 contract 不补写，Workflow 2–6 仍拒绝恢复。
-- **dry-run 通过：**当前 worker 部署后，`contig_filter` 目标展开五阶段并在 Cyclone 返回 0；依赖身份完整，六个索引逐文件 SHA-256 与聚合 SHA-256 均已记录。只产生 268 KiB 新 dry-run 目录，没有执行 FASTQ shell command，输入 stat 未变。
-- **真实恢复未验证：**没有制造真实 Workflow 1 中断，也没有运行完整 FASTQ 计算；因此只证明程序、自动测试、身份计算和 DAG dry-run，不宣称 A3／B1 或 M1 完成。
-- **B3 契约基础：**保留 CandidateEvidence v1 读取，新增内部 CandidateEvidence v2，表达 run／attempt、初筛或全量范围、候选类型、单位／population、缺失与零值、artifact 定位与 SHA-256、工具／参考身份、受限派生操作、输入 evidence IDs、来源分组及冲突／缺失／限制。使用 M0 冻结初筛数值新增不足 5 KiB 的小型 fixture 与负向案例；不生成 Assessment，不接报告、UI、持久化或领域结论。
-- **验证：**Agent 210 passed、2 skipped（另有 90 subtests）；相关 Backend 69 项与 Vitest 50 项通过。Ruff、Prettier 与一次 8 GiB 前端 build 结果见[第十三轮复现记录](m1-13-workflow1-identity-b3-contract-reproduction.md)。
-
-**M1/M2 均不勾选完整验收。** B1 仍缺 Workflow 3–6 manifest、Workflow 2 不可变参考 release、许可和正式兼容组合；A3 仍缺真实 Workflow 1 中断恢复、auto 发布边界与主机重启实演；B3 仍缺 Workflow 2 原始多表 provenance、规则、知识、Assessment、专家冻结集及业务接入。
-
-### 1.17 M1 第十四轮与 M2/B3 Workflow 2 解析范围及实际状态（2026-09-26，用户确认）
-
-本轮不做数据上传、FASTQ 重算、模型调用、专家审核、UI、后端 API 或数据库变更。先把 Workflow 2 五阶段登记为正式 capability contract，再以既有完成 run 对内部 CandidateEvidence v2 parser 做唯读聚合验证；候选列没有传回本机或写入新文件。
-
-- **M1/B1：**Workflow 2 的序列准备、HMM 候选搜索、候选提取、证据工具链和结果汇总均登记 manifest v1，包含软件、参考资产、资源、parser 和验证状态。execution spec／planner 升至 v5，新方案冻结所选 W1／W2 manifests；v4 方案保留读取但启动前必须重新编译。
-- **DAG dry-run：**首次 dry-run 发现 adapter 把 source workflow 不产生的 `taxonomy.tsv` 列为 target，Snakemake 以 `MissingRuleException` 返回 1；修正完成边界后在新目录展开 21 个 jobs 并返回 0，没有执行显示的 shell command。五个 W2 manifest 因此标记 `dry_run_validated`，不是实际运行或参考库发布验证。
-- **工程知识：**保留不可变 `engineering-knowledge-v1`，新增并启用 v2；只说明 W2 工程能力、依赖和验证边界，不把 NT、NR、CheckV、病毒宿主库或 HMM 视为已核准领域资产。
-- **M2/B3：**新增只读 W2 候选解析器，从完成 phase 定位 `virus_candidates.csv`，支持现行与历史样本结构；输出 `virus_contig` CandidateEvidence v2 的长度、HMM coverage、CheckV、NR 和基因计数等观测，并保存相对路径、行列、SHA-256、来源分组、分母和未知身份限制。缺值不当作 0；重复候选、样本无法对应、schema／数值／路径／读取变化均 fail closed。
-- **真实聚合验证：**既有 W1＋W2 run 的 8 行候选全部解析为 8 个候选、72 项 observation；登记 8 个缺值 issue 和 8 个历史依赖身份 limitation。来源表为 3,269 bytes，SHA-256 `43b4c12f36838261c896ce481d8166314dcfa495a93faad7d1029f9e508e8551`。CLI 只提供 aggregate summary，不输出候选内容。
-- **自动验证：**Agent 226 passed、2 skipped（另有 90 subtests）；根目录 4 项、Backend 69 项及 Vitest 52 项通过，Ruff 通过。Prettier 与最终 build 见[第十四轮复现记录](m1-14-workflow2-manifest-b3-parser-reproduction.md)。
-
-**M1/M2 仍未完成。** B1 尚缺 Workflow 3–6 manifests、Workflow 2 不可变参考 release／许可／完整哈希和正式兼容组合；A3 尚缺真实 Workflow 1 中断恢复与主机重启实演；B3 尚缺原始 W2 多表 provenance 链、领域规则、知识引用、Assessment、专家冻结集、持久化及业务接入。Workflow 2 仍不可受控恢复。
-
-### 1.18 M1 第十五轮 Workflow 3 能力契约范围及实际状态（2026-09-26，用户确认）
-
-本轮只推进 **M1/B1 的 Workflow 3 宿主识别能力契约**，不做数据上传、真实 workflow 计算、M2、模型调用、数据库变更或大型参考库扫描。没有新增环境变量、后端 API、UI 或 migration。
-
-- **M1/B1：**Workflow 3 的宿主标记比对、覆盖度、BLAST、证据整合和结果汇总均登记 manifest v1，包含输入／输出 artifact、Bowtie2／Samtools／BLASTn／Python 与固定文本工具、EukaMarker 索引／taxonomy、parser、资源和限制。execution spec／planner 升至 v6；v5 方案保留读取，但启动前必须重新编译。
-- **工程知识：**保留可校验的 v1／v2 文件，新增并启用 4,518 bytes 的 `engineering-knowledge-v3`；只发布 W3 工程契约和验证边界，不把 EukaMarker 索引、taxonomy 或汇总脚本视为具备许可及完整哈希的正式 release。
-- **DAG dry-run：**复用既有 run 的 `v120` clean reads 与 contig，只在新隔离目录展开 `host_mapping → host_coverage → host_blast → host_integrate → host_summary` 共 5 个 jobs。Snakemake 返回 0 并明确为 dry-run，没有生成结果文件；目录为 300 KiB，输入 stat 未变。
-- **恢复边界：**W3 dependency identity 未扩充，dry-run 明确返回 `RECOVERY_DEPENDENCY_IDENTITY_INCOMPLETE`；因此 W3 不可受控恢复，也未完成真实运行或正式 ReleaseSet 验收。
-- **自动验证：**Agent 229 passed、2 skipped（另有 93 subtests）；根目录 4 项、Backend 69 项及 Vitest 50 项通过。Ruff、Prettier 与唯一一次 8 GiB 前端 build 结果见[第十五轮复现记录](m1-15-workflow3-manifest-reproduction.md)。
-
-**M1/M2 仍未完成。** B1 尚缺 Workflow 4–6 manifests、W1–W3 正式参考 release／许可／完整哈希、兼容组合及真实运行验收；A3 仍缺真实 Workflow 1 中断恢复、W2–W6 恢复身份与主机重启实演。B2／C1、M0 及既有 M2/B3 缺口不变，本轮没有继续推进 M2。
-
-### 1.19 M1 第十六轮 Workflow 4–6 能力契约与 M2/B3 多表追溯范围及实际状态（2026-09-27，用户确认）
-
-本轮不做数据上传、数据库迁移、UI、模型调用、真实生信计算或大型参考库扫描；不复制 FASTQ、workflow 或参考库到本机。先收尾 W4–W6 的 M1 capability contract，再把 W2 候选证据由最终汇总表扩展为四个小型来源的只读追溯。
-
-- **M1/B1：**W4 的 Kraken2、Bracken 与汇总，W5 的 Bowtie2／Samtools 比对、coverage 筛选与 RPM 汇总，以及 W6 的 CheckV、策略分流、结构注释、DRAM-v 功能注释与交付汇总共新增 11 个 manifest。W5 病毒 reference 保持为执行输入，不伪装成发布资产；W6 的工具与数据库身份仍如实保留未完成状态。每个 W1–W6 公开 stage 现在恰有一个 manifest，并有完整性测试约束。
-- **版本与工程知识：**execution spec／planner 升至 v7；v6 方案仍可查看但启动前必须重新编译。保留可校验的工程知识 v1–v3，新增并启用 `engineering-knowledge-v4`，只描述 W1–W6 工程契约与验证限制，不作为领域资料或正式参考 release。
-- **Cyclone dry-run：**最终内容定址 worker `93e033860220e860d39dd5840febe8fb32263aad9d71af1f2cd778d2060ab510` 在三个新 run 目录分别展开 W4 7、W5 7、W6 12 个 jobs，均返回 0 并明确为 `-n` dry-run。三个目录为 240／212／668 KiB，输入大小保持 1,717,631,486、1,808,575,242、79,823、848 与 94 bytes，`/data` 尚余 365 GiB。三者 recovery identity 都仍为 `RECOVERY_DEPENDENCY_IDENTITY_INCOMPLETE`；W6 `strict_tools=false` 及 dry-run 不代表 CheckV／VIGOR／DRAM-v 真实验收。
-- **M2/B3：**最终 `virus_candidates.csv` 只决定候选集合；`Profile_cov`、五项 CheckV 指标与 `qlen`／`nr_pident`／`approval_rate` 分别回溯 coverage、CheckV 和 NR 来源。每项 observation 使用对应来源的 run-relative path、行列、SHA-256、工具和 unknown reference identity。候选缺列、重复 ID、schema／数值错误、路径越界、symlink、实质数值不一致与读取中变化均 fail closed；只对 `Profile_cov` 允许 `1e-15` 的浮点序列化绝对误差，缺值仍保持缺值。
-- **真实只读聚合：**既有完成 run 仍得到 8 个候选、72 项 observation、8 个 missing 与 8 个 dependency limitation；四个来源合计 8,725 bytes，CLI summary schema v2 仅输出 `sources[]` 与聚合计数，不输出候选 ID 或内容，也不写回原 run。
-- **验证：**Agent 全量 240 passed、2 skipped；变更檔 Ruff 通过。全 repo Ruff 仍有 8 个既有、与本轮无关的问题。根 CLI、Backend、Vitest、Prettier 与唯一一次 8 GiB 前端 build 的实际结果见[第十六轮复现记录](m1-16-workflow4-6-manifests-b3-provenance-reproduction.md)。
-
-**M1/M2 仍未完成。** W1–W6 正式参考 release、许可、完整哈希、ReleaseSet、真实运行与 W2–W6 受控恢复仍缺；B3 尚未接 Assessment、领域规则、正式知识引用、报告、持久化、API、UI 或专家冻结集。M0、B2、C1 及既有 A 轨缺口不变。
-
-### 1.20 M1 第十七轮依赖契约与 M2/B3 确定性研判范围及实际状态（2026-09-27，用户确认）
-
-本轮不做数据上传、数据库迁移、UI、模型调用、新 workflow 计算或大型参考库扫描。增加小型可校验 ReleaseSet／依赖身份解析，并将既有 Workflow 2 CandidateEvidence v2 映射为不含正向生物结论的确定性工程 findings。
-
-- **M1 契约切片：**发布 `candidate-evidence-v2` capability 与 `b3-engineering-integrity-rules-v1`，逐档校验 release 及实现 SHA-256。resolution 从 execution spec、capability contract 与 recovery contract 区分 complete／incomplete／unavailable；旧 state、版本不符、缺依赖与暂时不可读均 fail closed。W2 的 NR／NT 来源 checksum 可登记为 observation，但不证明已安装数据库内容完整，不提升 reference release 或恢复资格；execution spec 仍为 v7。
-- **M2/B3 工程 findings：**固定检查缺失、冲突、依赖身份、同来源相关性和领域资产缺口。finding 只能引用已有 evidence ID，缺值不按零处理、冲突不删除、同 source group 不重复计票。没有核准领域规则与知识时，所有候选均保持 `Assessment(status=not_generated, review_status=pending)`，provider／model 为 `none`，没有 draft、claim、分类或支持程度。
-- **唯读入口：**`candidate_assessment.py --state <run>/.bioagent/state.json --summary` 只输出来源哈希和候选／观测／finding／assessment 聚合计数；不接受输出路径、不写回 run、不输出候选 ID 或序列。本轮未接报告、API、UI 或业务持久化。
-- **Cyclone 实证：**既有 run `analysis-20260813-160906-0f9eda85` 保持 8 candidates、72 observations、8 missing 与 8 dependency limitations；新增映射得到 8 个 not-generated Assessment、0 个 draft。四来源 size／mtime 未变且 SHA-256 重核通过，远端写入为 0。NR／NT 分别只读取 164／92 个小型 `.md5` 来源清单，不递归读取已安装数据库。
-- **验证与容量：**Agent 248 passed、2 skipped，新增与 W2 parser 定向测试 27 passed；根 CLI 4 passed、Backend 96 tests、Vitest 50 passed。新增 assets 为 3,118 bytes，全部 Agent 新程式、资产与测试约 32 KiB；没有扩充 SQLite。Ruff、Prettier 与唯一一次前端 build 详见[第十七轮复现记录](m1-17-release-contract-m2-assessment-reproduction.md)。
-
-**M1/M2 仍未完成。** 本轮工程 release 不是正式领域或 reference ReleaseSet。W1–W6 正式 reference release／许可／完整内容哈希、真实运行与 W2–W6 受控恢复仍缺；B3 仍缺核准领域规则与知识、可审核正向 Assessment、报告／API／UI／持久化及专家冻结集。M0、B2、C1 及既有 A 轨缺口不变。
+M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程碑状态。
 
 ## 2. 当前基线、职责与契约
 
@@ -268,13 +72,13 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 
 | 仓库            | Commit      | 核对范围                                                       |
 | --------------- | ----------- | -------------------------------------------------------------- |
-| bioagent 根仓库 | `9f46cdd`   | AGENTS.md、README、roadmap 与部署约定                          |
-| agent           | `3853f76`   | 动作契约、编译、Workflow 1–6 适配、初筛、worker、runner 和证据 |
+| bioagent 根仓库 | `ca8f33b`   | AGENTS.md、README、roadmap 与部署约定                          |
+| agent           | `ad00fcf`   | 动作契约、编译、Workflow 1–6 适配、初筛、worker、runner 和证据 |
 | open-webui      | `6cece2ff3` | Dashboard、AnalysisPage、业务模型、报告与数值校验              |
 
 | 当前代码基础                                                                    | 待补能力或限制                                                                    |
 | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Dashboard 静态项目数组；分析对象已有 user／chat 关联                            | 真实项目、成员、权限与统计                                                        |
+| 真实项目／成员／权限、项目入口与分析对象 user／chat／project 关联               | 研判／审核统计未接入；尚未进行正式生产安全审计                                    |
 | 远端文件、typed artifact、预检、revision、symlink 双重指纹                      | 浏览器到计算节点的专用大文件上传闭环、完整样本／批次元信息                        |
 | ConversationAction 支持回答、追问、交付终点、排除步骤及 fastp 白名单参数提议    | 其他工具参数与审核预设；模型仍不得直接启动计算                                    |
 | Workflow 1–6 的目录、DAG 与执行适配                                             | 逐项真实数据验证、可交付插件与参考库快照；代码存在不证明所有库可用                |
@@ -364,9 +168,9 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 
 **负责人：**工程＋生信＋专家。**依赖：**无。**代码落点：**`agent/workflow_catalog.py`、`pipeline_spec.py`、`workflow_adapters.py`、`benchmarks/conversation_actions.json` 及现有结果解析器。
 
-- [ ] 形成目标→stage→artifact→工具／参考库映射，区分源码配置、run-local 覆写和实际命令，记录每项能力的验证状态。
-- [ ] 只读盘点 Cyclone 参考库与工具入口：NT、NR、Kraken2、CheckV、rRNA、宿主／BOLD 及 workflow 专用库按实际依赖登记；未找到的库标缺失，未确认版本标 unknown，不在盘点时批量搬库或重建索引。
-- [ ] 选择一个有授权、来源可核验的既有计算结果包，记录真实样本、run、候选、产物定位、可复算指标与参考库身份。无合格结果包时 D0 保持未完成，先修复来源或另行登记受控计算任务，不伪装已有证据。
+- [x] 形成目标→stage→artifact→工具／参考库映射，区分源码配置、run-local 覆写和实际命令，记录每项能力的验证状态。
+- [x] 只读盘点 Cyclone 参考库与工具入口：NT、NR、Kraken2、CheckV、rRNA、宿主／BOLD 及 workflow 专用库按实际依赖登记；未找到的库标缺失，未确认版本标 unknown，不在盘点时批量搬库或重建索引。
+- [x] 选择一个有授权、来源可核验的既有计算结果包，记录真实样本、run、候选、产物定位、可复算指标与参考库身份。无合格结果包时 D0 保持未完成，先修复来源或另行登记受控计算任务，不伪装已有证据。
 - [ ] 冻结公共契约、正常与负向样例、评测用途和数据划分。没有生物学真值的案例只评估异常提示与补证行为。
 - [ ] 检查本机及可用 5090 的内存／显存、系统、存储、访问方式和模型许可；训练与推理分别记录可行配置。现有资料与代码工作不等待 GPU 恢复；本地推理未就绪时不能宣称 D0 通过。
 - [ ] 按任务定义数值正确性、知识召回／引用适用性、合法动作、冲突保留、幻觉事实、延迟和专家修订成本，分别统计。
@@ -377,11 +181,11 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 
 **负责人：**三轨共同验收，领域专家确认解释与限制。**依赖：**A0、B0、C0。**代码落点：**复用上述模块和现有报告模板，仅增加薄的 CLI／开发入口；计算结果回放不另建判读逻辑。
 
-- [ ] 读入 S0 的真实结果包，解析候选证据，检查来源与版本，加载小规模本地知识和规则包。
+- [x] 读入 S0 的真实结果包，解析候选证据，检查来源与版本，加载小规模本地知识和规则包。
 - [ ] 检索适用规则及文献，由本地模型生成结构化说明，宿主验证数值、引用 ID、来源定位和规则约束后模板渲染报告。
 - [ ] 覆盖正常支持、证据矛盾、知识或证据不足三类情况。正常支持必须有实际观测及审核规则；若真实结果未覆盖异常情况，用明确标注的派生测试样例验证，不修改真实包、不将模拟异常计入生物学性能。
-- [ ] 参考库无法完整确认时如实显示来源限制。是否能生成某条研判取决于其所需证据与知识是否齐全；受影响结论降级，不能补写版本或编造确定分类。
-- [ ] 输出证据与引用 JSON、可查看的 HTML 报告、版本清单、运行命令和测试结果。明确“既有结果回放 demo”与真实 FASTQ 端到端运行的区别。
+- [x] 参考库无法完整确认时如实显示来源限制。是否能生成某条研判取决于其所需证据与知识是否齐全；受影响结论降级，不能补写版本或编造确定分类。
+- [x] 输出证据与引用 JSON、可查看的 HTML 报告、版本清单、运行命令和测试结果。明确“既有结果回放 demo”与真实 FASTQ 端到端运行的区别。
 - [ ] 关闭外网后重复运行；专家可先在结构化文件中审核／修订。demo 使用开发隔离入口，不开放未经项目鉴权的多人服务。
 
 **产物／接口：**demo 结果包及复现说明；输入采用 S0 的结果包与 ReleaseSet，输出采用统一 CandidateEvidence／Assessment／Citation 和模板报告，不另设演示专用业务契约。**验收：**本地模型实际参与生成，三类情形均保留可追溯依据；数值、样本身份、引用和版本篡改被拦截。模型不可用时仍能输出已验证数值与“未生成研判”，但该降级结果不替代本地模型 demo 验收。预写报告、纯检索页面和未标注模拟结果不算完成。**回退：**关闭 demo 入口或恢复上一组资产／模型版本，保留输出用于复查，不影响现有分析服务。
@@ -392,8 +196,8 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 
 **负责人：**业务工程。**依赖：**S0。**代码落点：**现有 analysis run delivery／report 模块及 `agent/adapter.py`。
 
-- [ ] 使用现有结果读取和数值复算逻辑准备开发用入口，接收固定结果包与资产版本；记录样本和运行来源，只向 provider 传裁剪后的证据。
-- [ ] 支持将 B0／C0 接入同一 demo 调用链，保存独立 demo 输出，不覆盖生产报告、方案或执行登记。
+- [x] 使用现有结果读取和数值复算逻辑准备开发用入口，接收固定结果包与资产版本；记录样本和运行来源，只向 provider 传裁剪后的证据。
+- [x] 支持将 B0／C0 接入同一 demo 调用链，保存独立 demo 输出，不覆盖生产报告、方案或执行登记。
 
 **产物／接口：**薄的回放入口及 demo 结果记录。**验收：**合法结果可读，错误路径、候选身份和来源损坏被拒绝；不会启动生信计算。**回退：**移除开发入口配置，结果与原始文件保持不变。
 
@@ -418,11 +222,8 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 - [ ] 完成后原子提交到项目数据根，复用 resolve／preflight／fingerprints；未完成文件不能进入 dataset 或分析方案，不在应用内存保存整份 FASTQ。
 - [ ] 保存样本、测序批次、宿主背景、类型、可选表型及对照关系；技术重复合并需确认。计算相关变化产生新 dataset／plan revision，纯报告背景修订单独版本化。
 - [ ] 从 B1 的参数 schema 开放具名预设。首期审核 fastp 标准／宽松预设，模型只提 preset_id 或白名单字段，用户看到数值差异和受影响步骤，确认后重新编译。
-- [x] **第八轮切片：**发布 fastp manifest v1、`workflow_default` 与六个精确值白名单；模糊数值必须追问，合法提案在保存前预编译并展示参数差异与影响。标准／宽松审核预设仍未发布。
 - [ ] 区分 rRNA 去除、宿主序列去除和宿主识别。宿主过滤只有参考库、artifact、合法依赖变体和验证案例齐全才开放；不能跳过必需步骤后伪造 clean reads 类型。
 - [ ] 方案冻结展开参数、插件／工具、参考库、规则及执行 spec 版本。旧计划可读，但未知版本不自动补写，新启动要求重新编译确认。
-- [x] **第八轮切片：**execution spec v3 冻结 fastp 展开值、manifest v1、adapter v1 和方案哈希；旧能力契约可读但禁止启动。参考库、规则与完整 ReleaseSet 冻结仍未完成。
-- [x] **第十三轮切片：**execution spec／planner v4 冻结所选 Workflow 1 五阶段 manifest；旧 v3 方案保持可读但必须重新编译才能启动。尚未冻结正式 ReleaseSet、许可或 Workflow 2–6 manifest，上一项保持未完成。
 
 **产物／接口：**uploads 创建／状态／分块／完成／终止接口；dataset 元信息；受控 ProposedPatch／options 与 ReleaseSet。**验收：**分块重复、断线、摘要不符、路径越界、配对错、非法参数、预设未发布、输入变化和缺依赖均有明确结果。合法表单和自然语言预设编译成同一方案。**回退：**关闭新增参数或上传入口，保留已提交文件；执行 spec 不兼容时升级版本，不为旧配置启动隐式兼容流程。
 
@@ -438,8 +239,6 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 - [x] 阶段边界核查 CPU、内存、磁盘空间与负载。资源不足进入 waiting_resources，保留目标与快报并释放准入资格；其他具备资源条件的任务可以运行。
 - [x] 事务／唯一身份保证重复启动、控制进程重启和重复恢复不产生第二次计算。重连联合 state、tmux、PID、boot ID 核对；已运行进程消失保留 interrupted，不自动重跑。
 - [ ] 显式恢复前核对输入、冻结方案、插件、软件、参考库、worker 执行条件和完整输出。同条件追加 attempt，保留旧状态／日志；变更条件时新建 plan／run，仅按 artifact 契约引用可复用产物。
-- [x] **第十二轮切片：**仅为具备完整恢复契约的 `interrupted` run 提供受控 resume、attempt 历史、完整 phase checkpoint 与重复请求幂等；当前只覆盖 diagnostic 和 Workflow 1 `read_qc`。其余 workflow 因工具／参考资产身份不完整而拒绝恢复，上一项保持未完成。
-- [x] **第十三轮切片：**recovery contract v2 将依赖身份扩至完整 Workflow 1，并验证缺失、改变、暂时不可读与旧 contract 拒绝语义；全阶段 DAG dry-run 通过，但未做真实 Workflow 1 中断恢复，上一项保持未完成。
 
 **产物／接口：**版本化 routing policy、reports 列表、queue／attempt／waiting_reason／observed_at，以及授权的优先级和恢复动作。**验收：**auto 的高／低信号及多样本情况均继续目标；快报不被当作完整完成；SSH 断线、主机重启、排队 session 消失、指纹暂不可验、版本改变和重复请求均有回归测试。**回退：**新队列接管前清空或登记旧队列，禁止双调度；回退先停止新准入并处理在途任务，不静默恢复 auto 提前结束语义。
 
@@ -471,10 +270,10 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 **负责人：**知识工程＋生信＋领域专家。**依赖：**S0，不依赖完整项目 CRUD。**代码落点：**现有 `conversation_contract.py`、结果解析器、报告证据校验与模板模块；新增供应方无关的知识／规则模块。
 
 - [ ] 围绕 S0 的结果包选择必要的类群、标志基因、分类条件、方法、工具说明和文献片段，不将整个 NT/NR 放入语言模型知识索引。
-- [ ] 使用版本化资料包、SQLite 关系表与全文索引，建立 Source／Passage／Entity／Relation／KnowledgeRelease；每条关系有原文定位、适用范围、版本和审核状态。知识数据放在独立资产目录，宿主读取小规模结果，与 SDK 会话文件隔离。
+- [x] 使用版本化资料包、SQLite 关系表与全文索引，建立 Source／Passage／Entity／Relation／KnowledgeRelease；每条关系有原文定位、适用范围、版本和审核状态。知识数据放在独立资产目录，宿主读取小规模结果，与 SDK 会话文件隔离。
 - [ ] 整理 demo 所需的技能卡、工具契约、参考库身份与小规则包；工具知识说明从现有注册信息生成，来源未知字段保留 unknown。
 - [ ] 复用已有产物解析和数值复算，建立 demo 候选证据及来源分组，显式区分未提供和 0。规则按具体类群引用，缺少适用规则时输出不足，保留高同源低覆盖、缺失对照等实际可见问题。
-- [ ] 实现离线查询、片段定位、引用注册与校验；在测试包中验证正常、冲突、空知识和来源损坏。工具／参考版本不能确认时限制受影响结论，不能凭语言补齐。
+- [x] 实现离线查询、片段定位、引用注册与校验；在测试包中验证正常、冲突、空知识和来源损坏。工具／参考版本不能确认时限制受影响结论，不能凭语言补齐。
 - [ ] 使用同一套模板从经校验证据与模型说明渲染 demo 报告，转义文本。专家可通过结构化文件审核资料、规则和输出，记录审核人、版本和理由。
 
 **产物／接口：**小规模知识包、规则包、参考身份清单、CandidateEvidence、Citation 解析与 demo 模板；不要求 M0 重建或复制完整 NT/NR。**验收：**断网可检索，有效引用回到固定原文，数值可复算，冲突／不足不被隐藏；未审核资料不作为已发布知识。**回退：**恢复上一组知识／规则快照，保留历史引用；无可用知识时只交付允许的数值结果。
@@ -483,18 +282,11 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 
 **负责人：**执行工程＋生信维护者。**依赖：**S0；可与 B0 并行。**代码落点：**`workflow_catalog.py`、`pipeline_spec.py`、`workflow_adapters.py`、`analysis_runner.py` 和 worker 发布模块。
 
-- [ ] 将已有 Workflow 1–6 适配包装为 CapabilityManifest，登记 artifact、参数、资源、软件／参考库、解析器和验证状态。现有 catalog／adapter 保持执行能力的唯一来源，不重写一套通用插件引擎。
-- [x] **第八轮切片：**建立最小通用 manifest 结构，登记 W1 公开交付终点及 fastp 的 stage、输入／输出 artifact、参数 schema、版本、验证状态和影响；W2–W6 及其他工具尚未逐项发布。
+- [x] 将已有 Workflow 1–6 适配包装为 CapabilityManifest，登记 artifact、参数、资源、软件／参考库、解析器和验证状态。现有 catalog／adapter 保持执行能力的唯一来源，不重写一套通用插件引擎。
 - [ ] 计算节点只执行已注册、版本允许且参数合格的适配器。workflow 源码、run-local 变更与解析器版本进入执行清单；未通过验证的能力对用户不可选。
 - [ ] 将实际参考库登记为不可变版本目录，记录来源、许可、下载或发布日期、索引格式、构建命令、工具版本、清单和哈希；未知版本不能包装成已校验 release。
 - [ ] 工具与参考库兼容关系进入 ReleaseSet。编译时绑定，执行前核对；产物携带真实使用的版本，不随默认库切换而改变历史记录。
 - [ ] 按数据集预检→DAG dry-run→登记真实 run 的顺序逐项验证，所有产物进入 run root；原始 FASTQ 与源 workflow 不就地修改。大型库完整校验安排在发布环节，正常任务不重复扫描全库。
-- [x] **第八轮切片：**W1 `read_qc`／`rrna_filter` dry-run 与 fastp `length_required=50` 实跑完成；wrapper 和配置仅写 run-local 副本，完成后输入双重指纹一致。其他 workflow 的 manifest 验收仍未完成。
-- [x] **第十三轮切片：**W1 五阶段统一登记 manifest，按阶段冻结软件、parser、资源、源码闭包与六文件 rRNA 索引身份；完整目标 DAG dry-run 及索引 SHA-256 通过。`read_qc` 保持 validated，`rrna_filter` 仅标记 dry-run 已验证，其余仍为 code exists；未提升为正式发布。
-- [x] **第十四轮切片：**W2 五阶段登记 manifest 并由 execution spec v5 冻结；修正不存在的 summary target 后，当前 adapter 全 DAG 21 jobs dry-run 通过。状态只提升到 `dry_run_validated`；工具／参考库版本、许可、完整哈希、ReleaseSet、真实运行和恢复身份仍未完成。
-- [x] **第十五轮切片：**W3 五阶段登记 manifest 并由 execution spec v6 冻结；复用既有 clean reads 与 contig 的全 DAG 5 jobs dry-run 通过。状态只提升到 `dry_run_validated`；EukaMarker 索引／taxonomy 的版本、许可、完整哈希、ReleaseSet、真实运行和恢复身份仍未完成。
-- [x] **第十六轮切片：**W4 三阶段、W5 三阶段与 W6 五阶段共登记 11 个 manifest，并由 execution spec v7 冻结；三个新隔离目录的全 DAG 分别展开 7／7／12 jobs 且 dry-run 返回 0。状态只提升到 `dry_run_validated`；正式参考 release、许可、完整哈希、ReleaseSet、真实运行和 W2–W6 恢复身份仍未完成。
-- [x] **第十七轮契约切片：**新增小型工程 ReleaseSet 与 dependency resolution，校验 capability／规则档案及实现哈希，并对 execution spec、manifest 与 recovery identity 的缺失、版本不符和暂时不可读 fail closed。NR／NT 来源 checksum 仅记 observation，未发布任何正式 reference release，也未改变执行或恢复准入。
 
 **产物／接口：**CapabilityManifest、参考库 release、兼容清单和执行快照；编译／启动接口接受已验证的版本组合。**验收：**缺库、索引不兼容、插件未注册、参数非法及执行前版本改变被拒绝；合法输入可在配置的计算节点产生可核验 artifact。**回退：**切回已验证插件与库组合；在途任务保留原 release，旧产物解析器继续可定位，不用新版本静默重解读旧报告。
 
@@ -511,12 +303,11 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 | 本地参考库 | NT、NR、Kraken2、CheckV、rRNA、宿主／BOLD 和实际 workflow 依赖                   | 由 B1 发布计算侧索引；知识索引仅收录用途、版本和依赖说明              |
 
 - [ ] 统一导入→来源／许可校验→结构化整理→专家审核→索引构建→回归→发布；自动抽取进入待审核区，不能直接成为线上事实。
-- [ ] 完成 RetrievalAdapter，保留 query／corpora／limit 和不足／不可用语义，增加快照与适用类群过滤。中文查询和导入使用相同词项处理，英文工具名、基因名、taxon ID 精确匹配。
+- [x] 完成 RetrievalAdapter，保留 query／corpora／limit 和不足／不可用语义，增加快照与适用类群过滤。中文查询和导入使用相同词项处理，英文工具名、基因名、taxon ID 精确匹配。
 - [ ] 先检索类群、别名与版本，再返回关系和原文片段；检索分数仅排序。向量召回只在固定评测集证明收益后增加，不作为首期依赖。
-- [ ] 建立服务端引用注册、解析和可信标记后，再修改 ConversationAction 清空 citations 的逻辑。模型只能返回本次检索包的 ID，不能自行声明 verified；越项目、越快照或未知 ID 拒绝。
+- [x] 建立服务端引用注册、解析和可信标记后，再修改 ConversationAction 清空 citations 的逻辑。模型只能返回本次检索包的 ID，不能自行声明 verified；越项目、越快照或未知 ID 拒绝。
 - [ ] 保存查询、资产版本、命中片段和 claim→citation 映射；经业务授权 API 查询／展示，不向浏览器暴露知识文件系统。只有当前项目允许的上下文进入模型。
-- [ ] 区分 KNOWLEDGE_INSUFFICIENT 与 RETRIEVAL_UNAVAILABLE；冲突来源共同返回。检索文本不能改变工具白名单、权限和规则，不把资料中的指令当作系统指令。
-- [x] **第十轮切片：**发布 capability catalog 派生的工程契约小包，完成 `/analysis` 项目授权检索、snapshot／ID 校验、受限引用持久化与历史卡片；领域资料、专家审核与 claim 级正式引用仍未完成。
+- [x] 区分 KNOWLEDGE_INSUFFICIENT 与 RETRIEVAL_UNAVAILABLE；冲突来源共同返回。检索文本不能改变工具白名单、权限和规则，不把资料中的指令当作系统指令。
 
 **产物／接口：**知识 release、带快照及审核来源的 Citation／RetrievalResult、引用 resolve／verify 与后端持久化。**验收：**类群、别名、中英文、版本、定位和授权正确；空检索、冲突、仅摘要、伪造引用与资料越权指令不进入可信结论。**回退：**回到旧快照，旧报告不自动补写文献；索引可由资料包重建，历史引用不依赖当前默认索引。
 
@@ -525,16 +316,12 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 **负责人：**生信／知识工程＋领域专家。**依赖：**B1、B2。**代码落点：**`analysis_runner.py`、候选解析器、规则服务、后端 `utils/report_evidence.py` 与报告模板；领域逻辑独立于 WebUI 页面和模型 SDK。
 
 - [ ] 扩展 B0 证据结构，覆盖真实 workflow 的候选与样本。指标显式说明核酸／蛋白同一性、query／subject、覆盖区间／分母、breadth／depth、reads／pairs、全量／抽样／过滤后口径。
-- [ ] 每项观测记录来源文件、行列或序列坐标、哈希、派生公式、工具／参考库和来源分组。同一 reads 派生证据避免重复计票，缺失值不当作 0；公式使用受限白名单。
+- [x] 每项观测记录来源文件、行列或序列坐标、哈希、派生公式、工具／参考库和来源分组。同一 reads 派生证据避免重复计票，缺失值不当作 0；公式使用受限白名单。
 - [ ] 建立类群特异的适用条件、冲突、阈值附近与缺失检查；对照不足、混合信号、分节段不完整、EVE／污染／组装问题只根据实际证据给出提示。CheckV 不承担全部异常判定。
 - [ ] 固定数据流：解析→规则检查→知识检索→主 Agent 说明→数值／引用校验→模板报告。分类归属、支持程度、冲突／缺失和审核状态分别记录；首期不增加融合 subagent 或未经校准的概率。
 - [ ] 宿主准备有限候选证据包并强制保留规则命中的冲突。校验引用身份与定位不等于证明文献语义充分，语义适用性保留专家复核。
 - [ ] 证据齐全后允许生成待审核研判；关键计算或知识一侧不足时只发布可验证数值和不足说明，不虚构分类依据。模型故障明确“未生成研判”，不阻断已验证计算报告。
 - [ ] 发布回归案例，覆盖样本错配、来源被改、错误单位／分母、引用冲突、相关证据、阈值边界和缺失项；来源授权、专家标注及数据划分随案例版本保存。
-- [x] **第十三轮契约基础：**保留 v1 读取并新增内部 CandidateEvidence v2 与 M0 冻结初筛 fixture，覆盖范围、run／attempt、单位／population、零值／缺失、来源哈希与定位、工具／参考身份、受限派生和 evidence 引用图；负向测试拒绝任意公式、非法哈希、未知／循环引用与重复 ID。本切片不含真实 workflow 解析、领域规则、Assessment、专家标注、API 或持久化，B3 保持未完成。
-- [x] **第十四轮解析切片：**新增只读 W2 parser，以最终候选表生成 8 个真实 `virus_contig` CandidateEvidence v2，并为来源直接给出的 ratio／percent 记录明确分母说明；路径、schema、重复 ID、样本映射、非法数值和读取变化 fail closed。当前只追溯最终汇总表，工具／参考版本保留 unknown limitation；不接规则、Assessment、API、报告或持久化。
-- [x] **第十六轮追溯切片：**最终候选表只决定 roster；九项观测分别回溯 coverage、CheckV 与 NR 小表，并保存各自路径、行列、SHA-256、工具和 unknown reference identity。既有完成 run 的 8 个候选／72 项 observation 聚合保持不变；上游额外行允许存在，候选缺行、重复、schema／数值／路径／symlink／读取变化与实质不一致均 fail closed。CLI schema v2 仅输出四来源及计数；不接规则、Assessment、API、报告、持久化或 UI。
-- [x] **第十七轮工程研判切片：**将 EvidenceIssue 与 source group 映射为五类确定性工程 finding；未核准领域资产时只生成 `not_generated` Assessment，不产生 claim 或生物学结论。真实 W2 run 得到 8 个 Assessment、0 个 draft；CLI 仅输出聚合计数且不写回 run。正向 Assessment、领域规则／知识、专家审核及业务接入仍未完成。
 
 **产物／接口：**完整 CandidateEvidence、Assessment、规则包与回归集；Assessment 保存分类、支持／反对、冲突、缺失、引用、限制、建议及模型／知识／规则版本。**验收：**正式结论可追溯，模型不得新增观测或删除冲突，未达到类群判读条件时保持不足；候选性能用专家冻结集评估。**回退：**旧 schema v4 数值报告保持可读，错误研判追加更正版本并保留替代关系，不删除旧输出。
 
@@ -556,12 +343,13 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 
 **负责人：**模型／宿主工程。**依赖：**S0，不等待完整知识库和审核 UI。**代码落点：**`runtime.py`、`config.py`、`conversation_context.py`、`conversation_contract.py`、`adapter.py`。
 
-- [ ] 提取供应方无关的 ProviderRequest／Result，接收四类 task_kind、schema、有限上下文和预算；用冻结样例独立验证。宿主负责检索、规则、引用校验、编译与任务提交。
-- [ ] 将 Claude Agent SDK 的 MiniMax 调用、session／resume／transcript 封装为现有 provider。对外保留 chat 和 analysis 边界，本地调用不依赖 Claude session ID。
+**范围说明：**DeepSeek Harness 按需适配，不作为 M0–M3 的必交付或阻塞项；未来接入时只提供所需能力，不启用能绕过宿主审批的工具／调度循环。
+
+- [x] 提取供应方无关的 ProviderRequest／Result，接收四类 task_kind、schema、有限上下文和预算；用冻结样例独立验证。宿主负责检索、规则、引用校验、编译与任务提交。
+- [x] 将 Claude Agent SDK 的 MiniMax 调用、session／resume／transcript 封装为现有 provider。对外保留 chat 和 analysis 边界，本地调用不依赖 Claude session ID。
 - [ ] 根据 S0 的实际硬件与许可选择一种本地推理后端，例如 vLLM 或 llama.cpp，接通未微调基线；记录模型哈希、量化方式、后端版本、上下文与推理配置。M0 不要求同时适配多个后端。
-- [ ] DeepSeek Harness 列入按需适配，不作为 M0–M3 的必交付或阻塞项。未来接入时只提供所需能力，不启用能绕过宿主审批的工具／调度循环。
-- [ ] 业务上下文从受控历史和确定性摘要构造，原 SDK transcript 保留作审计；新 provider 使用独立会话命名空间。原始 FASTQ、全量日志和私有路径不进入模型输入。
-- [ ] 单次生成后严格校验，将超时、不可用、schema 错误和上下文超限统一返回；失败明确降级，不无限修复。默认 local_only，现有 MiniMax 仅在显式授权的比较任务中调用。
+- [x] 业务上下文从受控历史和确定性摘要构造，原 SDK transcript 保留作审计；新 provider 使用独立会话命名空间。原始 FASTQ、全量日志和私有路径不进入模型输入。
+- [x] 单次生成后严格校验，将超时、不可用、schema 错误和上下文超限统一返回；失败明确降级，不无限修复。默认 local_only，现有 MiniMax 仅在显式授权的比较任务中调用。
 
 **产物／接口：**统一 provider、现有路径适配、本地生成适配和同契约测试。**验收：**在固定样例上切换 provider 不改变领域编译／执行逻辑；本地实际产生结构化结果；超时、非法 JSON 和云端禁用得到预期处理。**回退：**停用新 provider 或恢复已验证本地版本；若无可用本地模型则模板／人工路径，不能自动切回云端。
 
@@ -569,9 +357,7 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 
 **负责人：**模型工程＋领域专家。**依赖：**C0、B0；真实 proposal 的最终联调使用 A2，不阻塞冻结契约上的独立评测。**代码落点：**现有 conversation benchmark、provider 测试及新增离线评测／审核样例工具。
 
-- [ ] 分别评测意图／追问、受控改参、引用问答、证据说明；前两类可用能力目录和动作样例先行，后两类使用 B0 的固定资料／证据包，不等待所有类群收录。
-- [x] **第八轮切片：**新增五个受控需求固定案例，覆盖只做质控、`length_required=50`、模糊长度追问、assembly 依赖冲突及命令／路径拒绝；离线宿主契约通过，真实 MiniMax 三例因 provider 不可用／超时未通过。
-- [x] **第九轮恢复：**固定 SDK／CLI、MiniMax 中国大陆端点与模型映射，恢复对话可用性；真实三例不再 unavailable／timeout，其中一例通过、两例由严格 schema 安全拒绝，未算作完整 C1。
+- [x] 分别评测意图／追问、受控改参、引用问答、证据说明；前两类可用能力目录和动作样例先行，后两类使用 B0 的固定资料／证据包，不等待所有类群收录。
 - [ ] 比较时使用相同任务、schema、知识／规则快照与推理预算；有显式授权才运行 MiniMax-M3 云端基线，未获授权则记录当前可得本地基线。
 - [ ] 影子输出只写独立评测记录，不注册真实 proposal、不修改正式报告、不启动计算。模型返回字段、耗时、错误和遗漏分别统计，专家审核语义适用性。
 - [ ] 按四类任务收集审核过的输入、合格输出、不合格输出与修订理由，保留证据和知识快照。A4 上线前采用结构化审核文件，之后接入同一导出契约。
