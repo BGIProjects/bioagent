@@ -224,3 +224,16 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 - **验证与容量：**Agent 248 passed、2 skipped，新增与 W2 parser 定向测试 27 passed；根 CLI 4 passed、Backend 96 tests、Vitest 50 passed。新增 assets 为 3,118 bytes，全部 Agent 新程式、资产与测试约 32 KiB；没有扩充 SQLite。Ruff、Prettier 与唯一一次前端 build 详见[第十七轮复现记录](m1-17-release-contract-m2-assessment-reproduction.md)。
 
 **M1/M2 仍未完成。** 本轮工程 release 不是正式领域或 reference ReleaseSet。W1–W6 正式 reference release／许可／完整内容哈希、真实运行与 W2–W6 受控恢复仍缺；B3 仍缺核准领域规则与知识、可审核正向 Assessment、报告／API／UI／持久化及专家冻结集。M0、B2、C1 及既有 A 轨缺口不变。
+
+## 第 18 轮：优先三项 Demo（2026-09-30，用户确认）
+
+本轮优先级调整为三个可运行 Demo：端到端科学报告、`fastp@1.3.2` 本地工具条目，以及 `bioagent-w1-read-qc@1.0.0` 原样／受控修改。只使用 `BJ-2024-615` 成对 FASTQ；不新增第二个工具、通用市场、多样本推论、本地模型、正式专家审核或 W3–W6 重算，也没有数据库 migration。
+
+- **程序已完成：**capabilities／execution spec 升至 v2／v8，冻结工具契约与 skill invocation；未知工具、版本不符、未登记 skill、原始 CLI 和非白名单参数均 fail closed。worker 建立远端 state 前实测 fastp 版本，终态保存输入／输出哈希、参数、指标与错误码。
+- **报告已完成：**新增九笔方法／类群／阈值本地文献 release；MiniMax-M3 只接收匿名 ID 并只能排列既定 claim，确定性 renderer 插入事实与 locator。未知 ID、越界字段、缺文献、路径越界及结果不匹配均拒绝或降级；单样本报告不做群组推论，H/N 最佳命中不写成已确认亚型。
+- **业务入口已完成：**Agent／Backend 提供受控报告生成和 SHA-256 校验下载，snapshot 回传工具与 artifact report；`/analysis` 只新增一个极简“优先 Demo”区块。没有通用管理后台，技能修改继续走既有“更改需求”。
+- **真实运行：**首次完整 run 的 W1 成功，但暴露 W2 helper 无法从 PATH 找到 config 中 `hmmsearch` 的问题；未把该失败当作验收。修正只作用于 runner 的 phase PATH，不修改 Workflow 源码。`analysis-m118-priority-full-r2-20260930` 随后以 2:38:54 完成 W1→W2；同一持久 scheduler 再以 40 秒完成 `analysis-m118-priority-qc80-20260930`。两者 fastp 输出 artifact digest 不同，compiled spec 除 `length_required`、override 与派生 digest 外一致。
+- **报告实证：**完整 run 的 93 个 facts、九笔文献、MiniMax-M3 受限 reasoning plan、HTML／PDF 与工具报告均完成；修改版技能报告完成。相同 frozen 结果第二次生成命中 cache，facts JSON 与 HTML 逐字节一致。最终 artifact digest、引用与数值见复现记录。
+- **验证：**Agent 264 passed、2 skipped，Backend 80 passed，Vitest 65 passed；变更文件 Ruff、Prettier、skill quick validation 与 diff whitespace 均通过。沙箱内 build 在编译前的 Pyodide 下载阶段被本机代理权限阻断；沙箱外的一次完整 8 GiB 前端 build 通过。真实工具版本、未知／错版拒绝、受控 skill 修改、报告越界防护、缺文献降级与路径限制均有自动测试覆盖。
+
+实际 run、digest、容量与复现命令见[第十八轮复现记录](m1-18-priority-demos-reproduction.md)。三项完成只代表本轮指定 Demo；不提升 M1／M2／M3 共同里程碑，也不补齐正式 reference release、许可、专家审核、本地模型或 W2–W6 受控恢复。

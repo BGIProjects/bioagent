@@ -284,6 +284,8 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 
 `/analysis` 提供智能、标准、紧急三种模式：智能模式先生成 5% 初筛快报，再继续已确认完整流程；标准模式直接执行完整流程；紧急模式只完成 5% 初筛。没有成对 reads 时智能／紧急会明确降为标准。任务区按状态提供初筛报告、带人工审核清单的诊断意见书、标准交付报告 HTML/PDF 与运行审计报告。交付报告只覆盖 W1–W6，确定性生成并写入 run-local `reports/standard/`；配置入口为 `agent/.env.example` 中三个 `BIOAGENT_REPORT_*` 变量。详见 [M1 第六轮记录](docs/m1-06-adaptive-routing-implementation-record.md)与 [M1 第七轮记录](docs/m1-07-standard-delivery-report-implementation-record.md)。
 
+当前 `/analysis` 的“优先 Demo”区读取 capabilities schema v2 中的版本化本地工具与工作流技能，并提供科学、工具、技能报告入口。报告 API 为 `POST /api/v1/analysis/runs/priority-reports` 与 `GET /api/v1/analysis/runs/artifact-report`；所有产物留在对应 run 的 `reports/standard/`。科学报告的受控推理仅在 `BIOAGENT_MODEL_POLICY=minimax_explicit` 时使用现有 MiniMax 配置；密钥仍只由交互式 shell 提供，不写入仓库或报告。
+
 任务区会显示队列位置、冻结的项目／任务优先级、等待阶段及可读资源原因；继续使用现有轮询，没有新增队列管理页或取消操作。合格的 `interrupted` 任务提供受控人工恢复，详见 [M1 第十二轮记录](docs/m1-12-interrupted-run-recovery-reproduction.md)与[第十三轮记录](docs/m1-13-workflow1-identity-b3-contract-reproduction.md)；队列复现与限制见 [M1 第十一轮记录](docs/m1-11-persistent-queue-reproduction.md)。
 
 `/analysis` 可对已发布的工程能力、artifact 与 fastp 白名单参数显示受控引用卡片；每条回答最多保存 4 个短摘录，随项目会话隔离并可在历史对话重开。该入口只使用 capability catalog 派生的工程契约，不开放待审核分类学资料，也不代表生物学审核；无需新增配置或数据库迁移。复现与限制见 [M1 第十轮记录](docs/m1-10-engineering-citations-reproduction.md)。
