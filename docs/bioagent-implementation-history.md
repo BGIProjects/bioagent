@@ -1,6 +1,6 @@
-# BioAgent 实施历史：M1 第 1–17 轮
+# BioAgent 实施历史：M1 第 1–19 轮
 
-> 覆盖日期：2026-09-12 至 2026-09-27；从实施路线图 v1.17 拆分。
+> 覆盖日期：2026-09-12 至 2026-10-02；从实施路线图 v1.17 拆分。
 > 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
 
 <a id="m1-round-1"></a>
@@ -237,3 +237,16 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 - **验证：**Agent 264 passed、2 skipped，Backend 80 passed，Vitest 65 passed；变更文件 Ruff、Prettier、skill quick validation 与 diff whitespace 均通过。沙箱内 build 在编译前的 Pyodide 下载阶段被本机代理权限阻断；沙箱外的一次完整 8 GiB 前端 build 通过。真实工具版本、未知／错版拒绝、受控 skill 修改、报告越界防护、缺文献降级与路径限制均有自动测试覆盖。
 
 实际 run、digest、容量与复现命令见[第十八轮复现记录](m1-18-priority-demos-reproduction.md)。三项完成只代表本轮指定 Demo；不提升 M1／M2／M3 共同里程碑，也不补齐正式 reference release、许可、专家审核、本地模型或 W2–W6 受控恢复。
+
+## 第 19 轮：标准交付报告版型与完整分析对齐（2026-10-02，用户确认）
+
+本轮诊断确认第十八轮两个标准交付报告尚未完整满足参考版型：旧版缺少完整导航、五类状态标签、数据驱动叙述、专用图表与科研限制页尾，PDF 表格还存在逐字直排；完整 run 另因空值被字符串化而误收 `sample_id=nan`。本轮只重建报告，不重跑 FASTQ、W1 或 W2，不修改数据库、Backend、UI、README、`AGENTS.md` 或 `.gitignore`。
+
+- **模板与资料契约：**标准模板升级为 `bioagent-standard-delivery-v2`，保留 `standard_delivery` schema v1 与既有下载 API。sample ID 先正则化并拒绝空值、非有限数及 `NaN` 类文本；W1–W6 以具名指标组装 sample-level master table，不再无差别摊平数值。完整 run 因而恢复为唯一的 `BJ-2024-615`。
+- **统计与叙述：**描述统计统一输出 n、missing、mean、SD、median、Q25、Q75、min、max；只有至少两个水平且至少两组 `n≥2` 才生成 Kruskal–Wallis、Mann–Whitney、BH 与效应量。单样本只作描述性解读，缺失流程明确跳过，不虚构分组推论或组装结果。
+- **版型与图表：**实现 kicker、五个状态标签、锚点目录、警示区、编号 W1–W6 章节、结构化表、方法摘要、受限 R 附录与科研限制页尾；随 worker 部署确定性 R 主题和 W1–W6 专用图。单样本降级为点图／柱图；表格采用横向布局，避免逐字直排。
+- **安全发布：**report-only 先在 `reports/standard/` 内暂存，成功后只替换报告拥有的目录与文件，保留 `scientific/`、`tool-demo/`、`skill-demo/`。manifest 登记 `template_version`，不收录自身或优先 Demo 目录；正式运行不依赖 XvirMind／XvirBench。
+- **真实重建：**content-addressed worker `182a5ad8b43d68d3976084daac4664c1e127b8e07189de7ca02c39238287e6a4` 对 `analysis-m118-priority-full-r2-20260930` 与 `analysis-m118-priority-qc80-20260930` 各执行一次最终 report-only。前者为一个样本、W1/W2 extracted、W3–W6 skipped；后者为一个样本且只有实际可用的 W1 read-QC。两份 PDF 均由 WeasyPrint 69.0 产生，为 12／8 页 A4 landscape。
+- **不变性与验证：**两个 run 的 Workflow 目录指纹、原始 FASTQ stat 和三类优先 Demo artifact SHA-256 均与重建前一致。20 个 PDF 页面全部转 PNG 检查，无逐字直排、裁切、重叠、黑块或不可读表格。Agent 230 passed、2 skipped，Backend 51 passed，Vitest 65 passed；变更文件 Ruff 通过，Agent 全目录 Ruff 仍只有 8 个与本轮无关的既有诊断。
+
+新版完整产物、SHA-256、容量、复现命令和验证边界见[第十九轮复现记录](m1-19-standard-delivery-layout-alignment-reproduction.md)。本轮完成标准交付报告版型与已有 W1–W6 提取能力的对齐；没有新增 W7，也不把缺失 workflow、单样本资料或未核准领域资产解释成已完成的生物学验收。

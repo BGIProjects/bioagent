@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.19；修订日期：2026-09-30；原始源码基线：2026-09-09。
+> 版本：1.20；修订日期：2026-10-02；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> 十八轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
+> 十九轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -71,6 +71,14 @@
 - [x] **工作流技能使用与修改：**`bioagent-w1-read-qc@1.0.0` 先按默认值执行，再经既有受控需求编译把 `length_required` 从 50 改为 80，并由同一持久 runner 重新执行；不得拼接临时命令。
 
 三项只在真实 run、报告产物、负向用例、确定性重跑与最终自动验证全部通过后勾选；完成该 demo 不提升 M1／M2／M3 的共同里程碑状态。
+
+### 1.6 标准交付报告版型与完整分析对齐（第 19 轮）
+
+- [x] **标准交付报告版型与完整分析对齐：**以参考版型的 HTML 结构与内容为主契约，对齐导航、状态标签、警示、编号 W1–W6 章节、结构化统计、数据驱动叙述、专用图表、方法与受限 R 附录、科研限制页尾；PDF 由同源 HTML 生成并逐页通过 A4 landscape 视觉验收。
+- [x] **样本与统计口径修复：**拒绝空值／NaN sample ID，按 W1–W6 具名字段建立 master table；描述统计包含 n、missing、mean、SD、median、Q25、Q75、min、max，分组检验只在至少两个有效水平且至少两组 `n≥2` 时执行。
+- [x] **无损 report-only 重建：**两个第十八轮 run 只重建 `reports/standard/` 的受管产物；优先 Demo SHA-256、Workflow 结果指纹及原始 FASTQ stat 不变。运行时资产随 content-addressed Agent worker 部署，不依赖 XvirMind／XvirBench。
+
+完成证据、产物 SHA、容量和复现命令见[第十九轮复现记录](m1-19-standard-delivery-layout-alignment-reproduction.md)。本项只确认标准交付报告对已有资料的版型和分析能力；不补写缺失 workflow 或单样本群组推论，也不提升共同里程碑状态。
 
 M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程碑状态。
 
