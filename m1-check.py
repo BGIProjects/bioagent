@@ -147,6 +147,10 @@ def main():
     parser.add_argument(
         "--cases", default=str(ROOT / "agent/benchmarks/m1_development.json")
     )
+    parser.add_argument(
+        "--protocol",
+        default=str(ROOT / "agent/benchmarks/evaluation_protocol_v1.json"),
+    )
     parser.add_argument("--allow-cloud", action="store_true")
     args = parser.parse_args()
     if args.allow_cloud and args.action != "evaluate":
@@ -158,7 +162,12 @@ def main():
         if digest(raw.encode()) != args.bundle_sha256:
             raise ValueError("frozen bundle hash mismatch")
         bundle = json.loads(raw)
-        suite = load_cases(Path(args.cases), args.bundle_sha256, Path(args.assets))
+        suite = load_cases(
+            Path(args.cases),
+            args.bundle_sha256,
+            Path(args.assets),
+            Path(args.protocol),
+        )
         M0["load_release"](Path(args.assets))
         with tempfile.TemporaryDirectory(prefix="bioagent-m1-") as temp:
             work = Path(temp)
@@ -185,6 +194,7 @@ def main():
                 {
                     "results.json": M0["serialize"](results),
                     "cases.json": Path(args.cases).read_text(),
+                    "evaluation-protocol.json": Path(args.protocol).read_text(),
                     "bundle.json": raw,
                 }
             )

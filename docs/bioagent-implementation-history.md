@@ -1,4 +1,4 @@
-# BioAgent 实施历史：第 1–28 轮
+# BioAgent 实施历史：第 1–29 轮
 
 > 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M3 工程切片。
 > 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2／M3 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
@@ -360,3 +360,15 @@ A3 最后一项已在当前正式验证能力 W1 上完整实现并实跑，现�
 - **验证：**新增 10 passed，覆盖幂等导入、依赖、manifest 变化、内容篡改、额外档、symlink／路径组件、未审核／未知许可、容量、state 摘要与 draining gate。根部署回归、Ruff、Prettier、CLI 和 diff whitespace 通过；没有前端或子模块变更，不运行 build。
 
 B4 第二项只完成可复用控制面，未形成正式包或实际 runtime 切换，所以主 checklist 保持未勾选。大型参考库现场介质、独立目标导入、历史 run 固定旧组合、无引用清理、损坏／空间不足／中断实机及旧报告回放仍待真实资产与部署环境。详见[第二十八轮复现记录](m3-28-asset-release-control-reproduction.md)。
+
+## 第 29 轮：四任务评测 protocol 与诚实 split（2026-10-04）
+
+本轮推进 S0／C1 中不依赖本地模型或专家即可完成的评测契约；不调用 MiniMax-M3、不训练模型、不修改业务数据库，也不从当前单一候选资料中伪造 training／validation／final test。正常 fixture 与负向注入只证明结构和宿主工程边界，不当作生物学语义正确率。
+
+- **严格 protocol：**新增独立版本化 JSON，绑定 `m1-development-v1` 整档 SHA-256、全部 16 个 case ID、四种 split、共享候选／证据／资产 group、七类指标和发布 blocker。未知字段、摘要漂移、case 重复／遗漏、group 跨 split、指标缺失及非 blocked gate 均 fail closed。
+- **诚实数据划分：**现有 16 例共享 `BJ-2024-615` 初筛候选与 M0 资产，全部留在 development，允许继续写 prompt。training、validation、final_test 明确为空且禁止 prompt iteration；缺少专家批准的新来源案例前不会切分开发 fixture 冒充留出集。
+- **统一统计语义：**offline 与 model evaluation 共用 protocol。两者均报告 schema 与合法动作／引用／finding boundary；只有实际 provider 调用才统计 provider error 与总延迟，首 token 延迟继续标不可得；引用语义、冲突遗漏／幻觉事实和人工修订成本保持待专家复核。
+- **实际离线复现：**`m1-check.py` 输出内附协议快照和摘要。在 Cyclone run root 的 `m1-offline-protocol-20261004` 中，16／16 schema 与工程边界通过、16／16 固定负向注入被拒绝；结果 19 files、655,097 bytes，结果摘要 `97c6cd…ba32`。release gate 因本地基线、专家审核及三个空 split 保持 blocked。
+- **验证与容量：**Agent 相关回归 34 passed、5 subtests passed；Ruff、Prettier 与 diff whitespace 通过。本机仍约 185 GiB 可用、仓库约 2.4 GiB、benchmark 目录 32 KiB；远端 `/data` 可用 379,682,508,800 bytes。本轮不新增数据库或大型文件。
+
+S0 的公共契约、正常／负向样例、评测用途和数据划分现已完整冻结，予以勾选。S0 仍缺本地硬件／许可基线和专家领域指标实测；C1 仍缺相同条件下的本地／MiniMax 比较、真正独立的非开发资料、专家统计及负责人门槛，因此 M0／M1 不提升。详细命令与边界见[第二十九轮复现记录](m1-29-evaluation-protocol-reproduction.md)。

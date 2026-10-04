@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.29；修订日期：2026-10-04；原始源码基线：2026-09-09。
+> 版本：1.30；修订日期：2026-10-04；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> 二十八轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
+> 二十九轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -50,7 +50,7 @@
 
 | 任务   | 已完成能力                                                                                       | 仍缺少                                               |
 | ------ | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
-| S0     | Workflow 1–6 能力映射、Cyclone 依赖盘点、真实结果包与基础契约                                    | 本地模型资源基线、完整数据划分与领域评测指标         |
+| S0     | Workflow 1–6 能力映射、Cyclone 盘点、真实结果包、冻结样例／用途／split 与基础指标契约            | 本地模型资源基线、专家数据与领域评测实测             |
 | D0     | 真实结果回放、证据复算、知识／规则加载、限制降级及独立报告                                       | 本地模型生成、经专家审核的正常支持案例与完整离线生成 |
 | A0     | 隔离回放入口及不覆盖生产记录的 demo 输出                                                         | 无；其依赖任务仍未全部完成                           |
 | A1     | 项目、成员权限、数据授权、历史迁移与真实项目入口                                                 | 正式生产安全审计不在本阶段完成范围                   |
@@ -61,7 +61,7 @@
 | B2     | 工程知识 release、RetrievalAdapter、授权引用校验与会话持久化                                     | 正式领域知识、专家审核及 claim 级领域引用            |
 | B3     | CandidateEvidence v2、W2 四来源追溯、工程 findings、有界只读 API、`not_generated` 业务修订与报告 | 核准领域规则／知识、正向 Assessment 与专家冻结回归集 |
 | C0     | 统一 provider 契约、MiniMax 适配、受控上下文与失败降级                                           | 本地推理后端、模型权重身份与未微调本地基线           |
-| C1     | 四类冻结开发案例与 MiniMax 工程 smoke                                                            | 专家语义审核、数据划分、本地模型比较与上线门槛       |
+| C1     | 四类冻结开发案例、MiniMax 工程 smoke、严格 split／group／metric protocol                         | 专家语义审核、非开发数据、本地模型比较与上线门槛     |
 | A4     | 研判版本、审核事件、修订报告、补算确认与待审核训练导出                                           | 无；其依赖的 B3／C2 仍未完成                         |
 | A5     | 严格 DeploymentProfile、两套配置、恢复快照、准入控制、依赖 BOM／介质 preflight                   | 离线介质、定期恢复、联合升级与独立目标实机验收       |
 | B4     | 离线包／ReleaseSet 校验、暂存导入、原子 active pointer 与回滚控制面                              | 正式资产包、运行时冻结、独立环境与大型介质演练       |
@@ -139,6 +139,14 @@
 
 本轮完成 B4 第二项中不依赖正式介质的控制面切片，并为第一、三至五项提供共同底座；没有把当前 runtime 接到 active pointer，没有制作正式知识／规则／参考库／插件／模型包，也没有在独立目标运行分析、验证历史 run 冻结、清理旧资产或演练大型介质。B4 各整项、A5 第四项与 M3 因此仍不勾选。详见[第二十八轮复现记录](m3-28-asset-release-control-reproduction.md)。
 
+### 1.14 四任务评测 protocol 与诚实 split（第 29 轮）
+
+- [x] **案例身份与用途：**strict protocol 绑定现有 `m1-development-v1` 整档 SHA-256、16 个 case ID、四种 task kind 及 M0 资产／候选 group。suite 明确 `biological_ground_truth=false`；正常 fixture 只验证 schema／host boundary，固定注入的非法动作、伪引用和遗漏 finding 用作负向样例，不作为生物学性能。
+- [x] **不泄漏的 split：**16 例共用 `BJ-2024-615` 初筛候选、证据与资产，全部留在 development 且允许 prompt iteration；同一 group 不得跨 split。training、validation、final_test 已冻结为空且禁止 prompt iteration，不能从开发集切片冒充留出评测。
+- [x] **指标与发布阻断：**统一输出 schema pass、合法动作／引用／finding boundary、provider error、总延迟，以及待专家核对的引用语义、冲突遗漏／幻觉事实和修订成本。无模型的 offline fixture 将 provider／latency 标为 not applicable；缺本地基线、专家审核及三个非开发 split 时 release gate 固定 blocked。
+
+本轮完成 S0 的公共契约／样例／评测用途／数据划分项，并补齐 C1 可机器验证的 protocol 切片；没有专家数据、training／validation／final test case、本地模型比较或负责人批准门槛，S0 指标实测项、C1 后四项与 M1 仍不勾选。详见[第二十九轮复现记录](m1-29-evaluation-protocol-reproduction.md)。
+
 M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程碑状态。
 
 ## 2. 当前基线、职责与契约
@@ -164,7 +172,7 @@ M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程�
 | 工程知识 release、SQLite FTS5、受控引用与项目会话展示                                                       | 正式领域语料、专家审核、领域 claim 引用与向量召回                                 |
 | MiniMax-M3 经固定 Claude Agent SDK；本机 TaxonAgent 关闭                                                    | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-截至第二十八轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、W1 fastp 实跑与真实中断恢复、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、`not_generated` 研判的业务修订／报告入口、显式 DeploymentProfile 启动配置、一次非覆盖恢复快照演练、更新前准入 drain／resume、离线依赖 BOM／介质 preflight，以及资产 ReleaseSet 暂存／切换／回滚控制面，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。恢复 staging、准入演练、preflight、资产控制面和独立目标 profile 也不是安装、断网、联合升级或定期灾备验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
+截至第二十九轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、W1 fastp 实跑与真实中断恢复、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、`not_generated` 研判的业务修订／报告入口、显式 DeploymentProfile 启动配置、一次非覆盖恢复快照演练、更新前准入 drain／resume、离线依赖 BOM／介质 preflight、资产 ReleaseSet 控制面，以及四任务 strict evaluation protocol，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。恢复 staging、准入演练、preflight、资产控制面和独立目标 profile 也不是安装、断网、联合升级或定期灾备验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 
@@ -246,7 +254,7 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 - [x] 形成目标→stage→artifact→工具／参考库映射，区分源码配置、run-local 覆写和实际命令，记录每项能力的验证状态。
 - [x] 只读盘点 Cyclone 参考库与工具入口：NT、NR、Kraken2、CheckV、rRNA、宿主／BOLD 及 workflow 专用库按实际依赖登记；未找到的库标缺失，未确认版本标 unknown，不在盘点时批量搬库或重建索引。
 - [x] 选择一个有授权、来源可核验的既有计算结果包，记录真实样本、run、候选、产物定位、可复算指标与参考库身份。无合格结果包时 D0 保持未完成，先修复来源或另行登记受控计算任务，不伪装已有证据。
-- [ ] 冻结公共契约、正常与负向样例、评测用途和数据划分。没有生物学真值的案例只评估异常提示与补证行为。
+- [x] 冻结公共契约、正常与负向样例、评测用途和数据划分。没有生物学真值的案例只评估异常提示与补证行为。
 - [ ] 检查本机及可用 5090 的内存／显存、系统、存储、访问方式和模型许可；训练与推理分别记录可行配置。现有资料与代码工作不等待 GPU 恢复；本地推理未就绪时不能宣称 D0 通过。
 - [ ] 按任务定义数值正确性、知识召回／引用适用性、合法动作、冲突保留、幻觉事实、延迟和专家修订成本，分别统计。
 
