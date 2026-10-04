@@ -197,6 +197,26 @@ python3 deployment_preflight.py check --media-root /path/to/offline-media
 
 media manifest 必须逐项覆盖 `deployment/offline-install-manifest.json` 的七类介质，并登记目标 platform／architecture、大小和 SHA-256；未知档案、缺件、篡改或 symlink 均拒绝。即使七类确定性运行介质齐全，MiniMax-M3 仍会保留 `MODEL_NOT_OFFLINE_CAPABLE`，不冒充全离线模型交付。
 
+离线资产包先进入独立 store，不能直接覆盖当前 `agent/assets`。package／ReleaseSet 完整验证后，切换与回滚还必须处于 admission draining：
+
+```bash
+python3 asset_release_manager.py --store /srv/bioagent/asset-store \
+  verify-package /media/knowledge-v1 --max-bytes 1073741824
+python3 asset_release_manager.py --store /srv/bioagent/asset-store \
+  import-package /media/knowledge-v1 \
+  --max-bytes 1073741824 --min-free-bytes 5368709120
+python3 asset_release_manager.py --store /srv/bioagent/asset-store \
+  import-set /media/release-set-v1.json
+
+./dev-services.sh drain '切换资产版本'
+python3 asset_release_manager.py --store /srv/bioagent/asset-store \
+  --admission-state /path/from/deployment-profile/admission.json \
+  activate release-set-v1 --actor operator
+./dev-services.sh resume '资产切换完成'
+```
+
+`status` 会列出 active／previous ReleaseSet、已安装数量与未完成的 `.partial-*`；`rollback --actor operator` 使用同一 draining gate 原子切回 previous。当前工具只建立 B4 控制面，不会让尚未接入 store 的运行时自动采用新资产；正式包仍须有真实来源、许可、回归及兼容记录。
+
 默认模板已经对应当前 Cyclone。若更换远端账号或存储位置，至少同步修改下列变量：
 
 - SSH 与 worker：`BIOAGENT_SSH_HOST`、`BIOAGENT_REMOTE_PYTHON`、`BIOAGENT_REMOTE_CONTROL_PYTHON`、`BIOAGENT_REMOTE_TMUX`、`BIOAGENT_REMOTE_WORKER_ROOT`

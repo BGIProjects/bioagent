@@ -1,4 +1,4 @@
-# BioAgent 实施历史：第 1–27 轮
+# BioAgent 实施历史：第 1–28 轮
 
 > 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M3 工程切片。
 > 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2／M3 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
@@ -348,3 +348,15 @@ A5 第二项仍未完整完成：缺少指定目标平台的实际离线介质�
 - **自动验证：**Agent 恢复／runner／planner／runtime／adapter／workflow adapter 回归为 129 passed、2 skipped、59 subtests；没有 Backend 或前端源码变更，不重复其测试或 build。文档 Prettier 与 diff whitespace 通过。
 
 A3 最后一项已在当前正式验证能力 W1 上完整实现并实跑，现予勾选。W2–W6 仍因 B1 参考资产／依赖身份和真实运行未完成而不可开放，不把 W1 证据外推；A2（按用户要求跳过上传）、B1／B2／C1 等依赖仍未完成，M1 不提升。详细状态与复现边界见[第二十七轮复现记录](m1-27-workflow1-recovery-reproduction.md)。
+
+## 第 28 轮：离线资产 ReleaseSet 控制面（2026-10-04）
+
+本轮实现 B4 中不需要正式领域资产、模型包或独立目标即可完成的安全控制面；不改变当前 runtime 资产读取、不制作大型介质、不访问 Cyclone、不调用模型、不修改数据库，也不把工程 fixture 宣称为交付包。
+
+- **包与内容身份：**五种资产类型使用同一 strict schema，必须登记 ID／版本／来源／许可、精确依赖、验证状态和逐档 size／SHA-256；manifest、路径、字段、档数、总 bytes 和 symlink 均有硬边界。同版本同内容幂等，不同内容拒绝覆盖。
+- **暂存与兼容：**package 先复制到目标 store 同 filesystem 的 `.partial-*`，完整复验后原子 publish；ReleaseSet 冻结 package manifest SHA-256，同一逻辑资产禁止并列多版本，精确依赖缺失或摘要变化 fail closed。容量同时检查 `max_bytes` 和 `min_free_bytes`，不建立 SQLite package catalog。
+- **切换与回滚：**只有 ReleaseSet 与全部 package 验证通过且许可不为 unknown 才可启用。active／previous pointer 固定 0600、带 SHA-256、fsync 后原子 replace；activate／rollback CLI 必须读取有效 draining 状态，失败保留上一 active。status 只显示身份、计数、bytes 与未完成 import，不自动删除包。
+- **实际小型演练：**在 `/tmp` 导入 41-byte 工程 fixture，两个 ReleaseSet 的摘要分别为 `c4b234…f507`／`ae6b8b…9eb6`；drain 后从 v1 切到 v2，再 rollback 到 v1，最后 resume。store 共 20 KiB、media 16 KiB，active 为 v1、previous 为 v2、incomplete imports 为 0；本机仍约 185 GiB 可用。
+- **验证：**新增 10 passed，覆盖幂等导入、依赖、manifest 变化、内容篡改、额外档、symlink／路径组件、未审核／未知许可、容量、state 摘要与 draining gate。根部署回归、Ruff、Prettier、CLI 和 diff whitespace 通过；没有前端或子模块变更，不运行 build。
+
+B4 第二项只完成可复用控制面，未形成正式包或实际 runtime 切换，所以主 checklist 保持未勾选。大型参考库现场介质、独立目标导入、历史 run 固定旧组合、无引用清理、损坏／空间不足／中断实机及旧报告回放仍待真实资产与部署环境。详见[第二十八轮复现记录](m3-28-asset-release-control-reproduction.md)。
