@@ -1,6 +1,6 @@
-# BioAgent 实施历史：M1 第 1–19 轮
+# BioAgent 实施历史：第 1–22 轮
 
-> 覆盖日期：2026-09-12 至 2026-10-02；从实施路线图 v1.17 拆分。
+> 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M2 工程切片。
 > 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
 
 <a id="m1-round-1"></a>
@@ -276,3 +276,16 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 - **验证：**Backend 相关测试以隔离进程运行共 185 passed，其中项目／审核定向 16 passed；Ruff、Prettier、Alembic 单一 head、迁移升级／回退和 diff whitespace 均通过。本轮未修改前端，不重复执行 build。命令、容量和限制见[第二十一轮复现记录](m2-21-review-actions-reproduction.md)。
 
 **A4 三项任务已完成。** M2 仍未完成，因为 B3 缺核准领域规则、正式知识、正向 Assessment 与回归集，C2 也因无本地模型、无审核训练集和不在本机训练而保持未开始；待审核导出不等于可训练数据或训练批准。
+
+## 第 22 轮：Workflow 2 工程研判业务接入（2026-10-04）
+
+本轮推进 M2/B3 在“无核准领域资产”条件下可独立完成的业务切片，不做资料上传、条件接入、正向生物学分类、知识引用、模型调用、训练或新 workflow 计算。A4 既有 revision、审核和 HTML 报告保持为唯一业务持久化机制，没有新增数据库表或 migration。
+
+- **有限候选包：**Agent 新增每次 1–5 个候选的确定性包，完整保留 CandidateEvidence v2、`not_generated` Assessment、冲突／缺失／相关证据 findings、四来源 identity 与 release resolution。候选按 ID 排序，包体生成 SHA-256；正文超过 60 KiB 拒绝。五个合成候选的实际序列化结果为 47,089 bytes。
+- **远端只读边界：**run 目录须同时通过 lexical 与 canonical run-root 检查，state、四个来源与 release 实现继续逐档校验。Cyclone control worker 的 `python -S` 不加载 Pydantic；本轮使用既有 runner Python 的 60 秒隔离子进程解析，未迁移环境或恢复旧 `/data` 环境。控制进程只接收有界 JSON，不写 run。
+- **授权业务入口：**`can_review` 成员可对同一项目／chat 已登记 run 调用 candidate-assessments import。Backend 独立重验包体 SHA-256、run/candidate identity、观测唯一性、finding evidence 引用以及固定 `not_generated/pending/provider=none/model=none`，再追加不可变 revision；普通成员和仅分析成员均拒绝。
+- **报告与状态：**导入 revision 使用 `workflow2_candidate_assessment` / `candidate-assessment-packet-v1` 身份，可从既有指定 revision 报告下载；项目列表显示 `assessment_status=not_generated`，不再把工程不足状态显示为 draft。报告只呈现转义后的受控 JSON，不生成生物学结论。
+- **Cyclone 实证：**只读 SSH 检查通过，content-addressed worker `a45fe40ea991e89198fa0021ebd0e050cd1abd409bd1e2b000c35acb8086ca89` 在既有完成 run 上返回 `snapshot=found`，并对故意不存在的候选精确 fail closed 为 `ASSESSMENT_CANDIDATE_UNKNOWN`。安全审核未允许导出整列候选 ID，因此没有把该检查扩展成远端正向包体读取；本机真实契约测试覆盖正向包体、持久化、权限和报告。
+- **验证与容量：**Agent 合计 276 passed、2 skipped（另有 100 subtests），Backend 相关 26 passed；Ruff、Prettier 与 diff whitespace 通过。本机仍约 184 GiB 可用、仓库约 2.4 GiB；不保存 FASTQ、来源表、HTML 或模型内容副本。数据库每条 revision 仍限制 64 KiB，Agent 额外预留约 4 KiB 信封空间。
+
+自动测试、静态检查、复现命令与回退边界见[第二十二轮复现记录](m2-22-candidate-assessment-business-integration-reproduction.md)。本轮完成路线图 1.7 的三个工程切片；B3 七项整项仍不勾选，因为核准领域规则／知识、正向 Assessment、领域引用与专家冻结回归集仍缺。M2、M3 不提升。

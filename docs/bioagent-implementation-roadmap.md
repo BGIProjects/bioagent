@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.22；修订日期：2026-10-04；原始源码基线：2026-09-09。
+> 版本：1.23；修订日期：2026-10-04；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> 二十一轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
+> 二十二轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -59,7 +59,7 @@
 | B0             | 小型版本化知识包、SQLite／FTS5、离线检索与引用校验               | 类群特异领域资料、专家审核及正式发布                   |
 | B1             | Workflow 1–6 全部公开 stage 的 CapabilityManifest 与 DAG dry-run | 正式参考 release／许可／完整哈希、真实运行和兼容组合   |
 | B2             | 工程知识 release、RetrievalAdapter、授权引用校验与会话持久化     | 正式领域知识、专家审核及 claim 级领域引用              |
-| B3             | CandidateEvidence v2、W2 四来源追溯与确定性工程 findings         | 核准领域规则／知识、正向 Assessment、报告与业务接入    |
+| B3             | CandidateEvidence v2、W2 四来源追溯、工程 findings、有界只读 API、`not_generated` 业务修订与报告 | 核准领域规则／知识、正向 Assessment 与专家冻结回归集 |
 | C0             | 统一 provider 契约、MiniMax 适配、受控上下文与失败降级           | 本地推理后端、模型权重身份与未微调本地基线             |
 | C1             | 四类冻结开发案例与 MiniMax 工程 smoke                            | 专家语义审核、数据划分、本地模型比较与上线门槛         |
 | A4             | 研判版本、审核事件、修订报告、补算确认与待审核训练导出           | 无；其依赖的 B3／C2 仍未完成                           |
@@ -80,6 +80,14 @@
 - [x] **无损 report-only 重建：**两个第十八轮 run 只重建 `reports/standard/` 的受管产物；优先 Demo SHA-256、Workflow 结果指纹及原始 FASTQ stat 不变。运行时资产随 content-addressed Agent worker 部署，不依赖 XvirMind／XvirBench。
 
 完成证据、产物 SHA、容量和复现命令见[第十九轮复现记录](m1-19-standard-delivery-layout-alignment-reproduction.md)。本项只确认标准交付报告对已有资料的版型和分析能力；不补写缺失 workflow 或单样本群组推论，也不提升共同里程碑状态。
+
+### 1.7 Workflow 2 工程研判业务接入（第 22 轮）
+
+- [x] **有界候选证据包：**授权调用每次显式选择 1–5 个候选，保留完整 CandidateEvidence v2、Assessment、工程 findings、来源 SHA-256 与 release resolution；确定性排序并生成包体 SHA-256，超过 60 KiB 拒绝。
+- [x] **远端只读与降级：**Cyclone control worker 继续使用 `python -S`；研判解析交给既有 runner Python 的隔离子进程。run 必须为 run root 下的 canonical path，来源缺失／变化／未知候选均 fail closed，不写回 run。
+- [x] **业务修订与报告入口：**只有 `can_review` 成员可把已登记 run 的包追加为不可变 `generated` revision；Backend 重验 run、候选、证据引用、`not_generated` 状态和包体 SHA-256，再复用指定 revision HTML 报告。数据库单条内容仍硬限 64 KiB。
+
+本切片只完成无核准领域资产时的工程检查业务接入；没有正向分类、知识引用、模型说明或专家冻结集，因此 B3 各整项 checkbox、M2 与 M3 均不提升。
 
 M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程碑状态。
 
@@ -102,11 +110,11 @@ M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程�
 | auto／emergency／standard；智能模式初筛后续跑完整 DAG                           | 真实多样本恢复及 auto 初筛发布边界仍待远端验证                                    |
 | Workflow 1 去 rRNA；Workflow 3 宿主识别                                         | 宿主序列去除为独立能力，不能与前两者混用                                          |
 | 单一私有 scheduler、持久队列、run-local attempt／checkpoint 与人工 resume       | Workflow 2–6 依赖身份及 Workflow 1 真实中断恢复验收                               |
-| schema v4 数值报告；CandidateEvidence v1/v2、W2 四来源追溯与确定性工程 findings | 核准领域规则、知识引用、正向 Assessment、研判、审核及业务接入                     |
+| schema v4 数值报告；CandidateEvidence v1/v2、W2 四来源追溯、确定性工程 findings 及 `not_generated` 审核接入 | 核准领域规则、知识引用、正向 Assessment 与专家冻结回归集 |
 | 工程知识 release、SQLite FTS5、受控引用与项目会话展示                           | 正式领域语料、专家审核、领域 claim 引用与向量召回                                 |
 | MiniMax-M3 经固定 Claude Agent SDK；本机 TaxonAgent 关闭                        | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-截至第十七轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、一次 W1 fastp 实跑、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列及受控中断恢复诊断，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合与 not-generated Assessment 验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
+截至第二十二轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、一次 W1 fastp 实跑、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、受控中断恢复诊断及 `not_generated` 研判的业务修订／报告入口，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 
