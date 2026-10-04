@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.32；修订日期：2026-10-04；原始源码基线：2026-09-09。
+> 版本：1.33；修订日期：2026-10-04；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> 三十一轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
+> 三十二轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -54,7 +54,7 @@
 | D0     | 真实结果回放、证据复算、知识／规则加载、限制降级及独立报告                                                           | 本地模型生成、经专家审核的正常支持案例与完整离线生成 |
 | A0     | 隔离回放入口及不覆盖生产记录的 demo 输出                                                                             | 无；其依赖任务仍未全部完成                           |
 | A1     | 项目、成员权限、数据授权、历史迁移与真实项目入口                                                                     | 正式生产安全审计不在本阶段完成范围                   |
-| A2     | 背景版本、技术重复确认、fastp 白名单参数、方案与 active ReleaseSet 冻结切片                                          | 上传闭环、对照关系、审核预设及正式 ReleaseSet        |
+| A2     | 背景版本、同版本结构化对照关系、技术重复确认、fastp 白名单参数、方案与 active ReleaseSet 冻结切片                    | 上传闭环、审核预设及正式 ReleaseSet                  |
 | A3     | 三种模式、阶段报告、持久队列、资源等待、受控恢复及真实 W1 恢复                                                       | W2–W6 恢复身份及主机重启实演                         |
 | B0     | 小型版本化知识包、SQLite／FTS5、离线检索与引用校验                                                                   | 类群特异领域资料、专家审核及正式发布                 |
 | B1     | Workflow 1–6 全部公开 stage 的 CapabilityManifest 与 DAG dry-run                                                     | 正式参考 release／许可／完整哈希、真实运行和兼容组合 |
@@ -163,6 +163,14 @@
 
 本轮完成 A5 第三项中 profile 级保留数量的安全执行机制，但没有项目级不同期限、受控定期排程或独立恢复主机上的服务重建、鉴权、引用关联和旧报告浏览器验收。因此 A5 第三项、A5 整体与 M3 仍不勾选。详见[第三十一轮复现记录](m3-31-backup-retention-reproduction.md)。
 
+### 1.17 同一数据版本的结构化对照关系（第 32 轮）
+
+- [x] **有界关系契约：**样本背景为每个 sample 保存 0–32 个 `control_sample_ids`；只接受同一 dataset revision 的样本，拒绝自指、重复、未知字段与未知 sample，并按 ID 排序后进入现有不可变背景版本。
+- [x] **旧记录与界面：**既有无该字段的背景在编辑时补空列表；分析页以多选框登记其他样本并展示当前及历史关系。自由文本“对照备注”保留用于说明，不再代替可验证引用。
+- [x] **冻结报告与存储边界：**方案继续冻结确切背景版本，报告只从 execution 对应快照渲染并转义对照 ID。关系不改变数据集／计算 hash、不触发任务；复用现有 JSON 列、64 KiB 请求上限且无需迁移。
+
+本轮完成 A2 第三项中此前缺少的对照关系切片；样本、批次、宿主、类型、表型、技术重复确认与纯背景版本已由既有实现覆盖。由于用户明确暂缓上传，且正式审核 preset／ReleaseSet 仍依赖领域核准和资产发布，A2 整项与 M1 仍不勾选。详见[第三十二轮复现记录](m1-32-structured-control-relations-reproduction.md)。
+
 M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程碑状态。
 
 ## 2. 当前基线、职责与契约
@@ -188,7 +196,7 @@ M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程�
 | 工程知识 release、SQLite FTS5、受控引用与项目会话展示                                                       | 正式领域语料、专家审核、领域 claim 引用与向量召回                                 |
 | MiniMax-M3 经固定 Claude Agent SDK；本机 TaxonAgent 关闭                                                    | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-截至第三十一轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、W1 fastp 实跑与真实中断恢复、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、`not_generated` 研判的业务修订／报告入口、显式 DeploymentProfile 启动配置、一次非覆盖恢复快照和 profile 级保留清理演练、更新前准入 drain／resume、离线依赖 BOM／介质 preflight、资产 ReleaseSet 控制面及可选规划／run 冻结接线，以及四任务 strict evaluation protocol，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。恢复 staging、保留清理、准入演练、preflight、资产接线和独立目标 profile 也不是正式资产发布、安装、断网、联合升级或定期灾备验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
+截至第三十二轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、W1 fastp 实跑与真实中断恢复、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、`not_generated` 研判的业务修订／报告入口、同版本结构化对照关系、显式 DeploymentProfile 启动配置、一次非覆盖恢复快照和 profile 级保留清理演练、更新前准入 drain／resume、离线依赖 BOM／介质 preflight、资产 ReleaseSet 控制面及可选规划／run 冻结接线，以及四任务 strict evaluation protocol，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。恢复 staging、保留清理、准入演练、preflight、资产接线和独立目标 profile 也不是正式资产发布、安装、断网、联合升级或定期灾备验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 

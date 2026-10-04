@@ -1,4 +1,4 @@
-# BioAgent 实施历史：第 1–31 轮
+# BioAgent 实施历史：第 1–32 轮
 
 > 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M3 工程切片。
 > 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2／M3 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
@@ -395,3 +395,14 @@ S0 的公共契约、正常／负向样例、评测用途和数据划分现已�
 - **验证与容量：**根部署相关回归 35 passed；Ruff、Prettier 和 diff whitespace 通过。本机卷约 460 GiB、已用 249 GiB、可用 185 GiB，仓库约 2.4 GiB；没有把演练快照、临时 profile 或数据库副本写入 Git。
 
 A5 第三项仍不整项勾选：profile 级固定份数不等于按项目配置保留期限，也没有受控定期排程和独立恢复环境的服务、鉴权、引用／运行关联及旧报告查询验收。命令、摘要与失败边界见[第三十一轮复现记录](m3-31-backup-retention-reproduction.md)。
+
+## 第 32 轮：同一数据版本的结构化对照关系（2026-10-04）
+
+本轮只补 A2 元信息中不依赖上传、专家或正式资产的对照关系；不改数据入口、不迁移数据库、不触发 workflow、不写当前业务库，也不调用 MiniMax-M3。关系仍属于使用者背景，不冒充计算证据或审核结论。
+
+- **严格同版本引用：**`control_sample_ids` 每个样本最多 32 项，只能指向同一 dataset revision 的其他 sample；自指、重复、越界和未知字段返回 422。保存前排序，语义相同的选择顺序不会制造新版本。
+- **兼容与 UI：**旧 JSON 没有关系字段时编辑器补空列表；每个样本只能从当前数据版本的其他样本中多选。当前背景与版本历史同时显示结构化关系，自由文本备注继续承载无法结构化的说明。
+- **冻结报告：**既有 plan metadata snapshot 自动包含新字段；报告只读取 execution 绑定的版本，HTML 转义 sample ID。纯背景修改不改变计算 hash、不注册 proposal、不启动计算。
+- **存储与验证：**复用现有 metadata JSON 列和 64 KiB 请求限制，不新增表、索引或副本。Backend metadata／project／plan 相关回归 61 passed，前端 API／contract 24 passed；Ruff、Prettier、build 与 diff whitespace 均通过。本机约 184 GiB 可用。
+
+A2 第三项的结构化对照关系切片完成，但整项仍受用户暂缓的上传闭环、需领域核准的 fastp preset 和正式 ReleaseSet 阻塞，M1 不提升。复现与失败边界见[第三十二轮复现记录](m1-32-structured-control-relations-reproduction.md)。
