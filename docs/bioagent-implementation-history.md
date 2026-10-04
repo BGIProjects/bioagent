@@ -1,4 +1,4 @@
-# BioAgent 实施历史：第 1–32 轮
+# BioAgent 实施历史：第 1–33 轮
 
 > 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M3 工程切片。
 > 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2／M3 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
@@ -406,3 +406,14 @@ A5 第三项仍不整项勾选：profile 级固定份数不等于按项目配置
 - **存储与验证：**复用现有 metadata JSON 列和 64 KiB 请求限制，不新增表、索引或副本。Backend metadata／project／plan 相关回归 61 passed，前端 API／contract 24 passed；Ruff、Prettier、build 与 diff whitespace 均通过。本机约 184 GiB 可用。
 
 A2 第三项的结构化对照关系切片完成，但整项仍受用户暂缓的上传闭环、需领域核准的 fastp preset 和正式 ReleaseSet 阻塞，M1 不提升。复现与失败边界见[第三十二轮复现记录](m1-32-structured-control-relations-reproduction.md)。
+
+## 第 33 轮：M0–M3 当前可实施范围收口（2026-10-04）
+
+本轮不增加产品代码，以只读检查收口剩余 checklist。目标不是把限制改写成完成，而是确认继续实现是否需要用户暂缓项、外部领域决定、正式介质／许可、本地模型或独立目标环境。没有访问 Cyclone、调用模型、启动服务、修改数据库或重复前端 build。
+
+- **本机与容量：**Darwin arm64、Apple M3（8 cores、16 GB、Metal），无 NVIDIA GPU；业务 SQLite 1,138,688 bytes，Agent assets 92 KiB，Backend data 4 MiB，仓库约 2.42 GiB，本机卷约 184 GiB 可用。三个工作区审计开始时均 clean。
+- **离线与资产事实：**源码 locks ready（48 Agent packages、356 Backend packages／2,358 hashes、1,274 Frontend packages／integrities），但七类离线介质全部缺失，MiniMax-M3 明确非离线模型；`deterministic_install_ready=false`、`full_offline_ready=false`。开发 profile 的正式 asset store 尚不存在，现有 assets 仅为小型工程资料和报告运行时。
+- **剩余范围分类：**上传和条件接入由用户暂缓；本地推理、训练、量化与模型包被用户的 MiniMax-M3 替代决定及硬件／许可事实阻断；领域资产、正常支持案例、语义引用、审核修订、指标门槛与正式发布需要专家／资产负责人；W2–W6 正式运行、B4 大型介质及 A5／M3 独立断网交付需要真实 release、分发许可、离线介质和独立节点。
+- **停止依据：**所有剩余主项至少依赖上述一项外部条件；只增加 fixture、空目录、未采用的清理器或未经审核的“正式”包既不能满足整项验收，也违背极简和不虚报原则。本轮仅运行 preflight、容量／硬件／Git 状态及文档检查；上一轮必要代码测试和 build 已通过。
+
+因此本目标在“当前可做部分”边界内结束。M0–M3 共同验收仍未通过，已完整实现的局部项保持勾选，未完整项保持未勾选。后续具备任一外部输入时，按[第三十三轮收口记录](m0-m3-33-feasibility-closeout.md)的最小恢复条件继续，不需要重做已提交的工程底座。
