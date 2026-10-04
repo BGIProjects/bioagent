@@ -1,7 +1,7 @@
-# BioAgent 实施历史：第 1–22 轮
+# BioAgent 实施历史：第 1–23 轮
 
-> 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M2 工程切片。
-> 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
+> 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M3 工程切片。
+> 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2／M3 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
 
 <a id="m1-round-1"></a>
 
@@ -289,3 +289,14 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 - **验证与容量：**Agent 合计 276 passed、2 skipped（另有 100 subtests），Backend 相关 26 passed；Ruff、Prettier 与 diff whitespace 通过。本机仍约 184 GiB 可用、仓库约 2.4 GiB；不保存 FASTQ、来源表、HTML 或模型内容副本。数据库每条 revision 仍限制 64 KiB，Agent 额外预留约 4 KiB 信封空间。
 
 自动测试、静态检查、复现命令与回退边界见[第二十二轮复现记录](m2-22-candidate-assessment-business-integration-reproduction.md)。本轮完成路线图 1.7 的三个工程切片；B3 七项整项仍不勾选，因为核准领域规则／知识、正向 Assessment、领域引用与专家冻结回归集仍缺。M2、M3 不提升。
+
+## 第 23 轮：DeploymentProfile 配置边界（2026-10-04）
+
+本轮先完成不依赖离线介质、独立目标机器或本地模型的 M3/A5 配置任务；不做资料上传、条件接入、服务启动、数据库迁移、远端计算、模型调用、依赖安装或备份恢复。默认 `.env` 工作流保持不变，只有显式指定 profile 才覆盖受治理的部署字段。
+
+- **严格无密钥契约：**新增 DeploymentProfile schema v1，精确限制顶层和嵌套字段、绝对路径、唯一服务端口、模型 HTTPS `/anthropic` 端点、Workflow 1–6 集合和正数资源额度。profile 只允许登记 `MINIMAX_API_KEY` 变量名，不能保存密钥值；shell loader 逐行校验变量名并使用 `printf -v`，不执行 profile 内容。
+- **开发与目标配置：**Cyclone profile 固化现有三项本机服务、远端数据／run／worker、Home Pixi 工具、Workflow 1–6 和 MiniMax-M3。独立目标 profile 改用 `bioagent-compute`、15173／18080／18001 及 `/opt`／`/srv` 路径，仍遵守用户确认的 MiniMax-M3 替代策略；它只是一份待部署模板，不声称目标路径已存在。
+- **实际启动接线：**`dev-services.sh` 读取服务地址、端口、SSH 主机和日志阈值；Agent／Backend 在各自 `.env` 之后重新加载组件 profile，确保集中值优先。Agent 的对外模型 ID、provider 模型和端点由环境配置；未设置 `BIOAGENT_DEPLOYMENT_PROFILE` 时所有既有默认值不变。
+- **验证与容量：**两份 profile 均通过 CLI 校验和安全导出；根测试 9 passed，Agent 配置／provider／adapter 定向 37 passed（另 7 subtests），四个 shell 入口通过 `bash -n`，Ruff、Prettier 与 diff whitespace 通过。本轮无前端源码变更，不重复 build。本机仍约 184 GiB 可用、仓库约 2.4 GiB，没有新增数据库或大型文件。
+
+本轮只勾选 A5 第一项。离线安装包、完整依赖锁定、独立环境鉴权／任务运行、断网验证、备份恢复、在途更新和 B4／C3 联合回滚仍缺，因此 A5 与 M3 不提升。命令、字段映射和回退方式见[第二十三轮复现记录](m3-23-deployment-profile-reproduction.md)。

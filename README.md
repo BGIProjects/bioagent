@@ -148,6 +148,16 @@ cp agent/.env.example agent/.env
 cp open-webui/.env.example open-webui/.env
 ```
 
+需要集中管理部署差异时，可先验证并显式启用不含密钥的 DeploymentProfile；它会在启动时覆盖地址、路径、工具、模型身份与资源额度，其他功能开关仍来自 `.env`：
+
+```bash
+python3 deployment_profile.py validate deployment/profiles/cyclone-development.json
+BIOAGENT_DEPLOYMENT_PROFILE=deployment/profiles/cyclone-development.json \
+  ./dev-services.sh start
+```
+
+`deployment/profiles/independent-target.json` 是使用不同地址和目录的目标部署配置样例，须按现场实际路径准备依赖后再使用。两个 profile 都只记录 `MINIMAX_API_KEY` 这个凭证变量名；密钥值仍只由启动环境提供。profile 未显式启用时，现有 `.env` 启动方式不变。
+
 默认模板已经对应当前 Cyclone。若更换远端账号或存储位置，至少同步修改下列变量：
 
 - SSH 与 worker：`BIOAGENT_SSH_HOST`、`BIOAGENT_REMOTE_PYTHON`、`BIOAGENT_REMOTE_CONTROL_PYTHON`、`BIOAGENT_REMOTE_TMUX`、`BIOAGENT_REMOTE_WORKER_ROOT`

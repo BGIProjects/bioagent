@@ -2,9 +2,21 @@
 set -euo pipefail
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+# shellcheck disable=SC1091
+source "$ROOT/deployment/load-profile.sh"
+bioagent_load_profile services
 CONDA=${BIOAGENT_CONDA_BIN:-}
 NODE_BIN=${BIOAGENT_NODE_BIN:-}
 TMUX=${TMUX_BIN:-tmux}
+AGENT_HOST=${AGENT_HOST:-127.0.0.1}
+AGENT_PORT=${AGENT_PORT:-8001}
+AGENT_URL=${AGENT_URL:-http://127.0.0.1:${AGENT_PORT}}
+BACKEND_HOST=${BACKEND_HOST:-127.0.0.1}
+BACKEND_PORT=${BACKEND_PORT:-${PORT:-8080}}
+BACKEND_URL=${BACKEND_URL:-http://127.0.0.1:${BACKEND_PORT}}
+FRONTEND_HOST=${FRONTEND_HOST:-127.0.0.1}
+FRONTEND_PORT=${FRONTEND_PORT:-5173}
+FRONTEND_URL=${FRONTEND_URL:-http://127.0.0.1:${FRONTEND_PORT}}
 
 AGENT_SESSION=bioagent-agent
 BACKEND_SESSION=bioagent-backend
@@ -12,7 +24,7 @@ FRONTEND_SESSION=bioagent-frontend
 AGENT_LOG=/tmp/bioagent-agent.log
 BACKEND_LOG=/tmp/bioagent-backend.log
 FRONTEND_LOG=/tmp/bioagent-frontend.log
-LOG_WARN_BYTES=$((100 * 1024 * 1024))
+LOG_WARN_BYTES=$((${BIOAGENT_LOG_WARN_MIB:-100} * 1024 * 1024))
 
 usage() {
     echo "用法: $0 {start|stop|restart|status}"
@@ -178,10 +190,10 @@ start_all() {
     local agent_cmd backend_cmd frontend_cmd
     agent_cmd="cd $(printf '%q' "$ROOT/agent") && exec /bin/zsh -lic 'exec $(printf '%q' "$CONDA") run --no-capture-output -n adapter ./start.sh'"
     backend_cmd="cd $(printf '%q' "$ROOT/open-webui/backend") && exec $(printf '%q' "$CONDA") run --no-capture-output -n open-webui ./dev.sh"
-    frontend_cmd="cd $(printf '%q' "$ROOT/open-webui") && export PATH=$(printf '%q' "$NODE_BIN"):\$PATH && exec npm run dev -- --host 127.0.0.1 --port 5173 --force"
-    start_service Agent "$AGENT_SESSION" 8001 "$agent_cmd" "$AGENT_LOG" http://127.0.0.1:8001/v1/models
-    start_service Backend "$BACKEND_SESSION" 8080 "$backend_cmd" "$BACKEND_LOG" http://127.0.0.1:8080/health
-    start_service Frontend "$FRONTEND_SESSION" 5173 "$frontend_cmd" "$FRONTEND_LOG" http://127.0.0.1:5173/
+    frontend_cmd="cd $(printf '%q' "$ROOT/open-webui") && export PATH=$(printf '%q' "$NODE_BIN"):\$PATH && exec npm run dev -- --host $(printf '%q' "$FRONTEND_HOST") --port $(printf '%q' "$FRONTEND_PORT") --force"
+    start_service Agent "$AGENT_SESSION" "$AGENT_PORT" "$agent_cmd" "$AGENT_LOG" "${AGENT_URL}/v1/models"
+    start_service Backend "$BACKEND_SESSION" "$BACKEND_PORT" "$backend_cmd" "$BACKEND_LOG" "${BACKEND_URL}/health"
+    start_service Frontend "$FRONTEND_SESSION" "$FRONTEND_PORT" "$frontend_cmd" "$FRONTEND_LOG" "${FRONTEND_URL}/"
 }
 
 stop_service() {
@@ -217,15 +229,15 @@ status_line() {
 
 status_all() {
     local tmp_available
-    status_line Agent "$AGENT_SESSION" http://127.0.0.1:8001/v1/models "$AGENT_LOG"
-    status_line Backend "$BACKEND_SESSION" http://127.0.0.1:8080/health "$BACKEND_LOG"
-    status_line Frontend "$FRONTEND_SESSION" http://127.0.0.1:5173/ "$FRONTEND_LOG"
+    status_line Agent "$AGENT_SESSION" "${AGENT_URL}/v1/models" "$AGENT_LOG"
+    status_line Backend "$BACKEND_SESSION" "${BACKEND_URL}/health" "$BACKEND_LOG"
+    status_line Frontend "$FRONTEND_SESSION" "${FRONTEND_URL}/" "$FRONTEND_LOG"
     tmp_available=$(df -Pk /tmp | awk 'NR == 2 {printf "%.0f", $4 * 1024}')
     echo "/tmp     可用=$(format_bytes "${tmp_available:-0}")（日志仅在创建新 session 或 restart 时截断）"
-    if ssh -o ClearAllForwardings=yes -o ConnectTimeout=5 Cyclone true >/dev/null 2>&1; then
-        echo "Cyclone   SSH=正常（远端 worker session 不受本脚本管理）"
+    if ssh -o ClearAllForwardings=yes -o ConnectTimeout=5 "${BIOAGENT_SSH_HOST:-Cyclone}" true >/dev/null 2>&1; then
+        echo "Compute   SSH=正常（远端 worker session 不受本脚本管理）"
     else
-        echo "Cyclone   SSH=连接暂时不可用（不推断远端任务失败）"
+        echo "Compute   SSH=连接暂时不可用（不推断远端任务失败）"
     fi
 }
 
