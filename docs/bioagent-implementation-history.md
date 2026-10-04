@@ -1,4 +1,4 @@
-# BioAgent 实施历史：第 1–26 轮
+# BioAgent 实施历史：第 1–27 轮
 
 > 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M3 工程切片。
 > 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2／M3 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
@@ -336,3 +336,15 @@ A5 第四项仍未完整完成：缺少 B4／C3 实际版本组合、真实在�
 - **容量与验证：**根部署测试合计 22 passed，新增 preflight Ruff 通过；Agent `pip check`、config／provider／adapter／admission 共 40 passed、7 subtests。没有前端源码或 Backend 变更，不重复 build／Backend tests。本机仍约 185 GiB 可用，仓库约 2.4 GiB；现有 `node_modules`／Agent env／Backend env 分别约 1.2 GiB／414 MiB／2.7 GiB，均未复制。
 
 A5 第二项仍未完整完成：缺少指定目标平台的实际离线介质、系统安装器、初始化／迁移／管理员设置、独立机器健康与故障演练；MiniMax-M3 也不满足全离线模型条件。A5 第一项保持完成，其他整项与 M3 不提升。命令和 blocker 输出见[第二十六轮复现记录](m3-26-offline-preflight-reproduction.md)。
+
+## 第 27 轮：真实 Workflow 1 中断恢复（2026-10-04）
+
+本轮不改恢复实现，只补齐 A3 最后缺少的真实 Workflow 证据。按约定先做只读 SSH 连通检查；使用既有授权 FASTQ 新建 W1 `read_qc` run，不调用模型、不写业务数据库、不复制或修改输入，也不影响其他 run。
+
+- **受控中断：**`analysis-m127-w1-recovery-20261004` 进入 `upstream/running` 后，一次性核对 state path、runner PID／process group、scheduler PID 与 run root，再依序终止 scheduler 和该 runner process group。新 scheduler 只做 reconciliation，把 attempt 1 标为 `interrupted`，没有自动重跑；队列事前和事后均无其他活动任务。
+- **冻结身份重验：**人工 resume 重新验证两份输入的 logical link／canonical target 双重 fingerprint，以及方案、worker `a45fe40…a89`、Workflow 1 闭包、Snakemake、SeqKit 与 `fastp@1.3.2`。依赖摘要为 `daabfc…2633`；既有变更／缺失／暂时不可验证测试继续分别 fail closed 或返回 retryable。
+- **attempt 与产物：**attempt 1 保留为 interrupted，attempt 2 `manual_resume` 于 38 秒内完成；未完成 upstream 被强制重跑，checkpoint 为 6 files、274,179,641 bytes、SHA-256 `b91d7e…5d17`。final report ready，标准 HTML／PDF 分别 91,989／540,867 bytes，runner 与 scheduler session 最终均退出。
+- **容量与输入保护：**run 合计 275,151,448 bytes，只写 `/data/user/liufangzhou/runs`；两份 FASTQ 的 inode、size、mtime 与预检一致。结束时 `/data` 可用 379,683,209,216 bytes、NVMe 可用 44,845,973,504 bytes，本机仍约 185 GiB 可用。
+- **自动验证：**Agent 恢复／runner／planner／runtime／adapter／workflow adapter 回归为 129 passed、2 skipped、59 subtests；没有 Backend 或前端源码变更，不重复其测试或 build。文档 Prettier 与 diff whitespace 通过。
+
+A3 最后一项已在当前正式验证能力 W1 上完整实现并实跑，现予勾选。W2–W6 仍因 B1 参考资产／依赖身份和真实运行未完成而不可开放，不把 W1 证据外推；A2（按用户要求跳过上传）、B1／B2／C1 等依赖仍未完成，M1 不提升。详细状态与复现边界见[第二十七轮复现记录](m1-27-workflow1-recovery-reproduction.md)。

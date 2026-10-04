@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.27；修订日期：2026-10-04；原始源码基线：2026-09-09。
+> 版本：1.28；修订日期：2026-10-04；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> 二十六轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
+> 二十七轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -48,23 +48,23 @@
 
 核心任务按“整条描述全部满足才勾选”的严格标准维护；局部切片、测试数量、产物位置和回退记录统一见[实施历史](bioagent-implementation-history.md)及各轮复现记录。
 
-| 任务       | 已完成能力                                                                                       | 仍缺少                                                 |
-| ---------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| S0         | Workflow 1–6 能力映射、Cyclone 依赖盘点、真实结果包与基础契约                                    | 本地模型资源基线、完整数据划分与领域评测指标           |
-| D0         | 真实结果回放、证据复算、知识／规则加载、限制降级及独立报告                                       | 本地模型生成、经专家审核的正常支持案例与完整离线生成   |
-| A0         | 隔离回放入口及不覆盖生产记录的 demo 输出                                                         | 无；其依赖任务仍未全部完成                             |
-| A1         | 项目、成员权限、数据授权、历史迁移与真实项目入口                                                 | 正式生产安全审计不在本阶段完成范围                     |
-| A2         | 背景版本、技术重复确认、fastp 白名单参数与方案冻结切片                                           | 上传闭环、对照关系、审核预设及完整 ReleaseSet          |
-| A3         | 三种模式、阶段报告、持久队列、资源等待与受控恢复切片                                             | 真实 Workflow 1 中断恢复、W2–W6 恢复身份及主机重启实演 |
-| B0         | 小型版本化知识包、SQLite／FTS5、离线检索与引用校验                                               | 类群特异领域资料、专家审核及正式发布                   |
-| B1         | Workflow 1–6 全部公开 stage 的 CapabilityManifest 与 DAG dry-run                                 | 正式参考 release／许可／完整哈希、真实运行和兼容组合   |
-| B2         | 工程知识 release、RetrievalAdapter、授权引用校验与会话持久化                                     | 正式领域知识、专家审核及 claim 级领域引用              |
-| B3         | CandidateEvidence v2、W2 四来源追溯、工程 findings、有界只读 API、`not_generated` 业务修订与报告 | 核准领域规则／知识、正向 Assessment 与专家冻结回归集   |
-| C0         | 统一 provider 契约、MiniMax 适配、受控上下文与失败降级                                           | 本地推理后端、模型权重身份与未微调本地基线             |
-| C1         | 四类冻结开发案例与 MiniMax 工程 smoke                                                            | 专家语义审核、数据划分、本地模型比较与上线门槛         |
-| A4         | 研判版本、审核事件、修订报告、补算确认与待审核训练导出                                           | 无；其依赖的 B3／C2 仍未完成                           |
-| A5         | 严格 DeploymentProfile、两套配置、恢复快照、准入控制、依赖 BOM／介质 preflight                   | 离线介质、定期恢复、联合升级与独立目标实机验收         |
-| B4／C2／C3 | 尚未开始完整交付                                                                                 | 资产升级、微调与现场模型验收                           |
+| 任务       | 已完成能力                                                                                       | 仍缺少                                               |
+| ---------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| S0         | Workflow 1–6 能力映射、Cyclone 依赖盘点、真实结果包与基础契约                                    | 本地模型资源基线、完整数据划分与领域评测指标         |
+| D0         | 真实结果回放、证据复算、知识／规则加载、限制降级及独立报告                                       | 本地模型生成、经专家审核的正常支持案例与完整离线生成 |
+| A0         | 隔离回放入口及不覆盖生产记录的 demo 输出                                                         | 无；其依赖任务仍未全部完成                           |
+| A1         | 项目、成员权限、数据授权、历史迁移与真实项目入口                                                 | 正式生产安全审计不在本阶段完成范围                   |
+| A2         | 背景版本、技术重复确认、fastp 白名单参数与方案冻结切片                                           | 上传闭环、对照关系、审核预设及完整 ReleaseSet        |
+| A3         | 三种模式、阶段报告、持久队列、资源等待、受控恢复及真实 W1 恢复                                   | W2–W6 恢复身份及主机重启实演                         |
+| B0         | 小型版本化知识包、SQLite／FTS5、离线检索与引用校验                                               | 类群特异领域资料、专家审核及正式发布                 |
+| B1         | Workflow 1–6 全部公开 stage 的 CapabilityManifest 与 DAG dry-run                                 | 正式参考 release／许可／完整哈希、真实运行和兼容组合 |
+| B2         | 工程知识 release、RetrievalAdapter、授权引用校验与会话持久化                                     | 正式领域知识、专家审核及 claim 级领域引用            |
+| B3         | CandidateEvidence v2、W2 四来源追溯、工程 findings、有界只读 API、`not_generated` 业务修订与报告 | 核准领域规则／知识、正向 Assessment 与专家冻结回归集 |
+| C0         | 统一 provider 契约、MiniMax 适配、受控上下文与失败降级                                           | 本地推理后端、模型权重身份与未微调本地基线           |
+| C1         | 四类冻结开发案例与 MiniMax 工程 smoke                                                            | 专家语义审核、数据划分、本地模型比较与上线门槛       |
+| A4         | 研判版本、审核事件、修订报告、补算确认与待审核训练导出                                           | 无；其依赖的 B3／C2 仍未完成                         |
+| A5         | 严格 DeploymentProfile、两套配置、恢复快照、准入控制、依赖 BOM／介质 preflight                   | 离线介质、定期恢复、联合升级与独立目标实机验收       |
+| B4／C2／C3 | 尚未开始完整交付                                                                                 | 资产升级、微调与现场模型验收                         |
 
 ### 1.5 优先 Demo（第 18 轮）
 
@@ -122,6 +122,14 @@
 
 本切片提供 A5 第二项的锁定／包清单与故障定位入口，但没有为明确目标 OS／architecture 构建实际介质、执行初始化／迁移／管理员设置、独立安装或断网运行；MiniMax-M3 也按用户确认继续替代本地模型。因此 A5 第二项与 M3 保持未勾选。详见[第二十六轮复现记录](m3-26-offline-preflight-reproduction.md)。
 
+### 1.12 真实 Workflow 1 中断恢复（第 27 轮）
+
+- [x] **真实阶段中断：**使用授权的 `BJ-2024-615` 成对 FASTQ 新建仅含 `read_qc` 的 standard run；确认 `upstream` phase 与专属 runner 实际 running 后，同时核对 state path、runner process group、scheduler PID／run root，再精确终止该 runner 与单一 scheduler。新 scheduler reconciliation 将状态保留为 `interrupted`，没有自动重算。
+- [x] **同契约人工恢复：**恢复前重新验证 logical／canonical 双重输入 fingerprint、方案、worker、Workflow 1 闭包、`fastp@1.3.2`、Snakemake 与 SeqKit 身份；同一 run 追加 attempt 2，attempt 1／日志保留。未完成 phase 使用 `--rerun-incomplete --forcerun`，完成后登记 6 files、274,179,641 bytes 的 checkpoint。
+- [x] **结果与收尾：**attempt 2 return code 0，标准 HTML／PDF 与 final report ready；runner、scheduler session 均退出，队列为空。原 FASTQ inode／size／mtime 不变，run 仅写入 run root，实际占 275,151,448 bytes。
+
+本轮据真实 W1 与既有正负自动测试完成 A3 最后一项；变更输入、方案、worker、依赖或已完成 checkpoint 仍须拒绝原地恢复并新建 plan／run。Workflow 2–6 尚未形成完整恢复身份，继续受 B1 发布／验证状态阻断，不能据此开放或宣称已通过恢复验收；M1 仍不提升。详见[第二十七轮复现记录](m1-27-workflow1-recovery-reproduction.md)。
+
 M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程碑状态。
 
 ## 2. 当前基线、职责与契约
@@ -147,7 +155,7 @@ M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程�
 | 工程知识 release、SQLite FTS5、受控引用与项目会话展示                                                       | 正式领域语料、专家审核、领域 claim 引用与向量召回                                 |
 | MiniMax-M3 经固定 Claude Agent SDK；本机 TaxonAgent 关闭                                                    | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-截至第二十六轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、一次 W1 fastp 实跑、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、受控中断恢复诊断、`not_generated` 研判的业务修订／报告入口、显式 DeploymentProfile 启动配置、一次非覆盖恢复快照演练、更新前准入 drain／resume，以及离线依赖 BOM／介质 preflight，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。恢复 staging、准入演练、preflight 和独立目标 profile 也不是安装、断网、联合升级或定期灾备验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
+截至第二十七轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、W1 fastp 实跑与真实中断恢复、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、`not_generated` 研判的业务修订／报告入口、显式 DeploymentProfile 启动配置、一次非覆盖恢复快照演练、更新前准入 drain／resume，以及离线依赖 BOM／介质 preflight，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。恢复 staging、准入演练、preflight 和独立目标 profile 也不是安装、断网、联合升级或定期灾备验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 
@@ -296,7 +304,7 @@ S0 只冻结最小共享基线，不等待所有 workflow 真机验证完成；�
 - [x] 按项目优先级、项目内紧急级、入队时间排序；工程初始采用可配置的 24 小时等待提升，超过阈值的可准入任务按入队时间优先选择。策略版本可追溯，运行中 job 不抢占。
 - [x] 阶段边界核查 CPU、内存、磁盘空间与负载。资源不足进入 waiting_resources，保留目标与快报并释放准入资格；其他具备资源条件的任务可以运行。
 - [x] 事务／唯一身份保证重复启动、控制进程重启和重复恢复不产生第二次计算。重连联合 state、tmux、PID、boot ID 核对；已运行进程消失保留 interrupted，不自动重跑。
-- [ ] 显式恢复前核对输入、冻结方案、插件、软件、参考库、worker 执行条件和完整输出。同条件追加 attempt，保留旧状态／日志；变更条件时新建 plan／run，仅按 artifact 契约引用可复用产物。
+- [x] 显式恢复前核对输入、冻结方案、插件、软件、参考库、worker 执行条件和完整输出。同条件追加 attempt，保留旧状态／日志；变更条件时新建 plan／run，仅按 artifact 契约引用可复用产物。
 
 **产物／接口：**版本化 routing policy、reports 列表、queue／attempt／waiting_reason／observed_at，以及授权的优先级和恢复动作。**验收：**auto 的高／低信号及多样本情况均继续目标；快报不被当作完整完成；SSH 断线、主机重启、排队 session 消失、指纹暂不可验、版本改变和重复请求均有回归测试。**回退：**新队列接管前清空或登记旧队列，禁止双调度；回退先停止新准入并处理在途任务，不静默恢复 auto 提前结束语义。
 
