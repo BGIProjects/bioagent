@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "profile_id": "cyclone-development",
   "deployment_kind": "development",
   "services": {
@@ -61,7 +61,8 @@
   "operations": {
     "business_db": "/Users/lfz/Documents/Project/bioagent/open-webui/backend/data/webui.db",
     "backup_root": "/Users/lfz/BioAgentBackups",
-    "backup_retention_count": 7
+    "backup_retention_count": 7,
+    "admission_state_file": "/Users/lfz/Documents/Project/bioagent/.local/admission.json"
   },
   "resources": {
     "queue_aging_hours": 24,

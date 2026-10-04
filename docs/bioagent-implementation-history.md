@@ -1,4 +1,4 @@
-# BioAgent 实施历史：第 1–24 轮
+# BioAgent 实施历史：第 1–25 轮
 
 > 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M3 工程切片。
 > 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2／M3 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
@@ -312,3 +312,15 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 - **自动验证与容量：**根 Profile／backup 测试共 13 passed；fixture 另覆盖一个合法工程引用、内容篡改、孤儿成员、无效引用、已存在恢复目录及安全 rsync 参数。Ruff、Prettier、shell 语法与 diff whitespace 通过。本机仍约 185 GiB 可用，仓库约 2.4 GiB；演练快照和恢复目录各约 1.2 MiB，未写入仓库或远端。
 
 A5 第三项仍未完整完成：尚无按项目保留策略的自动／定期执行，也没有在独立恢复机器重建服务、核对登录鉴权与浏览器查询历史报告。第一项保持完成；第二、第四项及 B4／C3 不提升。命令、失败边界与 staging 清单见[第二十四轮复现记录](m3-24-recovery-snapshot-reproduction.md)。
+
+## 第 25 轮：更新前准入 drain／resume（2026-10-04）
+
+本轮推进 A5 运维更新的安全前置，不制作 B4／C3 包、不停止真实服务、不访问 Cyclone、不修改数据库、不启动或中止 workflow。目标是让管理员在服务更新前先阻止新的 start／resume，同时保持现有远端 scheduler／runner 与只读业务入口不受本机服务生命周期影响。
+
+- **Profile v3 与状态契约：**两套 profile 新增共享 admission state 绝对路径；状态 schema 固定接受／排空、原因、operator、带时区时间和内容 SHA-256。CLI 用同目录 0600 临时文件、fsync 和原子 replace；缺档默认接受，损坏、symlink、超 8 KiB、未知字段或摘要错误均 fail closed。
+- **双重准入检查：**Backend 在权限、dataset／project 检查后、execution reservation 前读取 Agent 专用 admission endpoint；Agent 在 run start 与 resume 调用 planner 前再次读取本机状态，处理检查后的 drain 竞态和绕过 Backend 的直接请求。两层均回传可重试 503 与稳定 `ADMISSION_DRAINING`／`ADMISSION_STATE_INVALID`。
+- **不扩大影响：**compile、health、capabilities、snapshot、evidence、candidate assessment 和报告入口不受 drain 阻断；`dev-services.sh stop|restart` 仍只管理三个本机 tmux，不操作远端 worker session。未设置 profile／gate 环境变量时维持既有接受行为。
+- **本机演练：**`/tmp/bioagent-round25-admission.json` 依次 drain、status、resume、status；最终为 accepting，文件 mode 0600、218 bytes。没有连接或写入 Cyclone，也没有对真实运行中的 Agent 注入维护状态。
+- **验证与容量：**根 Profile／backup／admission 共 17 passed；Agent admission／adapter／config／provider 共 40 passed、7 subtests；Backend planner／project 共 25 passed。Ruff、Prettier、shell 语法和 diff whitespace 通过；无前端源码变更，不重复 build。本机约 185 GiB 可用，未新增数据库或大型文件。
+
+A5 第四项仍未完整完成：缺少 B4／C3 实际版本组合、真实在途更新、服务回滚、日志／存储／模型联合观察与独立目标验证。A5 第一项保持完成，第二、第三、第四项仍未整项勾选；M3 不提升。命令与失败行为见[第二十五轮复现记录](m3-25-admission-drain-reproduction.md)。

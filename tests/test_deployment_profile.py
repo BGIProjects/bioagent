@@ -28,6 +28,10 @@ def test_profiles_are_valid_secret_free_and_complete(name: str) -> None:
     backend = environment(profile, 'backend')
     assert agent['BIOAGENT_PROFILE_ID'] == profile['profile_id']
     assert agent['BIOAGENT_ASSET_ROOT'] == profile['storage']['asset_root']
+    assert (
+        agent['BIOAGENT_ADMISSION_STATE_FILE']
+        == profile['operations']['admission_state_file']
+    )
     assert agent['BIOAGENT_MODEL_ID'] == 'MiniMax-M3'
     assert agent['BIOAGENT_MODEL_BASE_URL'].endswith(':443/anthropic')
     assert 'MINIMAX_API_KEY' not in agent

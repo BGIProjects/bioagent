@@ -171,6 +171,20 @@ python3 deployment_backup.py stage-restore \
 
 工具不会自动删除旧快照；按 profile 中的保留数量核对后，须由管理员另行执行清理。staging 验证通过也不等于独立目标部署或定期恢复演练已经完成。
 
+更新或维护前先显式停止新分析准入；这不会停止已在 Cyclone 运行或排队的任务。确认服务、数据库和在途任务状态后再维护，完成检查后恢复准入：
+
+```bash
+BIOAGENT_DEPLOYMENT_PROFILE=deployment/profiles/cyclone-development.json \
+  ./dev-services.sh drain '部署维护'
+BIOAGENT_DEPLOYMENT_PROFILE=deployment/profiles/cyclone-development.json \
+  ./dev-services.sh status
+# 执行已核准的维护并验证服务
+BIOAGENT_DEPLOYMENT_PROFILE=deployment/profiles/cyclone-development.json \
+  ./dev-services.sh resume '维护完成'
+```
+
+drain 期间新的 run start／resume 会收到可重试的 `ADMISSION_DRAINING`；方案编译、状态和报告读取保持可用。准入状态损坏时 fail closed，须由管理员修复或执行受控 resume，不能删除文件来绕过。
+
 默认模板已经对应当前 Cyclone。若更换远端账号或存储位置，至少同步修改下列变量：
 
 - SSH 与 worker：`BIOAGENT_SSH_HOST`、`BIOAGENT_REMOTE_PYTHON`、`BIOAGENT_REMOTE_CONTROL_PYTHON`、`BIOAGENT_REMOTE_TMUX`、`BIOAGENT_REMOTE_WORKER_ROOT`

@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.25；修订日期：2026-10-04；原始源码基线：2026-09-09。
+> 版本：1.26；修订日期：2026-10-04；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> 二十四轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
+> 二十五轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -63,7 +63,7 @@
 | C0         | 统一 provider 契约、MiniMax 适配、受控上下文与失败降级                                           | 本地推理后端、模型权重身份与未微调本地基线             |
 | C1         | 四类冻结开发案例与 MiniMax 工程 smoke                                                            | 专家语义审核、数据划分、本地模型比较与上线门槛         |
 | A4         | 研判版本、审核事件、修订报告、补算确认与待审核训练导出                                           | 无；其依赖的 B3／C2 仍未完成                           |
-| A5         | 严格 DeploymentProfile、两套配置、启动链覆写、内容校验恢复快照                                   | 离线安装、定期保留／恢复、运维与独立目标实机验收       |
+| A5         | 严格 DeploymentProfile、两套配置、恢复快照、原子准入 drain／resume                               | 离线安装、定期保留／恢复、联合升级与独立目标实机验收   |
 | B4／C2／C3 | 尚未开始完整交付                                                                                 | 资产升级、微调与现场模型验收                           |
 
 ### 1.5 优先 Demo（第 18 轮）
@@ -106,6 +106,14 @@
 
 当前业务库没有 assessment 或持久化工程引用，真实演练对应计数均为 0；自动测试另以合法引用、篡改、孤儿关系和既有目标覆盖验证正负路径。工具不自动按保留数量删除旧备份，也未在独立恢复主机验证鉴权、历史报告访问或定期排程，因此 A5 第三项仍不勾选。详见[第二十四轮复现记录](m3-24-recovery-snapshot-reproduction.md)。
 
+### 1.10 更新前准入控制（第 25 轮）
+
+- [x] **原子运维状态：**DeploymentProfile schema v3 登记共享 admission state；operator CLI 以 0600 临时档、fsync、SHA-256 与原子 rename 切换 `accepting`／`draining`，未知 schema、篡改、symlink、超限或不可读状态均 fail closed。
+- [x] **两层执行阻断：**Backend 在建立 execution reservation 前查询 Agent 准入；Agent 对直接 run start 与 resume 再次检查，关闭竞态与绕过。drain 只阻止新计算准入，方案编译、状态、证据和报告读取继续可用。
+- [x] **运维入口与可观察性：**`dev-services.sh drain|resume|status` 复用 profile 中同一状态文件，Agent health 及专用只读 endpoint 返回状态；维护原因和更新时间可追溯，缺省未配置保持既有接受行为。
+
+本轮只完成 A5 第四项中“更新前停止新准入、业务服务不终止远端计算”的工程切片。尚无 B4／C3 合格包可做联合更新、兼容拒绝或回滚，未停止真实服务或干预 Cyclone scheduler／runner，因此 A5 第四项与 M3 仍不勾选。详见[第二十五轮复现记录](m3-25-admission-drain-reproduction.md)。
+
 M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程碑状态。
 
 ## 2. 当前基线、职责与契约
@@ -131,7 +139,7 @@ M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程�
 | 工程知识 release、SQLite FTS5、受控引用与项目会话展示                                                       | 正式领域语料、专家审核、领域 claim 引用与向量召回                                 |
 | MiniMax-M3 经固定 Claude Agent SDK；本机 TaxonAgent 关闭                                                    | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-截至第二十四轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、一次 W1 fastp 实跑、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、受控中断恢复诊断、`not_generated` 研判的业务修订／报告入口、显式 DeploymentProfile 启动配置，以及一次非覆盖恢复快照演练，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。恢复 staging 和独立目标 profile 也不是安装、断网或定期灾备验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
+截至第二十五轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、一次 W1 fastp 实跑、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、受控中断恢复诊断、`not_generated` 研判的业务修订／报告入口、显式 DeploymentProfile 启动配置、一次非覆盖恢复快照演练，以及更新前准入 drain／resume，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。恢复 staging、准入演练和独立目标 profile 也不是安装、断网、联合升级或定期灾备验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 

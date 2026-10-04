@@ -5,6 +5,7 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 # shellcheck disable=SC1091
 source "$ROOT/deployment/load-profile.sh"
 bioagent_load_profile services
+PROFILE_PYTHON=${BIOAGENT_PROFILE_PYTHON:-python3}
 CONDA=${BIOAGENT_CONDA_BIN:-}
 NODE_BIN=${BIOAGENT_NODE_BIN:-}
 TMUX=${TMUX_BIN:-tmux}
@@ -27,7 +28,22 @@ FRONTEND_LOG=/tmp/bioagent-frontend.log
 LOG_WARN_BYTES=$((${BIOAGENT_LOG_WARN_MIB:-100} * 1024 * 1024))
 
 usage() {
-    echo "用法: $0 {start|stop|restart|status}"
+    echo "用法: $0 {start|stop|restart|status|drain [原因]|resume [说明]}"
+}
+
+admission_command() {
+    local action=$1 reason=${2:-}
+    if [[ -z "${BIOAGENT_ADMISSION_STATE_FILE:-}" ]]; then
+        echo "准入控制需要显式启用 DeploymentProfile。" >&2
+        return 2
+    fi
+    if [[ "$action" == status ]]; then
+        "$PROFILE_PYTHON" "$ROOT/deployment_admission.py" \
+            --state-file "$BIOAGENT_ADMISSION_STATE_FILE" status
+    else
+        "$PROFILE_PYTHON" "$ROOT/deployment_admission.py" \
+            --state-file "$BIOAGENT_ADMISSION_STATE_FILE" "$action" --reason "$reason"
+    fi
 }
 
 discover_executable() {
@@ -234,6 +250,11 @@ status_all() {
     status_line Frontend "$FRONTEND_SESSION" "${FRONTEND_URL}/" "$FRONTEND_LOG"
     tmp_available=$(df -Pk /tmp | awk 'NR == 2 {printf "%.0f", $4 * 1024}')
     echo "/tmp     可用=$(format_bytes "${tmp_available:-0}")（日志仅在创建新 session 或 restart 时截断）"
+    if [[ -n "${BIOAGENT_ADMISSION_STATE_FILE:-}" ]]; then
+        admission_command status || echo "Admission 状态无效；新分析将 fail closed。"
+    else
+        echo "Admission 未配置（默认接收新分析）"
+    fi
     if ssh -o ClearAllForwardings=yes -o ConnectTimeout=5 "${BIOAGENT_SSH_HOST:-Cyclone}" true >/dev/null 2>&1; then
         echo "Compute   SSH=正常（远端 worker session 不受本脚本管理）"
     else
@@ -258,6 +279,8 @@ main() {
             resolve_tmux
             status_all
             ;;
+        drain) admission_command drain "${2:-部署维护}" ;;
+        resume) admission_command resume "${2:-维护完成}" ;;
         *) usage; return 2 ;;
     esac
 }
