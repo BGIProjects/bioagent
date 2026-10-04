@@ -10,6 +10,7 @@ import pytest
 from asset_release_manager import (
     AssetReleaseError,
     activate_release_set,
+    active_binding,
     import_package,
     import_release_set,
     require_draining,
@@ -111,7 +112,13 @@ def test_import_activate_and_rollback_are_immutable_and_atomic(tmp_path: Path) -
         tmp_path, 'knowledge', 'knowledge', '2'
     )
     for package in (knowledge_v1, rules, knowledge_v2):
-        assert _import(package, store)['installed'] is True
+        imported = _import(package, store)
+        assert imported['installed'] is True
+        assert oct(Path(imported['path']).stat().st_mode & 0o777) == '0o555'
+        assert (
+            oct((Path(imported['path']) / 'package-manifest.json').stat().st_mode & 0o777)
+            == '0o444'
+        )
         assert _import(package, store)['installed'] is False
 
     first = _release_set(
@@ -146,6 +153,13 @@ def test_import_activate_and_rollback_are_immutable_and_atomic(tmp_path: Path) -
     assert rolled_back['active_release_set'] == 'set-1'
     assert rolled_back['previous_release_set'] == 'set-2'
     assert status(store)['active']['release_set_id'] == 'set-1'
+    binding = active_binding(store)
+    assert binding['release_set_id'] == 'set-1'
+    assert [item['asset_id'] for item in binding['packages']] == [
+        'knowledge',
+        'rules',
+    ]
+    assert len(binding['sha256']) == 64
 
 
 def test_tamper_extra_file_and_symlink_fail_closed(tmp_path: Path) -> None:

@@ -11,7 +11,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import urlparse
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 WORKFLOW_KEYS = tuple(f'workflow{index}' for index in range(1, 7))
 COMPONENTS = {'services', 'agent', 'backend', 'all'}
 SAFE_ENV_KEY = re.compile(r'^[A-Z][A-Z0-9_]*$')
@@ -210,6 +210,7 @@ def load_profile(path: Path) -> dict[str, Any]:
             'backup_root',
             'backup_retention_count',
             'admission_state_file',
+            'asset_release_store',
         },
     )
     operations['business_db'] = _absolute(
@@ -220,6 +221,9 @@ def load_profile(path: Path) -> dict[str, Any]:
     )
     operations['admission_state_file'] = _absolute(
         operations['admission_state_file'], 'operations.admission_state_file'
+    )
+    operations['asset_release_store'] = _absolute(
+        operations['asset_release_store'], 'operations.asset_release_store'
     )
     _positive_int(
         operations['backup_retention_count'], 'operations.backup_retention_count'
@@ -267,6 +271,7 @@ def environment(profile: dict[str, Any], component: str) -> dict[str, str]:
         'BIOAGENT_BACKUP_RETENTION_COUNT': str(operations['backup_retention_count']),
         'BIOAGENT_BUSINESS_DB': operations['business_db'],
         'BIOAGENT_ADMISSION_STATE_FILE': operations['admission_state_file'],
+        'BIOAGENT_ASSET_RELEASE_STORE': operations['asset_release_store'],
         'BIOAGENT_SSH_HOST': profile['compute']['ssh_host'],
     }
     if component in {'agent', 'all'}:

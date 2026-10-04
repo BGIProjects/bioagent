@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "profile_id": "independent-target",
   "deployment_kind": "independent_target",
   "services": {
@@ -59,7 +59,8 @@
     "business_db": "/srv/bioagent/business/webui.db",
     "backup_root": "/srv/bioagent/backups",
     "backup_retention_count": 7,
-    "admission_state_file": "/srv/bioagent/control/admission.json"
+    "admission_state_file": "/srv/bioagent/control/admission.json",
+    "asset_release_store": "/srv/bioagent/asset-release-store"
   },
   "resources": {
     "queue_aging_hours": 24,

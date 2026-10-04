@@ -1,4 +1,4 @@
-# BioAgent 实施历史：第 1–29 轮
+# BioAgent 实施历史：第 1–30 轮
 
 > 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M3 工程切片。
 > 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2／M3 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
@@ -372,3 +372,15 @@ B4 第二项只完成可复用控制面，未形成正式包或实际 runtime �
 - **验证与容量：**Agent 相关回归 34 passed、5 subtests passed；Ruff、Prettier 与 diff whitespace 通过。本机仍约 185 GiB 可用、仓库约 2.4 GiB、benchmark 目录 32 KiB；远端 `/data` 可用 379,682,508,800 bytes。本轮不新增数据库或大型文件。
 
 S0 的公共契约、正常／负向样例、评测用途和数据划分现已完整冻结，予以勾选。S0 仍缺本地硬件／许可基线和专家领域指标实测；C1 仍缺相同条件下的本地／MiniMax 比较、真正独立的非开发资料、专家统计及负责人门槛，因此 M0／M1 不提升。详细命令与边界见[第二十九轮复现记录](m1-29-evaluation-protocol-reproduction.md)。
+
+## 第 30 轮：Active ReleaseSet 规划与 run 冻结接线（2026-10-04）
+
+本轮把第 28 轮独立资产控制面接到可选的方案／运行身份，不制作或启用正式领域资产，不启动 workflow、不调用模型、不写业务数据库，也不让正常任务反复扫描大型 reference payload。默认未配置 DeploymentProfile 的开发方式继续不绑定 store。
+
+- **单文件原子身份：**active state schema v2 扩充为同一份 0600、带整体 SHA-256 的 ReleaseSet／package binding，切换和回滚都先全量复验 payload、许可、package 与 set validation，再原子替换。导入完成的 package root／文件改为 0555／0444，版本内容不能被普通写入意外覆盖。
+- **小型运行时复核：**Agent 只读取 active state、ReleaseSet JSON 与 package manifest，复核路径无 symlink、字段、排序、摘要、许可和 validation；不读取大型 payload。DeploymentProfile schema v4 新增绝对 `asset_release_store`，health 明确返回 not configured／ready／unavailable。
+- **方案／启动／恢复：**新方案保存 active binding 和 decision trace；启动重新解析 current active，若期间切换则拒绝旧方案。local runtime 与 content-addressed Cyclone worker 再次重验 binding 后保存到 run state。恢复只使用已冻结 binding，不要求 current active 仍相同或可读。
+- **实际小型演练：**复用 41-byte 工程 fixture 建立 `/tmp/bioagent-round30-store`，切换 v1→v2→rollback v1。binding SHA-256 分别为 `69939b…98bc`、`f6ac47…98c2`、`69939b…98bc`；最终 active v1、previous v2、incomplete imports 0、admission accepting。Agent 独立读取与 root CLI 得到相同 binding。
+- **验证与容量：**根部署回归 32 passed；Agent 规划／runtime／worker／adapter 回归 101 passed、26 subtests passed；Ruff、Prettier 与 diff whitespace 通过。本机仍约 185 GiB 可用、仓库约 2.4 GiB；演练 store 20 KiB、media 16 KiB，无数据库变化。
+
+本轮不勾选 B4 第四项或其他主任务：仍没有正式五类 package、默认实例实际采用、workflow payload 解析、历史引用驱动清理、独立目标或大型资产演练。A2／B1 也只取得共用冻结机制，不代表完整参数／参考库发布。详细命令与回退边界见[第三十轮复现记录](m3-30-runtime-release-binding-reproduction.md)。

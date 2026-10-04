@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "profile_id": "cyclone-development",
   "deployment_kind": "development",
   "services": {
@@ -62,7 +62,8 @@
     "business_db": "/Users/lfz/Documents/Project/bioagent/open-webui/backend/data/webui.db",
     "backup_root": "/Users/lfz/BioAgentBackups",
     "backup_retention_count": 7,
-    "admission_state_file": "/Users/lfz/Documents/Project/bioagent/.local/admission.json"
+    "admission_state_file": "/Users/lfz/Documents/Project/bioagent/.local/admission.json",
+    "asset_release_store": "/Users/lfz/Documents/Project/bioagent/.local/asset-release-store"
   },
   "resources": {
     "queue_aging_hours": 24,

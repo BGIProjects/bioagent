@@ -200,27 +200,29 @@ media manifest 必须逐项覆盖 `deployment/offline-install-manifest.json` 的
 离线资产包先进入独立 store，不能直接覆盖当前 `agent/assets`。package／ReleaseSet 完整验证后，切换与回滚还必须处于 admission draining：
 
 ```bash
-python3 asset_release_manager.py --store /srv/bioagent/asset-store \
+python3 asset_release_manager.py --store /srv/bioagent/asset-release-store \
   verify-package /media/knowledge-v1 --max-bytes 1073741824
-python3 asset_release_manager.py --store /srv/bioagent/asset-store \
+python3 asset_release_manager.py --store /srv/bioagent/asset-release-store \
   import-package /media/knowledge-v1 \
   --max-bytes 1073741824 --min-free-bytes 5368709120
-python3 asset_release_manager.py --store /srv/bioagent/asset-store \
+python3 asset_release_manager.py --store /srv/bioagent/asset-release-store \
   import-set /media/release-set-v1.json
 
 ./dev-services.sh drain '切换资产版本'
-python3 asset_release_manager.py --store /srv/bioagent/asset-store \
+python3 asset_release_manager.py --store /srv/bioagent/asset-release-store \
   --admission-state /path/from/deployment-profile/admission.json \
   activate release-set-v1 --actor operator
+python3 asset_release_manager.py --store /srv/bioagent/asset-release-store binding
 ./dev-services.sh resume '资产切换完成'
 ```
 
-`status` 会列出 active／previous ReleaseSet、已安装数量与未完成的 `.partial-*`；`rollback --actor operator` 使用同一 draining gate 原子切回 previous。当前工具只建立 B4 控制面，不会让尚未接入 store 的运行时自动采用新资产；正式包仍须有真实来源、许可、回归及兼容记录。
+`status` 会列出 active／previous ReleaseSet、已安装数量与未完成的 `.partial-*`；`rollback --actor operator` 使用同一 draining gate 原子切回 previous。DeploymentProfile 的 `asset_release_store` 会导出为 `BIOAGENT_ASSET_RELEASE_STORE`：新方案冻结 active binding，启动前若 active 已变化则要求重新编译；已开始任务和恢复继续使用 run 中原组合。日常规划只校验小型 state／ReleaseSet／package manifest，不重扫大型 payload；全量内容哈希只在导入、切换和管理员 `status` 时执行。未准备 active ReleaseSet 的显式 profile 会 fail closed；默认未启用 profile 的既有开发入口保持不变。正式包仍须有真实来源、许可、回归及兼容记录。
 
 默认模板已经对应当前 Cyclone。若更换远端账号或存储位置，至少同步修改下列变量：
 
 - SSH 与 worker：`BIOAGENT_SSH_HOST`、`BIOAGENT_REMOTE_PYTHON`、`BIOAGENT_REMOTE_CONTROL_PYTHON`、`BIOAGENT_REMOTE_TMUX`、`BIOAGENT_REMOTE_WORKER_ROOT`
 - 数据、产物与队列：`BIOAGENT_DATA_ROOT`、`BIOAGENT_DATA_ALLOWED_ROOTS`、`BIOAGENT_RUN_ROOT`、`BIOAGENT_QUEUE_AGING_HOURS`（默认 `24`，只接受正数）
+- 资产版本：`BIOAGENT_ASSET_RELEASE_STORE`（只在已导入并启用 active ReleaseSet 后设置）
 - 工具：`BIOAGENT_SNAKEMAKE`、`BIOAGENT_SEQKIT`
 - Workflow：`BIOAGENT_WORKFLOW1_SOURCE` 至 `BIOAGENT_WORKFLOW6_SOURCE`
 - Open WebUI：`BIOAGENT_DATA_ROOT`、`BIOAGENT_RUN_ROOT` 与需要时的 `PORT`

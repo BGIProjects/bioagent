@@ -22,6 +22,7 @@ from deployment_admission import AdmissionError
 from deployment_admission import read_state as read_admission_state
 
 SCHEMA_VERSION = 1
+STATE_SCHEMA_VERSION = 2
 MANIFEST_NAME = 'package-manifest.json'
 STATE_NAME = 'active-release-set.json'
 MAX_JSON_BYTES = 2 * 1024 * 1024
@@ -285,6 +286,12 @@ def _fsync_directory(path: Path) -> None:
         os.close(descriptor)
 
 
+def _make_read_only(root: Path) -> None:
+    for path in sorted(root.rglob('*'), key=lambda item: len(item.parts), reverse=True):
+        os.chmod(path, 0o555 if path.is_dir() else 0o444)
+    os.chmod(root, 0o555)
+
+
 def import_package(
     source: Path,
     store: Path,
@@ -323,6 +330,7 @@ def import_package(
             staged = verify_package(staging, max_bytes=max_bytes)
             if staged['manifest_sha256'] != verified['manifest_sha256']:
                 raise AssetReleaseError('staged asset manifest changed during import')
+            _make_read_only(staging)
             os.replace(staging, target)
             _fsync_directory(target.parent)
         except Exception:
@@ -450,14 +458,24 @@ def _load_installed_release_set(store: Path, release_set_id: str) -> tuple[dict[
 def _state_body(
     active: str,
     previous: str | None,
+    verified: dict[str, Any],
     *,
     actor: str,
     activated_at: str,
 ) -> dict[str, Any]:
+    packages = [
+        {
+            key: item[key]
+            for key in ('asset_type', 'asset_id', 'version', 'manifest_sha256')
+        }
+        for item in verified['packages']
+    ]
     return {
-        'schema_version': SCHEMA_VERSION,
+        'schema_version': STATE_SCHEMA_VERSION,
         'active_release_set': active,
         'previous_release_set': previous,
+        'release_set_sha256': verified['release_set_sha256'],
+        'packages': packages,
         'activated_at': activated_at,
         'activated_by': actor,
     }
@@ -476,17 +494,55 @@ def _read_state(store: Path) -> dict[str, Any] | None:
             'schema_version',
             'active_release_set',
             'previous_release_set',
+            'release_set_sha256',
+            'packages',
             'activated_at',
             'activated_by',
             'sha256',
         },
     )
-    if value['schema_version'] != SCHEMA_VERSION:
+    if value['schema_version'] != STATE_SCHEMA_VERSION:
         raise AssetReleaseError('active release state schema is unsupported')
     _identifier(value['active_release_set'], 'active_release_set')
     previous = value['previous_release_set']
     if previous is not None:
         _identifier(previous, 'previous_release_set')
+    release_set_sha256 = value['release_set_sha256']
+    if not isinstance(release_set_sha256, str) or not SHA256.fullmatch(
+        release_set_sha256
+    ):
+        raise AssetReleaseError('active release set sha256 is invalid')
+    packages = value['packages']
+    if not isinstance(packages, list) or not packages:
+        raise AssetReleaseError('active release packages must be a non-empty list')
+    normalized_packages = []
+    keys = []
+    logical = []
+    for index, package in enumerate(packages):
+        item = _mapping(
+            package,
+            f'active release packages[{index}]',
+            {'asset_type', 'asset_id', 'version', 'manifest_sha256'},
+        )
+        identity = _identity(
+            {key: item[key] for key in ('asset_type', 'asset_id', 'version')},
+            f'active release packages[{index}]',
+        )
+        manifest_sha256 = item['manifest_sha256']
+        if not isinstance(manifest_sha256, str) or not SHA256.fullmatch(
+            manifest_sha256
+        ):
+            raise AssetReleaseError('active release package sha256 is invalid')
+        normalized_packages.append({**identity, 'manifest_sha256': manifest_sha256})
+        keys.append(tuple(identity.values()))
+        logical.append((identity['asset_type'], identity['asset_id']))
+    if (
+        normalized_packages != packages
+        or keys != sorted(keys)
+        or len(keys) != len(set(keys))
+        or len(logical) != len(set(logical))
+    ):
+        raise AssetReleaseError('active release packages are invalid')
     _timestamp(value['activated_at'], 'activated_at')
     _text(value['activated_by'], 'activated_by', 128)
     digest = value['sha256']
@@ -535,6 +591,30 @@ def _activation_ready(value: dict[str, Any], verified: dict[str, Any]) -> None:
         )
 
 
+def _binding_from_state(state: dict[str, Any]) -> dict[str, Any]:
+    body = {
+        'schema_version': SCHEMA_VERSION,
+        'release_set_id': state['active_release_set'],
+        'release_set_sha256': state['release_set_sha256'],
+        'packages': state['packages'],
+    }
+    return {**body, 'sha256': _json_digest(body)}
+
+
+def _state_matches_verified(
+    state: dict[str, Any], verified: dict[str, Any]
+) -> None:
+    expected = _state_body(
+        state['active_release_set'],
+        state['previous_release_set'],
+        verified,
+        actor=state['activated_by'],
+        activated_at=state['activated_at'],
+    )
+    if any(state[key] != value for key, value in expected.items()):
+        raise AssetReleaseError('active release binding differs from installed assets')
+
+
 def activate_release_set(
     store: Path,
     release_set_id: str,
@@ -551,10 +631,12 @@ def activate_release_set(
         _activation_ready(value, verified)
         current = _read_state(root)
         if current and current['active_release_set'] == release_set_id:
+            _state_matches_verified(current, verified)
             return {**current, 'changed': False, 'release_set': verified}
         body = _state_body(
             release_set_id,
             current['active_release_set'] if current else None,
+            verified,
             actor=actor,
             activated_at=now,
         )
@@ -580,6 +662,7 @@ def rollback_release_set(
         body = _state_body(
             target_id,
             current['active_release_set'],
+            verified,
             actor=actor,
             activated_at=now,
         )
@@ -592,6 +675,7 @@ def status(store: Path) -> dict[str, Any]:
         active = None
         if state:
             _, active = _load_installed_release_set(root, state['active_release_set'])
+            _state_matches_verified(state, active)
         package_count = 0
         partials = []
         packages_root = root / 'packages'
@@ -633,6 +717,19 @@ def status(store: Path) -> dict[str, Any]:
             'installed_release_sets': release_set_count,
             'incomplete_imports': sorted(partials),
         }
+
+
+def active_binding(store: Path) -> dict[str, Any]:
+    with _locked_store(store) as root:
+        state = _read_state(root)
+        if state is None:
+            raise AssetReleaseError('no active release set is available')
+        value, verified = _load_installed_release_set(
+            root, state['active_release_set']
+        )
+        _activation_ready(value, verified)
+        _state_matches_verified(state, verified)
+        return _binding_from_state(state)
 
 
 def require_draining(path: Path) -> dict[str, Any]:
@@ -681,6 +778,7 @@ def main(argv: list[str] | None = None) -> int:
     rollback = subparsers.add_parser('rollback')
     rollback.add_argument('--actor', required=True)
     subparsers.add_parser('status')
+    subparsers.add_parser('binding')
     args = parser.parse_args(argv)
     try:
         if args.command == 'verify-package':
@@ -704,8 +802,10 @@ def main(argv: list[str] | None = None) -> int:
                 raise AssetReleaseError('rollback requires --admission-state')
             require_draining(args.admission_state)
             result = rollback_release_set(args.store, actor=args.actor)
-        else:
+        elif args.command == 'status':
             result = status(args.store)
+        else:
+            result = active_binding(args.store)
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 0
     except (OSError, AssetReleaseError) as error:
