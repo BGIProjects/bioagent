@@ -263,3 +263,16 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 - **验证：**Backend 相关测试按文件隔离运行共 180 passed（其中本轮定向 14 passed）；Vitest 全量 66 passed；变更 Python Ruff、前端／文档 Prettier 及唯一一次完整前端 build（1 分 9 秒）通过。容量与复现命令见[第二十轮复现记录](m2-20-assessment-review-foundation-reproduction.md)。
 
 **A4 尚未完成。** 前两项任务已完整实现并在 roadmap 勾选；仍缺纯解释修订后的报告发布、关联候选的补算提议及显式确认、审核训练资料导出。B3 仍只有确定性工程 findings 和 `not_generated` Assessment，本轮没有把审核基础误记为正向领域研判。
+
+## 第 21 轮：解释修订、补算确认与待审核训练导出（2026-10-04）
+
+本轮完成 M2/A4 剩余任务，不扩展到 B3 正向生物学研判或 C2 训练。继续不做资料上传与条件接入；没有访问 Cyclone、调用 MiniMax-M3、运行 Workflow 或启动任何训练。
+
+- **指定版本报告：**每个研判 revision 可单独下载确定性、自包含 HTML，显示固定 report identity、结构化内容、审核事件和补算提议；所有内容经过 HTML 转义，旧 revision 可独立回看。
+- **纯解释修订：**新增 `revision_kind=explanation`，必须基于已有研判版本。建立解释 revision 只追加小型业务记录和新报告视图，不创建 plan revision、execution 或远端任务；原报告身份与旧研判保持不变。
+- **候选补算提议：**审核人可针对既有 assessment revision 与 candidate 建立白名单 plan patch；服务端用确定性编译器生成并冻结 impact preview。相同 proposal ID 与相同内容幂等返回，内容冲突拒绝。只有具分析权限的原 chat 拥有者可显式确认，确认只建立新 plan revision，不自动执行；过期 plan revision 与重复确认均拒绝。
+- **待审核训练导出：**项目审核人可导出带稳定 record SHA-256 的候选 JSON；只包含小型输入快照、输出修订、审核事件和来源 identity，固定 `training_eligible=false`、`triggers_training=false`，并列出许可、冲突、数据划分和训练目标批准四项后续门槛。
+- **数据库与迁移：**Alembic `b3c4d5e6f7a8` 为研判版本增加类型字段，并新增小型补算提议表；patch 与 impact 合计硬限制 64 KiB，不保存 HTML、PDF、FASTQ、日志或模型数据。既有 revision 升级为 `generated`，downgrade 验证可回退。
+- **验证：**Backend 相关测试以隔离进程运行共 185 passed，其中项目／审核定向 16 passed；Ruff、Prettier、Alembic 单一 head、迁移升级／回退和 diff whitespace 均通过。本轮未修改前端，不重复执行 build。命令、容量和限制见[第二十一轮复现记录](m2-21-review-actions-reproduction.md)。
+
+**A4 三项任务已完成。** M2 仍未完成，因为 B3 缺核准领域规则、正式知识、正向 Assessment 与回归集，C2 也因无本地模型、无审核训练集和不在本机训练而保持未开始；待审核导出不等于可训练数据或训练批准。
