@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.31；修订日期：2026-10-04；原始源码基线：2026-09-09。
+> 版本：1.32；修订日期：2026-10-04；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> 三十轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
+> 三十一轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -48,24 +48,24 @@
 
 核心任务按“整条描述全部满足才勾选”的严格标准维护；局部切片、测试数量、产物位置和回退记录统一见[实施历史](bioagent-implementation-history.md)及各轮复现记录。
 
-| 任务   | 已完成能力                                                                                       | 仍缺少                                               |
-| ------ | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
-| S0     | Workflow 1–6 能力映射、Cyclone 盘点、真实结果包、冻结样例／用途／split 与基础指标契约            | 本地模型资源基线、专家数据与领域评测实测             |
-| D0     | 真实结果回放、证据复算、知识／规则加载、限制降级及独立报告                                       | 本地模型生成、经专家审核的正常支持案例与完整离线生成 |
-| A0     | 隔离回放入口及不覆盖生产记录的 demo 输出                                                         | 无；其依赖任务仍未全部完成                           |
-| A1     | 项目、成员权限、数据授权、历史迁移与真实项目入口                                                 | 正式生产安全审计不在本阶段完成范围                   |
-| A2     | 背景版本、技术重复确认、fastp 白名单参数、方案与 active ReleaseSet 冻结切片                      | 上传闭环、对照关系、审核预设及正式 ReleaseSet        |
-| A3     | 三种模式、阶段报告、持久队列、资源等待、受控恢复及真实 W1 恢复                                   | W2–W6 恢复身份及主机重启实演                         |
-| B0     | 小型版本化知识包、SQLite／FTS5、离线检索与引用校验                                               | 类群特异领域资料、专家审核及正式发布                 |
-| B1     | Workflow 1–6 全部公开 stage 的 CapabilityManifest 与 DAG dry-run                                 | 正式参考 release／许可／完整哈希、真实运行和兼容组合 |
-| B2     | 工程知识 release、RetrievalAdapter、授权引用校验与会话持久化                                     | 正式领域知识、专家审核及 claim 级领域引用            |
-| B3     | CandidateEvidence v2、W2 四来源追溯、工程 findings、有界只读 API、`not_generated` 业务修订与报告 | 核准领域规则／知识、正向 Assessment 与专家冻结回归集 |
-| C0     | 统一 provider 契约、MiniMax 适配、受控上下文与失败降级                                           | 本地推理后端、模型权重身份与未微调本地基线           |
-| C1     | 四类冻结开发案例、MiniMax 工程 smoke、严格 split／group／metric protocol                         | 专家语义审核、非开发数据、本地模型比较与上线门槛     |
-| A4     | 研判版本、审核事件、修订报告、补算确认与待审核训练导出                                           | 无；其依赖的 B3／C2 仍未完成                         |
-| A5     | 严格 DeploymentProfile、两套配置、恢复快照、准入控制、依赖 BOM／介质 preflight、asset store 路径 | 离线介质、定期恢复、联合升级与独立目标实机验收       |
-| B4     | 离线包／ReleaseSet 校验、原子切换／回滚、可选规划／run 冻结接线                                  | 正式资产包、默认运行时采用、独立环境与大型介质演练   |
-| C2／C3 | 尚未开始完整交付                                                                                 | 微调、量化模型包与现场模型验收                       |
+| 任务   | 已完成能力                                                                                                           | 仍缺少                                               |
+| ------ | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| S0     | Workflow 1–6 能力映射、Cyclone 盘点、真实结果包、冻结样例／用途／split 与基础指标契约                                | 本地模型资源基线、专家数据与领域评测实测             |
+| D0     | 真实结果回放、证据复算、知识／规则加载、限制降级及独立报告                                                           | 本地模型生成、经专家审核的正常支持案例与完整离线生成 |
+| A0     | 隔离回放入口及不覆盖生产记录的 demo 输出                                                                             | 无；其依赖任务仍未全部完成                           |
+| A1     | 项目、成员权限、数据授权、历史迁移与真实项目入口                                                                     | 正式生产安全审计不在本阶段完成范围                   |
+| A2     | 背景版本、技术重复确认、fastp 白名单参数、方案与 active ReleaseSet 冻结切片                                          | 上传闭环、对照关系、审核预设及正式 ReleaseSet        |
+| A3     | 三种模式、阶段报告、持久队列、资源等待、受控恢复及真实 W1 恢复                                                       | W2–W6 恢复身份及主机重启实演                         |
+| B0     | 小型版本化知识包、SQLite／FTS5、离线检索与引用校验                                                                   | 类群特异领域资料、专家审核及正式发布                 |
+| B1     | Workflow 1–6 全部公开 stage 的 CapabilityManifest 与 DAG dry-run                                                     | 正式参考 release／许可／完整哈希、真实运行和兼容组合 |
+| B2     | 工程知识 release、RetrievalAdapter、授权引用校验与会话持久化                                                         | 正式领域知识、专家审核及 claim 级领域引用            |
+| B3     | CandidateEvidence v2、W2 四来源追溯、工程 findings、有界只读 API、`not_generated` 业务修订与报告                     | 核准领域规则／知识、正向 Assessment 与专家冻结回归集 |
+| C0     | 统一 provider 契约、MiniMax 适配、受控上下文与失败降级                                                               | 本地推理后端、模型权重身份与未微调本地基线           |
+| C1     | 四类冻结开发案例、MiniMax 工程 smoke、严格 split／group／metric protocol                                             | 专家语义审核、非开发数据、本地模型比较与上线门槛     |
+| A4     | 研判版本、审核事件、修订报告、补算确认与待审核训练导出                                                               | 无；其依赖的 B3／C2 仍未完成                         |
+| A5     | 严格 DeploymentProfile、两套配置、恢复快照、摘要确认的保留清理、准入控制、依赖 BOM／介质 preflight、asset store 路径 | 离线介质、定期恢复、联合升级与独立目标实机验收       |
+| B4     | 离线包／ReleaseSet 校验、原子切换／回滚、可选规划／run 冻结接线                                                      | 正式资产包、默认运行时采用、独立环境与大型介质演练   |
+| C2／C3 | 尚未开始完整交付                                                                                                     | 微调、量化模型包与现场模型验收                       |
 
 ### 1.5 优先 Demo（第 18 轮）
 
@@ -155,6 +155,14 @@
 
 本轮完成 B4 第四项中“新任务冻结新组合、进行中与历史运行保留旧组合”的运行接线切片，也补充 A2／B1 的方案资产身份底座；但当前 profile store 尚无正式知识／规则／参考库／capability／model 包，默认实例未启用该接线，也未验证无引用清理或实际 workflow 使用 package payload。B4、B1、A2 整项与 M1／M3 均不勾选。详见[第三十轮复现记录](m3-30-runtime-release-binding-reproduction.md)。
 
+### 1.16 已验证快照的保留计划与显式清理（第 31 轮）
+
+- [x] **先计划后清理：**`retention-plan` 全量验证同一 DeploymentProfile 下每份快照的 manifest、逐档身份、业务库关系与已登记 run 状态，再按带时区创建时间确定保留／删除集合、容量与规范化 SHA-256；不因创建快照自动删除。
+- [x] **摘要保护与 fail closed：**`prune` 在独占锁内重新生成计划，只接受管理员提交的完全相同摘要。损坏或异 profile 快照、symlink、未知文件、`.partial-*`／`.prune-*` 及目录竞态均拒绝；只把计划内精确目录同盘改名后删除。
+- [x] **当前范围演练：**使用当前业务库、Agent assets 和一个已登记 Cyclone run 建立三份 `/tmp` 快照；保留 2、删除最旧 1，回收 1,231,247 bytes。两份剩余快照再次通过 16 files、1,228,177 payload bytes、2 projects、2 members、1 run 与 10 项关系检查。
+
+本轮完成 A5 第三项中 profile 级保留数量的安全执行机制，但没有项目级不同期限、受控定期排程或独立恢复主机上的服务重建、鉴权、引用关联和旧报告浏览器验收。因此 A5 第三项、A5 整体与 M3 仍不勾选。详见[第三十一轮复现记录](m3-31-backup-retention-reproduction.md)。
+
 M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程碑状态。
 
 ## 2. 当前基线、职责与契约
@@ -180,7 +188,7 @@ M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程�
 | 工程知识 release、SQLite FTS5、受控引用与项目会话展示                                                       | 正式领域语料、专家审核、领域 claim 引用与向量召回                                 |
 | MiniMax-M3 经固定 Claude Agent SDK；本机 TaxonAgent 关闭                                                    | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-截至第三十轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、W1 fastp 实跑与真实中断恢复、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、`not_generated` 研判的业务修订／报告入口、显式 DeploymentProfile 启动配置、一次非覆盖恢复快照演练、更新前准入 drain／resume、离线依赖 BOM／介质 preflight、资产 ReleaseSet 控制面及可选规划／run 冻结接线，以及四任务 strict evaluation protocol，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。恢复 staging、准入演练、preflight、资产接线和独立目标 profile 也不是正式资产发布、安装、断网、联合升级或定期灾备验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
+截至第三十一轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、W1 fastp 实跑与真实中断恢复、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、`not_generated` 研判的业务修订／报告入口、显式 DeploymentProfile 启动配置、一次非覆盖恢复快照和 profile 级保留清理演练、更新前准入 drain／resume、离线依赖 BOM／介质 preflight、资产 ReleaseSet 控制面及可选规划／run 冻结接线，以及四任务 strict evaluation protocol，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。恢复 staging、保留清理、准入演练、preflight、资产接线和独立目标 profile 也不是正式资产发布、安装、断网、联合升级或定期灾备验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 

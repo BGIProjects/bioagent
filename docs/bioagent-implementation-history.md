@@ -1,4 +1,4 @@
-# BioAgent 实施历史：第 1–30 轮
+# BioAgent 实施历史：第 1–31 轮
 
 > 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M3 工程切片。
 > 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2／M3 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
@@ -384,3 +384,14 @@ S0 的公共契约、正常／负向样例、评测用途和数据划分现已�
 - **验证与容量：**根部署回归 32 passed；Agent 规划／runtime／worker／adapter 回归 101 passed、26 subtests passed；Ruff、Prettier 与 diff whitespace 通过。本机仍约 185 GiB 可用、仓库约 2.4 GiB；演练 store 20 KiB、media 16 KiB，无数据库变化。
 
 本轮不勾选 B4 第四项或其他主任务：仍没有正式五类 package、默认实例实际采用、workflow payload 解析、历史引用驱动清理、独立目标或大型资产演练。A2／B1 也只取得共用冻结机制，不代表完整参数／参考库发布。详细命令与回退边界见[第三十轮复现记录](m3-30-runtime-release-binding-reproduction.md)。
+
+## 第 31 轮：已验证快照的保留计划与显式清理（2026-10-04）
+
+本轮补齐第 24 轮恢复快照在现有开发实例可安全完成的保留执行机制；不建立系统定时任务、不修改正式备份根、不停止服务、不写业务数据库，也不改动 Cyclone run。远端只用于把已登记 run 的 state／reports 只读纳入三份 `/tmp` 演练快照。
+
+- **全量验证计划：**保留计划只接受同一 profile、名称安全且完整通过现有内容校验的快照；逐份记录创建时间、manifest SHA-256 和实际目录 bytes，确定性输出 keep／delete、总量、可回收量及计划 SHA-256。未知文件、异 profile、内容篡改、symlink 和未完成目录均 fail closed。
+- **显式摘要提交：**清理不会随备份创建自动发生。管理员把计划摘要传给 `prune` 后，工具以 0600 lock 串行化、在锁内重算 inventory，并只处理摘要内的精确目录；目录先原子改名为 `.prune-*`，再删除。摘要过期不产生删除。
+- **当前实例演练：**三份快照各含 16 个 payload 文件、1,228,177 bytes、2 projects、2 members、1 registered run 与 10 项零孤儿关系检查。retention count 2 的计划总量 3,693,741 bytes，删除最旧一份并回收 1,231,247 bytes；剩余两份再验证一致，实际目录约 2.5 MiB。
+- **验证与容量：**根部署相关回归 35 passed；Ruff、Prettier 和 diff whitespace 通过。本机卷约 460 GiB、已用 249 GiB、可用 185 GiB，仓库约 2.4 GiB；没有把演练快照、临时 profile 或数据库副本写入 Git。
+
+A5 第三项仍不整项勾选：profile 级固定份数不等于按项目配置保留期限，也没有受控定期排程和独立恢复环境的服务、鉴权、引用／运行关联及旧报告查询验收。命令、摘要与失败边界见[第三十一轮复现记录](m3-31-backup-retention-reproduction.md)。

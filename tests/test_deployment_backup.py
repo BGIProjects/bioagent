@@ -9,8 +9,10 @@ import pytest
 from deployment_backup import (
     BackupError,
     _rsync_command,
+    apply_retention,
     create_backup,
     inspect_database,
+    retention_plan,
     stage_restore,
     verify_backup,
 )
@@ -156,3 +158,67 @@ def test_remote_snapshot_command_has_fixed_ssh_and_bounded_includes(tmp_path: Pa
     assert '--include=/.bioagent/state.json' in command
     assert '--include=/reports/***' in command
     assert command[-2].startswith('Cyclone:/data/user/liufangzhou/runs/')
+
+
+def test_retention_requires_exact_plan_before_pruning_verified_snapshots(
+    tmp_path: Path,
+) -> None:
+    profile_path = _profile(tmp_path)
+    profile = json.loads(profile_path.read_text())
+    profile['operations']['backup_retention_count'] = 2
+    profile_path.write_text(json.dumps(profile))
+    backups = tmp_path / 'retention'
+    for name in ('backup-1', 'backup-2', 'backup-3'):
+        create_backup(profile_path, name, output_root=backups)
+
+    plan = retention_plan(profile_path, output_root=backups)
+    assert [item['name'] for item in plan['keep']] == ['backup-3', 'backup-2']
+    assert [item['name'] for item in plan['delete']] == ['backup-1']
+    assert plan['reclaimable_bytes'] > 0
+    with pytest.raises(BackupError, match='inventory changed'):
+        apply_retention(profile_path, '0' * 64, output_root=backups)
+    assert (backups / 'backup-1').is_dir()
+
+    result = apply_retention(profile_path, plan['sha256'], output_root=backups)
+    assert [item['name'] for item in result['deleted']] == ['backup-1']
+    assert result['deleted_bytes'] == plan['reclaimable_bytes']
+    assert result['remaining'] == 2
+    assert not (backups / 'backup-1').exists()
+    assert [item['name'] for item in retention_plan(profile_path, output_root=backups)['keep']] == [
+        'backup-3',
+        'backup-2',
+    ]
+
+
+def test_retention_fails_closed_on_unknown_or_incomplete_inventory(
+    tmp_path: Path,
+) -> None:
+    profile_path = _profile(tmp_path)
+    backups = tmp_path / 'retention'
+    create_backup(profile_path, 'backup-1', output_root=backups)
+    (backups / 'unexpected.txt').write_text('not managed')
+    with pytest.raises(BackupError, match='unexpected entry'):
+        retention_plan(profile_path, output_root=backups)
+    (backups / 'unexpected.txt').unlink()
+    (backups / '.partial-interrupted').mkdir()
+    with pytest.raises(BackupError, match='incomplete operation'):
+        retention_plan(profile_path, output_root=backups)
+
+
+def test_retention_fails_closed_on_invalid_or_foreign_snapshot(
+    tmp_path: Path,
+) -> None:
+    profile_path = _profile(tmp_path)
+    backups = tmp_path / 'retention'
+    backup = create_backup(profile_path, 'backup-1', output_root=backups)
+    (backup / 'assets/release.json').write_text('{"release":"changed"}\n')
+    with pytest.raises(BackupError, match='identity mismatch'):
+        retention_plan(profile_path, output_root=backups)
+
+    backup = tmp_path / 'foreign'
+    create_backup(profile_path, 'backup-1', output_root=backup)
+    profile = json.loads(profile_path.read_text())
+    profile['profile_id'] = 'another-profile'
+    profile_path.write_text(json.dumps(profile))
+    with pytest.raises(BackupError, match='belongs to another profile'):
+        retention_plan(profile_path, output_root=backup)

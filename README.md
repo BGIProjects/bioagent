@@ -169,7 +169,19 @@ python3 deployment_backup.py stage-restore \
   /path/to/backup-media/backup-20261004 /path/to/empty-restore-staging
 ```
 
-工具不会自动删除旧快照；按 profile 中的保留数量核对后，须由管理员另行执行清理。staging 验证通过也不等于独立目标部署或定期恢复演练已经完成。
+工具不会自动删除旧快照。管理员先生成逐份验证的保留计划，核对 `keep`／`delete`、可回收容量与计划 `sha256`，再显式提交完全相同的摘要；期间目录变化、损坏快照、异 profile、未知文件或未完成操作都会拒绝清理：
+
+```bash
+python3 deployment_backup.py retention-plan \
+  deployment/profiles/cyclone-development.json \
+  --output-root /path/to/backup-media
+python3 deployment_backup.py prune \
+  deployment/profiles/cyclone-development.json \
+  --output-root /path/to/backup-media \
+  --plan-sha256 <retention-plan 输出的 sha256>
+```
+
+保留数量仍是整套 profile 级策略，不是项目级期限；需要外部受控排程定期执行。staging 或保留清理验证通过也不等于独立目标部署或定期恢复演练已经完成。
 
 更新或维护前先显式停止新分析准入；这不会停止已在 Cyclone 运行或排队的任务。确认服务、数据库和在途任务状态后再维护，完成检查后恢复准入：
 

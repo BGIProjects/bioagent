@@ -4,15 +4,17 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import json
+import os
 import re
 import shutil
 import sqlite3
 import subprocess
 import sys
 import uuid
-from contextlib import closing
+from contextlib import closing, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -21,6 +23,7 @@ from urllib.parse import quote
 from deployment_profile import ProfileError, load_profile
 
 BACKUP_SCHEMA_VERSION = 1
+RETENTION_SCHEMA_VERSION = 1
 SAFE_NAME = re.compile(r'^[a-z0-9][a-z0-9._-]{0,63}$')
 SAFE_RUN_ID = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$')
 REQUIRED_TABLES = {
@@ -521,6 +524,160 @@ def stage_restore(backup: Path, destination: Path) -> Path:
         raise
 
 
+def _directory_bytes(root: Path) -> int:
+    total = 0
+    for path in root.rglob('*'):
+        if path.is_symlink():
+            raise BackupError('backup retention does not allow symlinks')
+        if path.is_file():
+            total += path.stat().st_size
+        elif not path.is_dir():
+            raise BackupError('backup retention found an unsupported file type')
+    return total
+
+
+def _retention_root(profile: dict[str, Any], output_root: Path | None) -> Path:
+    configured = output_root or Path(profile['operations']['backup_root'])
+    if not configured.is_absolute() or configured == Path('/'):
+        raise BackupError('backup root must be a non-root absolute path')
+    if configured.exists() and (not configured.is_dir() or configured.is_symlink()):
+        raise BackupError('backup root must be a regular directory')
+    return configured.resolve()
+
+
+def _retention_entry(path: Path, profile_id: str) -> dict[str, Any]:
+    if not SAFE_NAME.fullmatch(path.name):
+        raise BackupError(f'backup inventory contains an unsafe name: {path.name}')
+    verify_backup(path)
+    manifest_path = path / 'manifest.json'
+    manifest = _load_json(manifest_path)
+    if manifest.get('profile_id') != profile_id:
+        raise BackupError(f'backup belongs to another profile: {path.name}')
+    created_at = manifest.get('created_at')
+    try:
+        timestamp = datetime.fromisoformat(created_at)
+    except (TypeError, ValueError) as error:
+        raise BackupError(f'backup timestamp is invalid: {path.name}') from error
+    if timestamp.tzinfo is None:
+        raise BackupError(f'backup timestamp lacks timezone: {path.name}')
+    return {
+        'name': path.name,
+        'created_at': created_at,
+        'manifest_sha256': _sha256(manifest_path),
+        'bytes': _directory_bytes(path),
+    }
+
+
+def retention_plan(
+    profile_path: Path,
+    *,
+    output_root: Path | None = None,
+) -> dict[str, Any]:
+    profile = load_profile(profile_path)
+    root = _retention_root(profile, output_root)
+    entries = []
+    if root.exists():
+        for path in root.iterdir():
+            if path.name == '.retention.lock':
+                if path.is_symlink() or not path.is_file():
+                    raise BackupError('backup retention lock is invalid')
+                continue
+            if path.name.startswith(('.partial-', '.prune-')):
+                raise BackupError('backup root contains an incomplete operation')
+            if not path.is_dir() or path.is_symlink():
+                raise BackupError(f'backup root contains an unexpected entry: {path.name}')
+            entries.append(_retention_entry(path, profile['profile_id']))
+    entries.sort(
+        key=lambda item: (
+            datetime.fromisoformat(item['created_at']).timestamp(),
+            item['name'],
+        ),
+        reverse=True,
+    )
+    retention_count = profile['operations']['backup_retention_count']
+    body = {
+        'schema_version': RETENTION_SCHEMA_VERSION,
+        'profile_id': profile['profile_id'],
+        'backup_root': str(root),
+        'retention_count': retention_count,
+        'keep': entries[:retention_count],
+        'delete': entries[retention_count:],
+        'total_bytes': sum(item['bytes'] for item in entries),
+        'reclaimable_bytes': sum(
+            item['bytes'] for item in entries[retention_count:]
+        ),
+    }
+    return {**body, 'sha256': hashlib.sha256(_json_bytes(body)).hexdigest()}
+
+
+@contextmanager
+def _retention_lock(root: Path):
+    root.mkdir(parents=True, exist_ok=True)
+    lock_path = root / '.retention.lock'
+    if lock_path.is_symlink():
+        raise BackupError('backup retention lock must not be a symlink')
+    descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    os.fchmod(descriptor, 0o600)
+    try:
+        with os.fdopen(descriptor, 'a+b') as handle:
+            fcntl.flock(handle, fcntl.LOCK_EX)
+            yield
+    except Exception:
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+        raise
+
+
+def apply_retention(
+    profile_path: Path,
+    expected_sha256: str,
+    *,
+    output_root: Path | None = None,
+) -> dict[str, Any]:
+    if not re.fullmatch(r'[0-9a-f]{64}', expected_sha256):
+        raise BackupError('retention plan SHA-256 is invalid')
+    profile = load_profile(profile_path)
+    root = _retention_root(profile, output_root)
+    with _retention_lock(root):
+        plan = retention_plan(profile_path, output_root=root)
+        if plan['sha256'] != expected_sha256:
+            raise BackupError('retention inventory changed; generate a new plan')
+        prefix = f'.prune-{expected_sha256[:12]}-'
+        targets = [
+            (entry, root / entry['name'], root / f'{prefix}{entry["name"]}')
+            for entry in plan['delete']
+        ]
+        if any(target.exists() or target.is_symlink() for _, _, target in targets):
+            raise BackupError('retention staging path already exists')
+        staged = []
+        try:
+            for entry, source, target in targets:
+                source.rename(target)
+                staged.append((entry, source, target))
+        except OSError:
+            for _entry, source, target in reversed(staged):
+                if target.exists() and not source.exists():
+                    target.rename(source)
+            raise BackupError('retention staging rename failed') from None
+        deleted = []
+        for entry, _source, target in staged:
+            if target.is_symlink() or not target.is_dir():
+                raise BackupError('retention staging path is invalid')
+            shutil.rmtree(target)
+            deleted.append(entry)
+        return {
+            'schema_version': RETENTION_SCHEMA_VERSION,
+            'profile_id': profile['profile_id'],
+            'backup_root': str(root),
+            'plan_sha256': expected_sha256,
+            'deleted': deleted,
+            'deleted_bytes': sum(item['bytes'] for item in deleted),
+            'remaining': len(plan['keep']),
+        }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest='command', required=True)
@@ -533,6 +690,13 @@ def main(argv: list[str] | None = None) -> int:
     restore = subparsers.add_parser('stage-restore')
     restore.add_argument('backup', type=Path)
     restore.add_argument('destination', type=Path)
+    retention = subparsers.add_parser('retention-plan')
+    retention.add_argument('profile', type=Path)
+    retention.add_argument('--output-root', type=Path)
+    prune = subparsers.add_parser('prune')
+    prune.add_argument('profile', type=Path)
+    prune.add_argument('--plan-sha256', required=True)
+    prune.add_argument('--output-root', type=Path)
     args = parser.parse_args(argv)
     try:
         if args.command == 'create':
@@ -541,9 +705,27 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({'path': str(path), **summary}, sort_keys=True))
         elif args.command == 'verify':
             print(json.dumps(verify_backup(args.backup), sort_keys=True))
-        else:
+        elif args.command == 'stage-restore':
             path = stage_restore(args.backup, args.destination)
             print(json.dumps({'path': str(path), **verify_backup(path)}, sort_keys=True))
+        elif args.command == 'retention-plan':
+            print(
+                json.dumps(
+                    retention_plan(args.profile, output_root=args.output_root),
+                    sort_keys=True,
+                )
+            )
+        else:
+            print(
+                json.dumps(
+                    apply_retention(
+                        args.profile,
+                        args.plan_sha256,
+                        output_root=args.output_root,
+                    ),
+                    sort_keys=True,
+                )
+            )
     except (BackupError, ProfileError, OSError, sqlite3.Error) as error:
         print(f'BioAgent backup error: {error}', file=sys.stderr)
         return 2
