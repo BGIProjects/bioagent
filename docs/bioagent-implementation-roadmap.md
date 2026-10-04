@@ -1,8 +1,8 @@
 # BioAgent 三轨并行实施清单
 
-> 版本：1.26；修订日期：2026-10-04；原始源码基线：2026-09-09。
+> 版本：1.27；修订日期：2026-10-04；原始源码基线：2026-09-09。
 > 设计依据：[新版顶层设计](bioagent-top-level-design-new.html)、审核附言及本轮确认；[旧版设计](bioagent-top-level-design.html)供对照。
-> 二十五轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
+> 二十六轮实施范围、证据与限制已移至[实施历史](bioagent-implementation-history.md)；本清单按严格整项标准维护 checkbox，局部切片不视为完整任务或里程碑完成。
 > 2026-09-12 已实施 M0 的 MiniMax 过渡版工程链路，完成项和实际验证见 [M0 实施记录](m0-implementation-record.md)。本地后端、完整离线生成与领域审核仍未完成，不勾选完整 M0 验收。
 
 ## 1. 设计对齐与本轮决定
@@ -63,7 +63,7 @@
 | C0         | 统一 provider 契约、MiniMax 适配、受控上下文与失败降级                                           | 本地推理后端、模型权重身份与未微调本地基线             |
 | C1         | 四类冻结开发案例与 MiniMax 工程 smoke                                                            | 专家语义审核、数据划分、本地模型比较与上线门槛         |
 | A4         | 研判版本、审核事件、修订报告、补算确认与待审核训练导出                                           | 无；其依赖的 B3／C2 仍未完成                           |
-| A5         | 严格 DeploymentProfile、两套配置、恢复快照、原子准入 drain／resume                               | 离线安装、定期保留／恢复、联合升级与独立目标实机验收   |
+| A5         | 严格 DeploymentProfile、两套配置、恢复快照、准入控制、依赖 BOM／介质 preflight                   | 离线介质、定期恢复、联合升级与独立目标实机验收         |
 | B4／C2／C3 | 尚未开始完整交付                                                                                 | 资产升级、微调与现场模型验收                           |
 
 ### 1.5 优先 Demo（第 18 轮）
@@ -114,6 +114,14 @@
 
 本轮只完成 A5 第四项中“更新前停止新准入、业务服务不终止远端计算”的工程切片。尚无 B4／C3 合格包可做联合更新、兼容拒绝或回滚，未停止真实服务或干预 Cyclone scheduler／runner，因此 A5 第四项与 M3 仍不勾选。详见[第二十五轮复现记录](m3-25-admission-drain-reproduction.md)。
 
+### 1.11 离线依赖 BOM 与介质 preflight（第 26 轮）
+
+- [x] **源码依赖身份：**Agent Python 3.11 新增 48 个 direct／transitive exact pins；Backend 复用 `uv.lock` 的 356 个 package／2,358 个 artifact hash，Frontend 复用 npm lock v3 的 1,274 个 package integrity identity。preflight 对三档逐一计算 size／SHA-256，拒绝未 pin、缺 hash、未知字段、symlink 与越界路径。
+- [x] **目标平台介质契约：**七类必需介质明确拆为 source、Agent wheelhouse、Backend uv cache、Frontend npm cache、Pyodide cache、系统 runtime 和计算 runtime；`media-manifest.json` 必须逐组件登记 platform、architecture、相对路径、size 与 SHA-256，缺件、多件、额外档、篡改和 symlink 均 fail closed。
+- [x] **诚实 readiness：**当前只判定 `source_locks.status=ready`；没有在仓库复制现有 1.2 GiB `node_modules`、414 MiB Agent env 或 2.7 GiB Backend env。无介质时列出七个 `MISSING_MEDIA`；即使合成完整介质通过，MiniMax-M3 仍固定 `MODEL_NOT_OFFLINE_CAPABLE`，所以 full offline 永不误报为 ready。
+
+本切片提供 A5 第二项的锁定／包清单与故障定位入口，但没有为明确目标 OS／architecture 构建实际介质、执行初始化／迁移／管理员设置、独立安装或断网运行；MiniMax-M3 也按用户确认继续替代本地模型。因此 A5 第二项与 M3 保持未勾选。详见[第二十六轮复现记录](m3-26-offline-preflight-reproduction.md)。
+
 M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程碑状态。
 
 ## 2. 当前基线、职责与契约
@@ -139,7 +147,7 @@ M0／M1／M2／M3 均未通过共同验收；局部任务完成不提升里程�
 | 工程知识 release、SQLite FTS5、受控引用与项目会话展示                                                       | 正式领域语料、专家审核、领域 claim 引用与向量召回                                 |
 | MiniMax-M3 经固定 Claude Agent SDK；本机 TaxonAgent 关闭                                                    | 可替换 provider、本地模型、微调流水线；当前无项目 Skills 加载或自主 subagent 编排 |
 
-截至第二十五轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、一次 W1 fastp 实跑、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、受控中断恢复诊断、`not_generated` 研判的业务修订／报告入口、显式 DeploymentProfile 启动配置、一次非覆盖恢复快照演练，以及更新前准入 drain／resume，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。恢复 staging、准入演练和独立目标 profile 也不是安装、断网、联合升级或定期灾备验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
+截至第二十六轮已复核相关代码、自动测试、Workflow 1–6 DAG dry-run、一次 W1 fastp 实跑、Workflow 1 全阶段依赖身份、W2 历史候选四来源只读追溯与确定性工程 findings、小型工程引用闭环、隔离持久队列、受控中断恢复诊断、`not_generated` 研判的业务修订／报告入口、显式 DeploymentProfile 启动配置、一次非覆盖恢复快照演练、更新前准入 drain／resume，以及离线依赖 BOM／介质 preflight，并按显式授权执行四类 MiniMax 开发 smoke。W2–W6 仅通过当前 adapter 的 DAG dry-run；W2 另通过历史结果聚合、not-generated Assessment 与远端 fail-closed 接口验证，均不是新增实际运行、参考库发布、正向领域研判或受控恢复验收。恢复 staging、准入演练、preflight 和独立目标 profile 也不是安装、断网、联合升级或定期灾备验收。模型结果仍未经过专家语义审核；未执行 W4–W6 workflow shell 或远端参考库发布检查。任务完成状态分别记录：代码存在、自动测试通过、dry-run 通过、真实恢复验证通过、可私有化交付；对用户开放范围另行记录。
 
 ### 2.2 服务职责与数据所有权
 

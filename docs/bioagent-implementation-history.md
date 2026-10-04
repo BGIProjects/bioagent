@@ -1,4 +1,4 @@
-# BioAgent 实施历史：第 1–25 轮
+# BioAgent 实施历史：第 1–26 轮
 
 > 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M3 工程切片。
 > 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2／M3 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
@@ -324,3 +324,15 @@ A5 第三项仍未完整完成：尚无按项目保留策略的自动／定期�
 - **验证与容量：**根 Profile／backup／admission 共 17 passed；Agent admission／adapter／config／provider 共 40 passed、7 subtests；Backend planner／project 共 25 passed。Ruff、Prettier、shell 语法和 diff whitespace 通过；无前端源码变更，不重复 build。本机约 185 GiB 可用，未新增数据库或大型文件。
 
 A5 第四项仍未完整完成：缺少 B4／C3 实际版本组合、真实在途更新、服务回滚、日志／存储／模型联合观察与独立目标验证。A5 第一项保持完成，第二、第三、第四项仍未整项勾选；M3 不提升。命令与失败行为见[第二十五轮复现记录](m3-25-admission-drain-reproduction.md)。
+
+## 第 26 轮：离线依赖 BOM 与介质 preflight（2026-10-04）
+
+本轮推进 A5 离线安装中不需要目标机器即可严谨完成的依赖身份与介质校验；不下载套件、不复制现有 Conda／Node 环境、不建立大型压缩包、不访问 Cyclone、不调用 MiniMax-M3，也不宣称断网可运行。
+
+- **Agent 锁定：**顶层 `requirements.txt` 六项全部 exact pin，并从已通过测试的 Python 3.11 adapter 环境冻结 48 个 direct／transitive package 到独立 lock。`pip check` 无 broken requirement；lock 仍须在目标平台以 wheel hash manifest 约束，不能把开发机 site-packages 当交付介质。
+- **既有锁复用：**Backend 使用当前 `uv.lock`，扫描得到 356 packages、2,358 artifact hashes；Frontend npm lock v3 为 1,274 packages／1,274 integrity identities。三份 lock 合计 1,275,476 bytes，preflight 动态记录各自 SHA-256，不维护会自我过期的手写 digest 清单。
+- **七类介质契约：**source、Agent wheelhouse、Backend uv cache、Frontend npm cache、Pyodide cache、系统 runtime、计算 runtime 必须各有且只有一个受管档案；media manifest 固定 target platform／architecture／timestamp／相对路径／size／SHA-256。测试覆盖完整介质、篡改、额外档、symlink、未 pin requirement 与未知字段。
+- **可读阻断：**当前 `source` 检查 ready；`check` 返回退出码 3、七个 `MISSING_MEDIA:*` 和 `MODEL_NOT_OFFLINE_CAPABLE`。合成七类介质可使 deterministic install ready，但 MiniMax-M3 是外部显式授权服务，full offline 仍为 false。
+- **容量与验证：**根部署测试合计 22 passed，新增 preflight Ruff 通过；Agent `pip check`、config／provider／adapter／admission 共 40 passed、7 subtests。没有前端源码或 Backend 变更，不重复 build／Backend tests。本机仍约 185 GiB 可用，仓库约 2.4 GiB；现有 `node_modules`／Agent env／Backend env 分别约 1.2 GiB／414 MiB／2.7 GiB，均未复制。
+
+A5 第二项仍未完整完成：缺少指定目标平台的实际离线介质、系统安装器、初始化／迁移／管理员设置、独立机器健康与故障演练；MiniMax-M3 也不满足全离线模型条件。A5 第一项保持完成，其他整项与 M3 不提升。命令和 blocker 输出见[第二十六轮复现记录](m3-26-offline-preflight-reproduction.md)。

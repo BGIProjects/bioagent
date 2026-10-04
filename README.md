@@ -62,7 +62,7 @@ git submodule status --recursive
 
 ```bash
 conda create -n adapter python=3.11 -y
-conda run -n adapter python -m pip install -r agent/requirements.txt
+conda run -n adapter python -m pip install -r agent/requirements-lock.txt
 
 conda create -n open-webui python=3.11 -y
 conda run -n open-webui python -m pip install -U \
@@ -184,6 +184,18 @@ BIOAGENT_DEPLOYMENT_PROFILE=deployment/profiles/cyclone-development.json \
 ```
 
 drain 期间新的 run start／resume 会收到可重试的 `ADMISSION_DRAINING`；方案编译、状态和报告读取保持可用。准入状态损坏时 fail closed，须由管理员修复或执行受控 resume，不能删除文件来绕过。
+
+离线交付前先核对源码锁和目标平台介质。`source` 应成功；当前仓库没有提交数 GiB 的 wheel／uv／npm／Pyodide／系统与计算介质，而且 MiniMax-M3 不是离线模型，因此 `check` 预期返回退出码 3 和明确 blocker，不能当作已完成离线安装：
+
+```bash
+python3 deployment_preflight.py source
+python3 deployment_preflight.py check
+# 介质由目标平台构建并附带 media-manifest.json 后：
+python3 deployment_preflight.py verify-media /path/to/offline-media
+python3 deployment_preflight.py check --media-root /path/to/offline-media
+```
+
+media manifest 必须逐项覆盖 `deployment/offline-install-manifest.json` 的七类介质，并登记目标 platform／architecture、大小和 SHA-256；未知档案、缺件、篡改或 symlink 均拒绝。即使七类确定性运行介质齐全，MiniMax-M3 仍会保留 `MODEL_NOT_OFFLINE_CAPABLE`，不冒充全离线模型交付。
 
 默认模板已经对应当前 Cyclone。若更换远端账号或存储位置，至少同步修改下列变量：
 
