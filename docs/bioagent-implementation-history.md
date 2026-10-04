@@ -250,3 +250,16 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 - **不变性与验证：**两个 run 的 Workflow 目录指纹、原始 FASTQ stat 和三类优先 Demo artifact SHA-256 均与重建前一致。20 个 PDF 页面全部转 PNG 检查，无逐字直排、裁切、重叠、黑块或不可读表格。Agent 230 passed、2 skipped，Backend 51 passed，Vitest 65 passed；变更文件 Ruff 通过，Agent 全目录 Ruff 仍只有 8 个与本轮无关的既有诊断。
 
 新版完整产物、SHA-256、容量、复现命令和验证边界见[第十九轮复现记录](m1-19-standard-delivery-layout-alignment-reproduction.md)。本轮完成标准交付报告版型与已有 W1–W6 提取能力的对齐；没有新增 W7，也不把缺失 workflow、单样本资料或未核准领域资产解释成已完成的生物学验收。
+
+## 第 20 轮：不可变研判版本与追加式审核事件（2026-10-04）
+
+本轮先实现不依赖领域专家、模型训练或远端重算的 M2/A4 审核基础；不做资料上传、条件接入、正向生物学研判、报告正文入库、补算提议或训练。本轮新增数据库 migration，因此将容量上限与不可变语义放在 API 边界，而不是保存大型报告或证据文件。
+
+- **不可变研判版本：**新增 `AnalysisAssessmentRevision`，绑定项目、分析、已登记 run、报告类型／版本／SHA-256、短摘要与不超过 64 KiB 的结构化内容；使用 `base_revision` 乐观并发控制，新版本显式记录 `supersedes_id`，旧版本不覆盖。
+- **追加式审核事件：**新增 `AnalysisReviewEvent`，保存审核人、认可／需补证／需修订、理由、证据定位和时间。事件只追加；同一版本可保留多个意见，新研判版本不会删除旧事件。
+- **权限和来源边界：**只有 `can_review` 成员可建立研判版本或提交审核；普通项目成员只读，管理员身份本身不获得内容权限。研判只能绑定同一分析已登记的 run，跨项目、跨分析与未知 run 均拒绝。
+- **三状态分离：**项目列表分别显示计算、研判与审核状态；计算完成不再暗示研判或审核完成。最新研判版本没有审核事件时显示待审核，旧版本的意见仍可从历史 API 读取。
+- **数据库体积：**不保存 HTML、PDF、FASTQ、完整日志或大型 evidence blob；报告继续留在 run root，仅保存身份和小型结构化修订。单一研判内容硬限制 64 KiB、证据定位最多 50 项。
+- **验证：**Backend 相关测试按文件隔离运行共 180 passed（其中本轮定向 14 passed）；Vitest 全量 66 passed；变更 Python Ruff、前端／文档 Prettier 及唯一一次完整前端 build（1 分 9 秒）通过。容量与复现命令见[第二十轮复现记录](m2-20-assessment-review-foundation-reproduction.md)。
+
+**A4 尚未完成。** 前两项任务已完整实现并在 roadmap 勾选；仍缺纯解释修订后的报告发布、关联候选的补算提议及显式确认、审核训练资料导出。B3 仍只有确定性工程 findings 和 `not_generated` Assessment，本轮没有把审核基础误记为正向领域研判。
