@@ -158,6 +158,19 @@ BIOAGENT_DEPLOYMENT_PROFILE=deployment/profiles/cyclone-development.json \
 
 `deployment/profiles/independent-target.json` 是使用不同地址和目录的目标部署配置样例，须按现场实际路径准备依赖后再使用。两个 profile 都只记录 `MINIMAX_API_KEY` 这个凭证变量名；密钥值仍只由启动环境提供。profile 未显式启用时，现有 `.env` 启动方式不变。
 
+建立运维恢复快照时，使用 profile 中的业务库、资产、run root、容量与保留数量；输出目录可指向已挂载的备份介质。工具使用 SQLite 在线备份，只从 Cyclone 读取已登记 run 的 `state.json` 与 `reports/`，并逐档校验 SHA-256。恢复命令只建立新的 staging 目录，不覆盖正式路径：
+
+```bash
+python3 deployment_backup.py create \
+  deployment/profiles/cyclone-development.json backup-20261004 \
+  --output-root /path/to/backup-media
+python3 deployment_backup.py verify /path/to/backup-media/backup-20261004
+python3 deployment_backup.py stage-restore \
+  /path/to/backup-media/backup-20261004 /path/to/empty-restore-staging
+```
+
+工具不会自动删除旧快照；按 profile 中的保留数量核对后，须由管理员另行执行清理。staging 验证通过也不等于独立目标部署或定期恢复演练已经完成。
+
 默认模板已经对应当前 Cyclone。若更换远端账号或存储位置，至少同步修改下列变量：
 
 - SSH 与 worker：`BIOAGENT_SSH_HOST`、`BIOAGENT_REMOTE_PYTHON`、`BIOAGENT_REMOTE_CONTROL_PYTHON`、`BIOAGENT_REMOTE_TMUX`、`BIOAGENT_REMOTE_WORKER_ROOT`

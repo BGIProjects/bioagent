@@ -1,4 +1,4 @@
-# BioAgent 实施历史：第 1–23 轮
+# BioAgent 实施历史：第 1–24 轮
 
 > 覆盖日期：2026-09-12 至 2026-10-04；从实施路线图 v1.17 拆分，持续记录 M0–M3 工程切片。
 > 本文保存各轮范围、证据、限制与复现记录，不表示 M0／M1／M2／M3 已通过整体验收。当前任务状态与后续计划见[实施路线图](bioagent-implementation-roadmap.md)。
@@ -300,3 +300,15 @@ A1 按本轮最小工程范围交付；A2／A3、B1／B2／C1 的原缺口及 M0
 - **验证与容量：**两份 profile 均通过 CLI 校验和安全导出；根测试 9 passed，Agent 配置／provider／adapter 定向 37 passed（另 7 subtests），四个 shell 入口通过 `bash -n`，Ruff、Prettier 与 diff whitespace 通过。本轮无前端源码变更，不重复 build。本机仍约 184 GiB 可用、仓库约 2.4 GiB，没有新增数据库或大型文件。
 
 本轮只勾选 A5 第一项。离线安装包、完整依赖锁定、独立环境鉴权／任务运行、断网验证、备份恢复、在途更新和 B4／C3 联合回滚仍缺，因此 A5 与 M3 不提升。命令、字段映射和回退方式见[第二十三轮复现记录](m3-23-deployment-profile-reproduction.md)。
+
+## 第 24 轮：内容校验恢复快照（2026-10-04）
+
+本轮实现 A5 备份／恢复中可在现有开发实例安全验证的基础，不做资料上传、条件接入、服务停止、数据库迁移、模型调用、workflow 计算或正式路径覆盖。来源侧只读；恢复始终进入新 staging 目录，不能由工具直接替换业务库、Agent assets 或 Cyclone run。
+
+- **Profile v2：**新增业务 SQLite 路径、备份根、保留数量与备份容量上限；Backend 显式启用 profile 时也由它取得 `DATABASE_URL`。两套 profile 的默认上限均为 20 GiB、保留数量为 7，但工具刻意不自动删除旧快照。
+- **原子快照：**SQLite 使用 online backup 得到单文件一致性副本；Agent 小型版本化 assets 拒绝 symlink 后复制；从业务库冻结的注册 run 集合经固定 `ClearAllForwardings=yes` rsync 只读取 `.bioagent/state.json` 与 `reports/`。目标先写同根 `.partial-*`，完整验证成功才改名。
+- **完整性与关系：**manifest 精确列出每个普通文件的 size／SHA-256，并以 sidecar 保护 manifest。校验覆盖 SQLite quick check、核心表、十类孤儿关系、持久化工程引用结构、注册 run state JSON、意外文件和总额度；stage restore 只接受不存在的目标并再次执行相同校验。
+- **真实只读演练：**按规定先做 Cyclone SSH 连通检查。当前开发库、92 KiB Agent assets 及一个已登记 run 的状态／报告形成 16 files、1,228,177 bytes 的快照；恢复到另一 `/tmp` staging 后摘要、2 projects、2 members、1 run 和 10 项关系检查完全一致。当前库的 assessment／citation 计数为 0，不伪造正向数据。
+- **自动验证与容量：**根 Profile／backup 测试共 13 passed；fixture 另覆盖一个合法工程引用、内容篡改、孤儿成员、无效引用、已存在恢复目录及安全 rsync 参数。Ruff、Prettier、shell 语法与 diff whitespace 通过。本机仍约 185 GiB 可用，仓库约 2.4 GiB；演练快照和恢复目录各约 1.2 MiB，未写入仓库或远端。
+
+A5 第三项仍未完整完成：尚无按项目保留策略的自动／定期执行，也没有在独立恢复机器重建服务、核对登录鉴权与浏览器查询历史报告。第一项保持完成；第二、第四项及 B4／C3 不提升。命令、失败边界与 staging 清单见[第二十四轮复现记录](m3-24-recovery-snapshot-reproduction.md)。

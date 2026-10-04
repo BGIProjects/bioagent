@@ -11,10 +11,11 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import urlparse
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 WORKFLOW_KEYS = tuple(f'workflow{index}' for index in range(1, 7))
 COMPONENTS = {'services', 'agent', 'backend', 'all'}
 SAFE_ENV_KEY = re.compile(r'^[A-Z][A-Z0-9_]*$')
+SAFE_SSH_HOST = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,254}$')
 
 
 class ProfileError(ValueError):
@@ -87,6 +88,7 @@ def load_profile(path: Path) -> dict[str, Any]:
             'storage',
             'compute',
             'model',
+            'operations',
             'resources',
         },
     )
@@ -145,7 +147,9 @@ def load_profile(path: Path) -> dict[str, Any]:
     )
     if compute['transport'] != 'ssh':
         raise ProfileError('only the validated ssh compute transport is supported')
-    _text(compute['ssh_host'], 'compute.ssh_host')
+    ssh_host = _text(compute['ssh_host'], 'compute.ssh_host')
+    if not SAFE_SSH_HOST.fullmatch(ssh_host):
+        raise ProfileError('compute.ssh_host must be a safe SSH host alias')
     for key in (
         'python',
         'control_python',
@@ -198,14 +202,30 @@ def load_profile(path: Path) -> dict[str, Any]:
         raise ProfileError('model.credential_env must name MINIMAX_API_KEY without storing its value')
     _text(model['taxonagent_mcp_url'], 'model.taxonagent_mcp_url', allow_empty=True)
 
+    operations = _mapping(
+        profile['operations'],
+        'operations',
+        {'business_db', 'backup_root', 'backup_retention_count'},
+    )
+    operations['business_db'] = _absolute(
+        operations['business_db'], 'operations.business_db'
+    )
+    operations['backup_root'] = _absolute(
+        operations['backup_root'], 'operations.backup_root'
+    )
+    _positive_int(
+        operations['backup_retention_count'], 'operations.backup_retention_count'
+    )
+
     resources = _mapping(
         profile['resources'],
         'resources',
-        {'queue_aging_hours', 'snakemake_cores', 'log_warn_mib'},
+        {'queue_aging_hours', 'snakemake_cores', 'log_warn_mib', 'backup_max_gib'},
     )
     _positive_number(resources['queue_aging_hours'], 'resources.queue_aging_hours')
     _positive_int(resources['snakemake_cores'], 'resources.snakemake_cores')
     _positive_int(resources['log_warn_mib'], 'resources.log_warn_mib')
+    _positive_int(resources['backup_max_gib'], 'resources.backup_max_gib')
     profile['profile_sha256'] = hashlib.sha256(raw).hexdigest()
     return profile
 
@@ -215,6 +235,7 @@ def environment(profile: dict[str, Any], component: str) -> dict[str, str]:
         raise ProfileError(f'component must be one of: {", ".join(sorted(COMPONENTS))}')
     services = profile['services']
     storage = profile['storage']
+    operations = profile['operations']
     values = {
         'BIOAGENT_PROFILE_ID': profile['profile_id'],
         'BIOAGENT_APPLICATION_ROOT': storage['application_root'],
@@ -233,6 +254,10 @@ def environment(profile: dict[str, Any], component: str) -> dict[str, str]:
         'VITE_WEBUI_BASE_URL': services['backend']['url'],
         'OPENAI_API_BASE_URLS': f'{services["agent"]["url"]}/v1',
         'BIOAGENT_LOG_WARN_MIB': str(profile['resources']['log_warn_mib']),
+        'BIOAGENT_BACKUP_MAX_GIB': str(profile['resources']['backup_max_gib']),
+        'BIOAGENT_BACKUP_ROOT': operations['backup_root'],
+        'BIOAGENT_BACKUP_RETENTION_COUNT': str(operations['backup_retention_count']),
+        'BIOAGENT_BUSINESS_DB': operations['business_db'],
         'BIOAGENT_SSH_HOST': profile['compute']['ssh_host'],
     }
     if component in {'agent', 'all'}:
@@ -271,6 +296,7 @@ def environment(profile: dict[str, Any], component: str) -> dict[str, str]:
                 'BIOAGENT_REMOTE_DATA': 'true',
                 'BIOAGENT_DATA_ROOT': profile['storage']['data_root'],
                 'BIOAGENT_RUN_ROOT': profile['storage']['run_root'],
+                'DATABASE_URL': f'sqlite:///{operations["business_db"]}',
             }
         )
     return dict(sorted(values.items()))

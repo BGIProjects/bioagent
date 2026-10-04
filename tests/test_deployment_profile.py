@@ -33,6 +33,7 @@ def test_profiles_are_valid_secret_free_and_complete(name: str) -> None:
     assert 'MINIMAX_API_KEY' not in agent
     assert backend['BIOAGENT_REMOTE_DATA'] == 'true'
     assert backend['OPENAI_API_BASE_URLS'].endswith('/v1')
+    assert backend['DATABASE_URL'].endswith(profile['operations']['business_db'])
 
 
 def test_profile_rejects_unknown_fields_paths_ports_and_embedded_credentials(
@@ -53,6 +54,15 @@ def test_profile_rejects_unknown_fields_paths_ports_and_embedded_credentials(
     credential = copy.deepcopy(base)
     credential['model']['credential_env'] = 'actual-secret-value'
     mutations.append(credential)
+    relative_database = copy.deepcopy(base)
+    relative_database['operations']['business_db'] = 'relative/webui.db'
+    mutations.append(relative_database)
+    zero_backup_limit = copy.deepcopy(base)
+    zero_backup_limit['resources']['backup_max_gib'] = 0
+    mutations.append(zero_backup_limit)
+    unsafe_host = copy.deepcopy(base)
+    unsafe_host['compute']['ssh_host'] = 'Cyclone;other-command'
+    mutations.append(unsafe_host)
 
     for index, value in enumerate(mutations):
         path = tmp_path / f'invalid-{index}.json'

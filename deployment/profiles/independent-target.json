@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "profile_id": "independent-target",
   "deployment_kind": "independent_target",
   "services": {
@@ -55,9 +55,15 @@
     "credential_env": "MINIMAX_API_KEY",
     "taxonagent_mcp_url": ""
   },
+  "operations": {
+    "business_db": "/srv/bioagent/business/webui.db",
+    "backup_root": "/srv/bioagent/backups",
+    "backup_retention_count": 7
+  },
   "resources": {
     "queue_aging_hours": 24,
     "snakemake_cores": 8,
-    "log_warn_mib": 100
+    "log_warn_mib": 100,
+    "backup_max_gib": 20
   }
 }

@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "profile_id": "cyclone-development",
   "deployment_kind": "development",
   "services": {
@@ -58,9 +58,15 @@
     "credential_env": "MINIMAX_API_KEY",
     "taxonagent_mcp_url": ""
   },
+  "operations": {
+    "business_db": "/Users/lfz/Documents/Project/bioagent/open-webui/backend/data/webui.db",
+    "backup_root": "/Users/lfz/BioAgentBackups",
+    "backup_retention_count": 7
+  },
   "resources": {
     "queue_aging_hours": 24,
     "snakemake_cores": 8,
-    "log_warn_mib": 100
+    "log_warn_mib": 100,
+    "backup_max_gib": 20
   }
 }
