@@ -8,7 +8,7 @@ This deployment belongs to the `zhangyue` account on `172.24.195.66`.
 - Web interface and backend: `http://172.24.195.66:8083`.
 - Agent: `http://127.0.0.1:8003/v1` on the server.
 - Qwen: `http://172.24.195.65:8000/v1`, model `qwen3.8-27b`.
-- The WebUI exposes both the local BioAgent and the DGX Qwen provider.
+- The WebUI exposes DGX Qwen as its default model. The Agent API remains local.
 
 ## Provision
 
