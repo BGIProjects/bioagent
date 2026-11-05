@@ -4,3 +4,4 @@
 analysis-*/
 *.log
 *.dryrun.log
+domain_assets/

@@ -8,7 +8,11 @@ This deployment belongs to the `zhangyue` account on `172.24.195.66`.
 - Web interface and backend: `http://172.24.195.66:8083`.
 - Agent: `http://127.0.0.1:8003/v1` on the server.
 - Qwen: `http://172.24.195.65:8000/v1`, model `qwen3.8-27b`.
-- The WebUI exposes DGX Qwen as its default model. The Agent API remains local.
+- Analysis pages select `BioAgent` at `http://127.0.0.1:8003/v1`.
+- BioAgent uses DGX Qwen through `http://172.24.195.65:8000/v1/messages`;
+  the existing Agent SDK loads skills and handles tool execution.
+- Agent reasoning effort defaults to `xhigh` (`BIOAGENT_EFFORT`).
+- The direct Qwen connection remains available for ordinary chat.
 
 ## Provision
 
@@ -55,6 +59,6 @@ Do not commit these files or print their contents. Logs are in `logs/`.
 The WebUI has its own database and login. Existing accounts and conversations
 from other deployments are not imported. Offline mode prevents automatic
 downloads of embedding and transcription models. These optional models,
-workflow execution require separate verification. Qwen connectivity was
-verified from the XvirMind server with the OpenAI-compatible models and chat
-completion endpoints.
+full workflow execution requires separate verification. Qwen was verified
+through the Anthropic-compatible messages endpoint, an isolated SDK Read-tool
+roundtrip at `xhigh`, and a streamed WebUI -> BioAgent -> Qwen Read-tool roundtrip.

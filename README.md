@@ -385,3 +385,33 @@ Only the browser-facing frontend and backend ports are forwarded. The BioAgent r
 The backend starts at http://localhost:8080. API docs are available at http://localhost:8080/docs.
 
 Refresh the frontend at http://localhost:5173 and you should see the full application.
+
+## 3. 张月账号当前开发与测试部署
+
+本节补充当前 `/home/zhangyue/projects/bioagent` 的部署方式。前文的旧版 `/data/bioagent` 部署说明继续保留，二者属于不同部署，不要混用路径、端口或 systemd 服务。
+
+### 3.1 当前工作目录
+
+- 项目根目录：`/home/zhangyue/projects/bioagent`
+- Agent：`/home/zhangyue/projects/bioagent/agent`
+- Open WebUI：`/home/zhangyue/projects/bioagent/open-webui`
+- Agent 服务：`127.0.0.1:8003`
+- WebUI：`http://172.24.195.66:8083`
+- 分析运行数据：`/home/zhangyue/.local/share/bioagent-yuez/runs`
+
+### 3.2 当前请求链路
+
+```text
+浏览器 → WebUI:8083 → BioAgent:8003 → DGX Qwen:172.24.195.65:8000/v1
+```
+
+分析页面使用 BioAgent；BioAgent 通过 DGX 上的 `qwen3.8-27b` 进行语义规划。当前部署由 `deployment/yuez/` 中的脚本管理。
+
+### 3.3 当前服务检查
+
+```bash
+systemctl --user status bioagent-yuez-agent.service bioagent-yuez-webui.service
+curl http://127.0.0.1:8003/health
+curl http://127.0.0.1:8083/health
+curl http://172.24.195.65:8000/v1/models
+```

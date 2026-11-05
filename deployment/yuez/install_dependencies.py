@@ -72,7 +72,7 @@ jobs = [
         "agent",
         [[UV, "pip", "install", "--python", agent_python,
           "claude-agent-sdk==0.2.97", "fastapi==0.136.3", "uvicorn[standard]==0.41.0",
-          "pydantic==2.13.4", "httpx==0.28.1"]],
+          "pydantic==2.13.4", "httpx==0.28.1", "PyYAML>=6.0,<7"]],
         PROJECT / "agent",
     ),
     (

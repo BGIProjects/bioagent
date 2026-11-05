@@ -41,6 +41,10 @@ def install():
     agent_environment = environment_file("agent", {
         **shared,
         "CLAUDE_RUNTIME_CONFIG_DIR": STATE / "claude-runtime",
+        "BIOAGENT_MODEL": "qwen3.8-27b",
+        "BIOAGENT_EFFORT": "xhigh",
+        "ANTHROPIC_BASE_URL": "http://172.24.195.65:8000",
+        "ANTHROPIC_AUTH_TOKEN": "not-required",
     })
     webui_environment = environment_file("webui", {
         **shared,
@@ -51,8 +55,9 @@ def install():
         "ENABLE_SIGNUP": "true",
         "DEFAULT_USER_ROLE": "user",
         "WEBUI_URL": "http://172.24.195.66:8083",
-        "OPENAI_API_BASE_URLS": "http://172.24.195.65:8000/v1",
-        "OPENAI_API_KEYS": "not-required",
+        "OPENAI_API_BASE_URLS": "http://127.0.0.1:8003/v1;http://172.24.195.65:8000/v1",
+        "OPENAI_API_KEYS": "not-required;not-required",
+        "DEFAULT_MODELS": "BioAgent",
         "ENABLE_FORWARD_USER_INFO_HEADERS": "true",
         "ENABLE_OLLAMA_API": "false",
         "OFFLINE_MODE": "true",
