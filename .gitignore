@@ -1,0 +1,6 @@
+# XvirMind runtime metadata and generated logs
+.bioagent/
+.conversation-uploads/
+analysis-*/
+*.log
+*.dryrun.log
