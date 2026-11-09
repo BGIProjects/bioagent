@@ -1,4 +1,15 @@
-# BioAgent 本机开发说明
+# BioAgent 开发部署说明
+
+## 5090 部署差异
+
+- 仓库：`5090:/home/bgi-chao/projects/bioagent`；使用 Bash 和 `~/bin/tmux`，无须 zsh。
+- 每次 SSH 操作及新建服务 tmux session 后执行 `proxy_off`，不修改共享 `.bashrc`。
+- `MINIMAX_API_KEY` 来自交互式 `.bashrc`；使用 `[[ ... ]]` 检查，避免该主机同名 `test` 函数。
+- Backend 为 `8081`；浏览器转发 `15173 → 5173`、`18081 → 8081`，`.env` 中分别配置实际端口与浏览器地址。
+- TaxonAgent 使用 `taxonagent` Conda 环境、`~/projects/taxonagent/mcp/taxonagent_mcp.py`；`BIOAGENT_MANAGE_TAXONAGENT=1` 纳入统一启停，MCP URL 为 `http://127.0.0.1:8765/mcp`。
+- 仅接入 `taxonagent_query` 分类知识问答；不将缺少来源版本和定位的返回值标成已审核。
+- Workflow 2 当前目录为 `workflow2_virusid_2026viral`。
+- 下列 macOS 路径和 8080 默认端口只适用于本机；Cyclone、原始数据及验证约束适用于两种部署。
 
 ## 路径与服务
 
@@ -22,7 +33,7 @@
 
 ## 当前本机状态
 
-- TaxonAgent/5090 不可用，本机设置 `TAXONAGENT_MCP_URL=''`。
+- macOS 默认不启用 TaxonAgent，设置 `TAXONAGENT_MCP_URL=''`；5090 按上节显式启用。
 - 启用 Workflow 1–6，在 `Cyclone` 完成计算。
 - `BIOAGENT_SSH_HOST=Cyclone`，SSH 调用固定使用 `ClearAllForwardings=yes`。
 - `BIOAGENT_DATA_ROOT=/data/user/liufangzhou/datasets`，额外 symlink allowlist 为 `/data/user/guojindan/Projects/flu_tgs_ngs/rawdata/NGS`。

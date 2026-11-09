@@ -1,23 +1,45 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+set -a
+for config_file in "$ROOT/agent/.env" "$ROOT/open-webui/.env"; do
+    if [[ -f "$config_file" ]]; then
+        # shellcheck disable=SC1090
+        source "$config_file"
+    fi
+done
+set +a
 # shellcheck disable=SC1091
 source "$ROOT/deployment/load-profile.sh"
 bioagent_load_profile services
 PROFILE_PYTHON=${BIOAGENT_PROFILE_PYTHON:-python3}
-CONDA=${BIOAGENT_CONDA_BIN:-}
+CONDA=${BIOAGENT_CONDA_BIN:-${CONDA_EXE:-}}
 NODE_BIN=${BIOAGENT_NODE_BIN:-}
 TMUX=${TMUX_BIN:-tmux}
 AGENT_HOST=${AGENT_HOST:-127.0.0.1}
 AGENT_PORT=${AGENT_PORT:-8001}
 AGENT_URL=${AGENT_URL:-http://127.0.0.1:${AGENT_PORT}}
 BACKEND_HOST=${BACKEND_HOST:-127.0.0.1}
-BACKEND_PORT=${BACKEND_PORT:-${PORT:-8080}}
+BACKEND_PORT=${PORT:-${BACKEND_PORT:-8080}}
+PORT=$BACKEND_PORT
 BACKEND_URL=${BACKEND_URL:-http://127.0.0.1:${BACKEND_PORT}}
 FRONTEND_HOST=${FRONTEND_HOST:-127.0.0.1}
 FRONTEND_PORT=${FRONTEND_PORT:-5173}
 FRONTEND_URL=${FRONTEND_URL:-http://127.0.0.1:${FRONTEND_PORT}}
+AGENT_HEALTH_URL=http://127.0.0.1:${AGENT_PORT}/v1/models
+BACKEND_HEALTH_URL=http://127.0.0.1:${BACKEND_PORT}/health
+FRONTEND_HEALTH_URL=http://127.0.0.1:${FRONTEND_PORT}/
+SERVICE_SHELL=${BIOAGENT_SERVICE_SHELL:-${SHELL:-/bin/bash}}
+case "$SERVICE_SHELL" in
+    */bash) SERVICE_SHELL_FLAGS=-ic ;;
+    */zsh) SERVICE_SHELL_FLAGS=-lic ;;
+    *) echo "服务 shell 仅支持 Bash 或 zsh：$SERVICE_SHELL" >&2; exit 2 ;;
+esac
+MANAGE_TAXONAGENT=${BIOAGENT_MANAGE_TAXONAGENT:-0}
+TAXONAGENT_URL=${TAXONAGENT_MCP_URL:-}
+TAXONAGENT_SESSION=bioagent-taxonagent
+TAXONAGENT_LOG=/tmp/bioagent-taxonagent.log
 
 AGENT_SESSION=bioagent-agent
 BACKEND_SESSION=bioagent-backend
@@ -49,8 +71,10 @@ admission_command() {
 discover_executable() {
     local name=$1 discovered
     discovered=$(command -v "$name" 2>/dev/null || true)
-    if [[ ! -x "$discovered" && -x /bin/zsh ]]; then
-        discovered=$(/bin/zsh -lic "whence -p '$name'" 2>/dev/null | tail -n 1)
+    if [[ ! -x "$discovered" && -x "$SERVICE_SHELL" ]]; then
+        local lookup="type -P '$name'"
+        [[ "$SERVICE_SHELL" == */zsh ]] && lookup="whence -p '$name'"
+        discovered=$("$SERVICE_SHELL" "$SERVICE_SHELL_FLAGS" "$lookup" 2>/dev/null | tail -n 1)
     fi
     [[ -x "$discovered" ]] || return 1
     printf '%s\n' "$discovered"
@@ -112,7 +136,14 @@ port_pid() {
 }
 
 health_url() {
-    curl -fsS --max-time 2 "$1" >/dev/null 2>&1
+    if [[ "$MANAGE_TAXONAGENT" == 1 && "$1" == "$TAXONAGENT_URL" ]]; then
+        [[ -x "$CONDA" ]] || CONDA=$(discover_executable conda || true)
+        PYTHONPATH="$ROOT/agent" "$CONDA" run --no-capture-output -n adapter python -c \
+            'import asyncio,sys; from taxonagent_adapter import TaxonAgentClient; sys.exit(asyncio.run(TaxonAgentClient(sys.argv[1]).status())["status"] != "ready")' \
+            "$1" >/dev/null 2>&1
+    else
+        curl --noproxy '*' -fsS --max-time 2 "$1" >/dev/null 2>&1
+    fi
 }
 
 file_size_bytes() {
@@ -195,21 +226,45 @@ start_service() {
         echo "$name session 已存在。"
     else
         : >"$log"
-        "$TMUX" new-session -d -s "$session" "$command >>$(printf '%q' "$log") 2>&1"
+        local key
+        local -a environment=()
+        # A pre-existing shared tmux server may carry stale deployment variables.
+        # Credentials are read inside the interactive service shell, never argv.
+        for key in BIOAGENT_DEPLOYMENT_PROFILE BIOAGENT_PROFILE_PYTHON \
+            AGENT_HOST AGENT_PORT BACKEND_HOST PORT FRONTEND_HOST FRONTEND_PORT \
+            FRONTEND_URL VITE_WEBUI_PORT VITE_WEBUI_BASE_URL; do
+            environment+=(-e "$key=${!key-}")
+        done
+        "$TMUX" new-session -d -s "$session" "${environment[@]}" "$command >>$(printf '%q' "$log") 2>&1"
     fi
     wait_health "$name" "$url" "$session"
+}
+
+service_command() {
+    local directory=$1 command=$2 initialized
+    initialized="if command -v proxy_off >/dev/null 2>&1; then proxy_off >/dev/null 2>&1; fi; builtin cd $(printf '%q' "$directory") && $command"
+    printf 'exec %q %s %q' "$SERVICE_SHELL" "$SERVICE_SHELL_FLAGS" "$initialized"
 }
 
 start_all() {
     resolve_tmux
     resolve_runtime_tools
-    local agent_cmd backend_cmd frontend_cmd
-    agent_cmd="cd $(printf '%q' "$ROOT/agent") && exec /bin/zsh -lic 'exec $(printf '%q' "$CONDA") run --no-capture-output -n adapter ./start.sh'"
-    backend_cmd="cd $(printf '%q' "$ROOT/open-webui/backend") && exec $(printf '%q' "$CONDA") run --no-capture-output -n open-webui ./dev.sh"
-    frontend_cmd="cd $(printf '%q' "$ROOT/open-webui") && export PATH=$(printf '%q' "$NODE_BIN"):\$PATH && exec npm run dev -- --host $(printf '%q' "$FRONTEND_HOST") --port $(printf '%q' "$FRONTEND_PORT") --force"
-    start_service Agent "$AGENT_SESSION" "$AGENT_PORT" "$agent_cmd" "$AGENT_LOG" "${AGENT_URL}/v1/models"
-    start_service Backend "$BACKEND_SESSION" "$BACKEND_PORT" "$backend_cmd" "$BACKEND_LOG" "${BACKEND_URL}/health"
-    start_service Frontend "$FRONTEND_SESSION" "$FRONTEND_PORT" "$frontend_cmd" "$FRONTEND_LOG" "${FRONTEND_URL}/"
+    local agent_cmd backend_cmd frontend_cmd taxonagent_cmd
+    if [[ "$MANAGE_TAXONAGENT" == 1 ]]; then
+        if [[ "$TAXONAGENT_URL" != http://127.0.0.1:8765/mcp && "$TAXONAGENT_URL" != http://localhost:8765/mcp ]]; then
+            echo "管理本机 TaxonAgent 需要将 TAXONAGENT_MCP_URL 设为 http://127.0.0.1:8765/mcp。" >&2
+            return 1
+        fi
+        taxonagent_cmd=$(service_command "$HOME/projects/taxonagent" \
+            "[[ -n \${MINIMAX_API_KEY:-} ]] || { echo 'MINIMAX_API_KEY 未配置'; exit 1; }; exec env LLM_BACKEND=minimax MINIMAX_MODEL=MiniMax-M3 $(printf '%q' "$CONDA") run --no-capture-output -n taxonagent python $(printf '%q' "$HOME/projects/taxonagent/mcp/taxonagent_mcp.py")")
+        start_service TaxonAgent "$TAXONAGENT_SESSION" 8765 "$taxonagent_cmd" "$TAXONAGENT_LOG" "$TAXONAGENT_URL"
+    fi
+    agent_cmd=$(service_command "$ROOT/agent" "exec $(printf '%q' "$CONDA") run --no-capture-output -n adapter ./start.sh")
+    backend_cmd=$(service_command "$ROOT/open-webui/backend" "exec $(printf '%q' "$CONDA") run --no-capture-output -n open-webui ./dev.sh")
+    frontend_cmd=$(service_command "$ROOT/open-webui" "export PATH=$(printf '%q' "$NODE_BIN"):\$PATH; exec npm run dev:fast -- --host $(printf '%q' "$FRONTEND_HOST") --port $(printf '%q' "$FRONTEND_PORT") --strictPort --force")
+    start_service Agent "$AGENT_SESSION" "$AGENT_PORT" "$agent_cmd" "$AGENT_LOG" "$AGENT_HEALTH_URL"
+    start_service Backend "$BACKEND_SESSION" "$BACKEND_PORT" "$backend_cmd" "$BACKEND_LOG" "$BACKEND_HEALTH_URL"
+    start_service Frontend "$FRONTEND_SESSION" "$FRONTEND_PORT" "$frontend_cmd" "$FRONTEND_LOG" "$FRONTEND_HEALTH_URL"
 }
 
 stop_service() {
@@ -245,9 +300,12 @@ status_line() {
 
 status_all() {
     local tmp_available
-    status_line Agent "$AGENT_SESSION" "${AGENT_URL}/v1/models" "$AGENT_LOG"
-    status_line Backend "$BACKEND_SESSION" "${BACKEND_URL}/health" "$BACKEND_LOG"
-    status_line Frontend "$FRONTEND_SESSION" "${FRONTEND_URL}/" "$FRONTEND_LOG"
+    if [[ "$MANAGE_TAXONAGENT" == 1 ]]; then
+        status_line TaxonAgent "$TAXONAGENT_SESSION" "$TAXONAGENT_URL" "$TAXONAGENT_LOG"
+    fi
+    status_line Agent "$AGENT_SESSION" "$AGENT_HEALTH_URL" "$AGENT_LOG"
+    status_line Backend "$BACKEND_SESSION" "$BACKEND_HEALTH_URL" "$BACKEND_LOG"
+    status_line Frontend "$FRONTEND_SESSION" "$FRONTEND_HEALTH_URL" "$FRONTEND_LOG"
     tmp_available=$(df -Pk /tmp | awk 'NR == 2 {printf "%.0f", $4 * 1024}')
     echo "/tmp     可用=$(format_bytes "${tmp_available:-0}")（日志仅在创建新 session 或 restart 时截断）"
     if [[ -n "${BIOAGENT_ADMISSION_STATE_FILE:-}" ]]; then
@@ -270,6 +328,9 @@ main() {
             stop_service Frontend "$FRONTEND_SESSION"
             stop_service Backend "$BACKEND_SESSION"
             stop_service Agent "$AGENT_SESSION"
+            if [[ "$MANAGE_TAXONAGENT" == 1 ]]; then
+                stop_service TaxonAgent "$TAXONAGENT_SESSION"
+            fi
             ;;
         restart)
             "$0" stop

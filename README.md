@@ -1,6 +1,6 @@
-# BioAgent 本机开发
+# BioAgent 开发部署
 
-本仓库在 macOS 运行 Open WebUI Frontend、Backend 与 BioAgent；固定的 Workflow 1–6、FASTQ 预检、资源采集和分析产物全部留在 Cyclone。浏览器只需访问 <http://127.0.0.1:5173>，不需要 SSH port forwarding。
+本仓库支持 macOS 本机开发及 Linux 5090 部署；固定的 Workflow 1–6、FASTQ 预检、资源采集和分析产物全部留在 Cyclone。macOS 可直接访问 <http://127.0.0.1:5173>；5090 的浏览器访问使用下文的 SSH 转发，后端端口为 8081。
 
 ## 架构
 
@@ -26,7 +26,7 @@ Workflow 1 的源配置仍可保留原工具路径；worker 复制到 run root �
 
 ## Developer Guide
 
-本节是从一台新 macOS 开发机恢复本项目的唯一部署指南。默认继续使用现有 Cyclone 账号、数据与 Workflow；完成一次依赖安装后，日常操作请直接跳到[启停服务](#启停服务)。
+本节是 macOS 和 5090 的部署指南。默认继续使用现有 Cyclone 账号、数据与 Workflow；完成一次依赖安装后，日常操作请直接跳到[启停服务](#启停服务)。
 
 ### 1. 准备本机工具
 
@@ -43,7 +43,7 @@ conda --version
 
 `xcode-select --install` 已执行过时会提示工具已经存在。Miniconda 与 nvm 请按各自安装程序初始化 zsh 后再继续。
 
-Linux 可用发行版的包管理器安装同名工具；另外需安装 zsh，并确认 login zsh 能读取密钥。`lsof`、tmux 和浏览器命令的包名或路径可能不同，打开页面可使用 `xdg-open` 而非 macOS 的 `open`。本脚本以 macOS 为主要目标，不承诺覆盖所有 Linux 发行版差异。
+Linux 可用发行版的包管理器安装同名工具，支持 Bash，无需安装 zsh。5090 的 tmux 位于 `~/bin/tmux`，已加入 PATH。每次进入 5090 后执行 `proxy_off`；启动脚本也会在每个服务的交互式 shell 中执行该函数（如果存在），不需要修改共享的 `.bashrc`。脚本使用 Bash 内建 `[[ ... ]]` 检查，避免与用户定义的同名 `test` 函数冲突。
 
 ### 2. 克隆仓库与 submodule
 
@@ -68,7 +68,7 @@ conda create -n open-webui python=3.11 -y
 conda run -n open-webui python -m pip install -U \
   -r open-webui/backend/requirements.txt
 
-npm --prefix open-webui install
+ONNXRUNTIME_NODE_INSTALL_CUDA=skip CYPRESS_INSTALL_BINARY=0 npm --prefix open-webui install
 ```
 
 启动脚本不会自动 install 或 build。前端完整 build 只用于最终验收，见[验证](#验证)。
@@ -99,7 +99,7 @@ ssh -o ClearAllForwardings=yes Cyclone '
   test -d /data/user/liufangzhou/datasets
   test -d /data/user/liufangzhou/runs
   for workflow in \
-    workflow1_upstream workflow2_virusid_2026db workflow3_hostid \
+    workflow1_upstream workflow2_virusid_2026viral workflow3_hostid \
     workflow4_kraken_bracken workflow5_virus_quantification \
     workflow6_virus_annotation; do
       test -d "/data/user/guojindan/Projects/Workflows/$workflow"
@@ -239,7 +239,34 @@ python3 asset_release_manager.py --store /srv/bioagent/asset-release-store bindi
 - Workflow：`BIOAGENT_WORKFLOW1_SOURCE` 至 `BIOAGENT_WORKFLOW6_SOURCE`
 - Open WebUI：`BIOAGENT_DATA_ROOT`、`BIOAGENT_RUN_ROOT` 与需要时的 `PORT`
 
-`TAXONAGENT_MCP_URL` 默认留空；不要恢复旧的 5090 步骤。Backend 启动时由 tracked `open-webui/backend/dev.sh` 自动创建 `open-webui/backend/.webui_secret_key`，不需要也不应在 `.env` 手工设置 WebUI secret。
+`TAXONAGENT_MCP_URL` 默认留空。5090 可启用现有 TaxonAgent：在 `agent/.env` 中设置下列值，确认 `taxonagent` Conda 环境和 `~/projects/taxonagent/mcp/taxonagent_mcp.py` 已就绪。
+
+```dotenv
+TAXONAGENT_MCP_URL=http://127.0.0.1:8765/mcp
+BIOAGENT_MANAGE_TAXONAGENT=1
+```
+
+统一启动脚本会使用 `LLM_BACKEND=minimax MINIMAX_MODEL=MiniMax-M3` 启动 TaxonAgent，并继承 shell 中的密钥。手动诊断时可在独立终端执行；不要与已管理的 session 重复启动：
+
+```bash
+proxy_off
+conda activate taxonagent
+LLM_BACKEND=minimax MINIMAX_MODEL=MiniMax-M3 \
+  python ~/projects/taxonagent/mcp/taxonagent_mcp.py
+```
+
+当前接口为只读 `taxonagent_query(question)`，用于 `/analysis` 分类知识问答；不接入序列分类。只连接外部 TaxonAgent 时保留 `BIOAGENT_MANAGE_TAXONAGENT=0`，脚本不会启停外部服务。
+
+5090 的 `open-webui/.env` 使用以下配置。服务监听端口和本机浏览器转发地址分别设置，健康检查始终访问 5090 的实际监听端口：
+
+```dotenv
+PORT=8081
+FRONTEND_URL=http://127.0.0.1:15173
+VITE_WEBUI_BASE_URL=http://127.0.0.1:18081
+AIOHTTP_CLIENT_TIMEOUT=600
+```
+
+Backend 启动时由 tracked `open-webui/backend/dev.sh` 自动创建或复用 `open-webui/backend/.webui_secret_key`，不需要也不应在 `.env` 手工设置 WebUI secret。
 
 ### 7. 可选启用 MiniMax
 
@@ -247,27 +274,38 @@ python3 asset_release_manager.py --store /srv/bioagent/asset-release-store bindi
 
 Agent requirements 固定 `claude-agent-sdk==0.2.103`（内嵌 Claude Code 2.1.179）。provider 使用中国大陆 `https://api.minimax.cn/anthropic` 端点，并在 SDK 子进程内将默认 Claude 模型映射为 `MiniMax-M3[1m]`；对外模型名称仍为 `MiniMax-M3`。
 
-只在本机 `~/.zshrc` 中加入密钥，不要写入仓库、`.env`、命令输出或日志：
+只在交互式 shell 配置（macOS 的 `~/.zshrc` 或 5090 的 `~/.bashrc`）中加入密钥，不要写入仓库、`.env`、命令输出或日志：
 
 ```bash
 export MINIMAX_API_KEY='<your key>'
 ```
 
-重新打开终端，或执行 `source ~/.zshrc`。仅验证变量存在：
+重新打开对应终端。仅验证变量存在，5090 使用 Bash 版本：
 
 ```bash
-/bin/zsh -lic 'test -n "$MINIMAX_API_KEY" && echo "MINIMAX_API_KEY is set"'
+/bin/zsh -lic '[[ -n "$MINIMAX_API_KEY" ]] && echo "MINIMAX_API_KEY is set"'
+/bin/bash -ic '[[ -n "$MINIMAX_API_KEY" ]] && echo "MINIMAX_API_KEY is set"'
 ```
 
 ### 8. 启动服务
 
-`dev-services.sh` 会自动从当前 PATH 或 login zsh 查找 Conda 与 Node，并依 Agent → Backend → Frontend 启动：
+`dev-services.sh` 从当前 PATH 或交互式 Bash/zsh 查找 Conda 与 Node，并依可选 TaxonAgent → Agent → Backend → Frontend 启动。也可用 `BIOAGENT_SERVICE_SHELL=/bin/bash` 显式指定服务 shell：
 
 ```bash
 ./dev-services.sh start
 ./dev-services.sh status
 open http://127.0.0.1:5173
 ```
+
+5090 部署在自己的电脑另外打开一个终端并保持转发命令运行，然后访问 <http://127.0.0.1:15173/analysis>：
+
+```bash
+ssh -N -o ExitOnForwardFailure=yes \
+  -L 15173:127.0.0.1:5173 \
+  -L 18081:127.0.0.1:8081 5090
+```
+
+Agent 与 TaxonAgent 无需浏览器端口转发。若本机转发端口被占用，请同时调整 `.env` 中的浏览器地址、CORS Origin 与转发命令。
 
 若工具不在 shell PATH，可显式覆盖；`BIOAGENT_NODE_BIN` 可传 node 可执行文件，也可传同时包含 `node`/`npm` 的目录：
 
@@ -278,7 +316,7 @@ TMUX_BIN=/path/to/tmux \
   ./dev-services.sh start
 ```
 
-启动入口只使用 tracked `agent/start.sh` 与 `open-webui/backend/dev.sh`；Backend 直接运行轻量 uvicorn，不调用 `start.sh`。Frontend 创建新 session 时会强制重建 Vite 依赖缓存，因此首次启动或 `restart` 可能稍慢；重复执行 `start` 不会创建重复 session，也不会重建正在运行的 Frontend。
+启动入口只使用 tracked `agent/start.sh` 与 `open-webui/backend/dev.sh`；Backend 直接运行轻量 uvicorn，不调用 `start.sh`。Frontend 使用 `npm run dev:fast`，创建新 session 时强制重建 Vite 依赖缓存；重复执行 `start` 不会创建重复 session。首次准备浏览器 Python 功能或构建时，`scripts/prepare-pyodide.js` 会核对本地 Pyodide runtime 与所有依赖包的 SHA256，完整缓存可直接复用；缺包或版本不符时仍需下载。5090 已准备匹配的本地缓存，日常启动无需再次访问 CDN。
 
 若浏览器在 Frontend 重启后显示 `500: Internal Error`，并且前端日志提示 `node_modules/.vite/deps` 中的 chunk 不存在，请先按 `Command+Shift+R` 强制刷新。若仍未恢复，清除 `127.0.0.1:5173` 的站点数据后重新登录；这类错误来自已打开页面保留的旧 Vite 模块地址，不表示 Backend 或 Agent 健康检查失败。
 
@@ -287,7 +325,8 @@ TMUX_BIN=/path/to/tmux \
 ```bash
 curl -fsS http://127.0.0.1:8001/v1/models
 curl -fsS http://127.0.0.1:8001/v1/analysis/health
-curl -fsS http://127.0.0.1:8080/health
+# 5090 使用 8081；macOS 默认使用 8080
+curl -fsS http://127.0.0.1:8081/health
 curl -fsS http://127.0.0.1:5173/ >/dev/null
 ssh -o ClearAllForwardings=yes -o ConnectTimeout=5 Cyclone true
 ./dev-services.sh status
@@ -306,7 +345,7 @@ ssh -o ClearAllForwardings=yes -o ConnectTimeout=5 Cyclone true
 ./dev-services.sh restart
 ```
 
-`start` 依次启动 Agent、Backend、Frontend 并等待 health；`stop` 逆序终止且只操作本机的三个命名 session。停止本机服务不会终止 Cyclone 上的分析。
+`start` 依次启动已启用的 TaxonAgent、Agent、Backend、Frontend 并等待 health；`stop` 逆序终止，只操作自己管理的命名 session。停止这些服务不会终止 Cyclone 上的分析。对非目标进程占用的端口，脚本会拒绝启动而不终止进程。
 
 | 服务     | 本机 tmux           | 地址             | 日志                         |
 | -------- | ------------------- | ---------------- | ---------------------------- |
@@ -314,9 +353,11 @@ ssh -o ClearAllForwardings=yes -o ConnectTimeout=5 Cyclone true
 | Backend  | `bioagent-backend`  | `127.0.0.1:8080` | `/tmp/bioagent-backend.log`  |
 | Frontend | `bioagent-frontend` | `127.0.0.1:5173` | `/tmp/bioagent-frontend.log` |
 
+5090 Backend 使用 `127.0.0.1:8081`；可选 TaxonAgent session 为 `bioagent-taxonagent`，客户端地址为 `http://127.0.0.1:8765/mcp`，日志为 `/tmp/bioagent-taxonagent.log`。
+
 日志在同一个 tmux session 内持续追加，仅在创建新 session（包括 `restart`）时截断，不自动 rotation。`status` 会显示每个日志的大小和 `/tmp` 可用空间；单个日志达到 100 MiB 时只告警、不自动删除，因此极长的单次运行仍存在填满磁盘的理论风险。
 
-Agent 由 login zsh 启动并继承 `~/.zshrc` 中的 `MINIMAX_API_KEY`；脚本只检查变量是否存在，不输出值。TaxonAgent 当前关闭。Backend 使用 tracked 轻量入口 `backend/dev.sh`，首次启动通过 `openssl rand` 创建 `backend/.webui_secret_key`，之后复用；密钥文件权限受 `umask 077` 保护且被 Git 忽略。
+每个服务使用交互式 Bash 或 login zsh 启动，并在 shell 初始化后执行可用的 `proxy_off`。Agent 和 TaxonAgent 继承 shell 中的 `MINIMAX_API_KEY`，不把密钥放入命令参数或日志。脚本显式传递当前端口和 profile，避免既有 tmux server 的旧环境影响新 session。Backend 使用 tracked 轻量入口 `backend/dev.sh`，首次启动通过 `openssl rand` 创建 `backend/.webui_secret_key`，之后复用；密钥文件权限受 `umask 077` 保护且被 Git 忽略。
 
 本机私有配置只有 `agent/.env`、`open-webui/.env` 与自动生成的 `open-webui/backend/.webui_secret_key`，均不提交 Git。
 
@@ -371,7 +412,7 @@ Workflow 仅在 run root 创建 run-local 文件、link 或 copy，不修改原�
 
 任务区会显示队列位置、冻结的项目／任务优先级、等待阶段及可读资源原因；继续使用现有轮询，没有新增队列管理页或取消操作。合格的 `interrupted` 任务提供受控人工恢复，详见 [M1 第十二轮记录](docs/m1-12-interrupted-run-recovery-reproduction.md)与[第十三轮记录](docs/m1-13-workflow1-identity-b3-contract-reproduction.md)；队列复现与限制见 [M1 第十一轮记录](docs/m1-11-persistent-queue-reproduction.md)。
 
-`/analysis` 可对已发布的工程能力、artifact 与 fastp 白名单参数显示受控引用卡片；每条回答最多保存 4 个短摘录，随项目会话隔离并可在历史对话重开。该入口只使用 capability catalog 派生的工程契约，不开放待审核分类学资料，也不代表生物学审核；无需新增配置或数据库迁移。复现与限制见 [M1 第十轮记录](docs/m1-10-engineering-citations-reproduction.md)。
+`/analysis` 可对已发布的工程能力、artifact 与 fastp 白名单参数显示受控引用卡片；每条回答最多保存 4 个短摘录，随项目会话隔离并可在历史对话重开。工程契约不代表生物学审核；历史复现见 [M1 第十轮记录](docs/m1-10-engineering-citations-reproduction.md)。启用 TaxonAgent 后，分类知识使用独立来源卡片，保留服务未提供的版本和定位信息为空，并标记尚未经人工审核；不使用隔离回放中的待审核语料，也不新增数据库迁移。可用 `What is the classification standard of Coronaviridae?` 在 `/analysis` 验证。
 
 Workflow 2 的只读工程研判入口为 `agent/candidate_assessment.py --state <run>/.bioagent/state.json --summary`。它只输出 evidence／finding／assessment 聚合计数；在领域资产与正式 reference release 未核准时不会生成研判草稿、写回 run 或新增数据库记录。实现边界与 Cyclone 实证见 [M1 第十七轮记录](docs/m1-17-release-contract-m2-assessment-reproduction.md)。
 

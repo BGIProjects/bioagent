@@ -43,7 +43,7 @@
     "weasyprint": "/home/liufangzhou/.pixi/bin/bioagent-weasyprint",
     "workflow_sources": {
       "workflow1": "/data/user/guojindan/Projects/Workflows/workflow1_upstream",
-      "workflow2": "/data/user/guojindan/Projects/Workflows/workflow2_virusid_2026db",
+      "workflow2": "/data/user/guojindan/Projects/Workflows/workflow2_virusid_2026viral",
       "workflow3": "/data/user/guojindan/Projects/Workflows/workflow3_hostid",
       "workflow4": "/data/user/guojindan/Projects/Workflows/workflow4_kraken_bracken",
       "workflow5": "/data/user/guojindan/Projects/Workflows/workflow5_virus_quantification",
