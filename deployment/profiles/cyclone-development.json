@@ -1,0 +1,74 @@
+{
+  "schema_version": 4,
+  "profile_id": "cyclone-development",
+  "deployment_kind": "development",
+  "services": {
+    "frontend": {
+      "bind_host": "127.0.0.1",
+      "port": 5173,
+      "url": "http://127.0.0.1:5173"
+    },
+    "backend": {
+      "bind_host": "127.0.0.1",
+      "port": 8080,
+      "url": "http://127.0.0.1:8080"
+    },
+    "agent": {
+      "bind_host": "127.0.0.1",
+      "port": 8001,
+      "url": "http://127.0.0.1:8001"
+    }
+  },
+  "storage": {
+    "application_root": "/Users/lfz/Documents/Project/bioagent",
+    "asset_root": "/Users/lfz/Documents/Project/bioagent/agent/assets",
+    "data_root": "/data/user/liufangzhou/datasets",
+    "allowed_data_roots": [
+      "/data/user/liufangzhou/datasets",
+      "/data/user/guojindan/Projects/flu_tgs_ngs/rawdata/NGS"
+    ],
+    "run_root": "/data/user/liufangzhou/runs",
+    "worker_root": "/data/user/liufangzhou/.bioagent/worker"
+  },
+  "compute": {
+    "transport": "ssh",
+    "ssh_host": "Cyclone",
+    "python": "/home/liufangzhou/.pixi/envs/snakemake/bin/python",
+    "control_python": "/home/liufangzhou/.pixi/envs/snakemake/bin/python",
+    "tmux": "/data/user/liufangzhou/bin/tmux",
+    "snakemake": "/home/liufangzhou/.pixi/bin/snakemake",
+    "seqkit": "/home/liufangzhou/.pixi/bin/seqkit",
+    "report_python": "/home/liufangzhou/.pixi/bin/bioagent-report-python",
+    "rscript": "/home/liufangzhou/.pixi/bin/bioagent-rscript",
+    "weasyprint": "/home/liufangzhou/.pixi/bin/bioagent-weasyprint",
+    "workflow_sources": {
+      "workflow1": "/data/user/guojindan/Projects/Workflows/workflow1_upstream",
+      "workflow2": "/data/user/guojindan/Projects/Workflows/workflow2_virusid_2026db",
+      "workflow3": "/data/user/guojindan/Projects/Workflows/workflow3_hostid",
+      "workflow4": "/data/user/guojindan/Projects/Workflows/workflow4_kraken_bracken",
+      "workflow5": "/data/user/guojindan/Projects/Workflows/workflow5_virus_quantification",
+      "workflow6": "/data/user/guojindan/Projects/Workflows/workflow6_virus_annotation"
+    }
+  },
+  "model": {
+    "policy": "minimax_explicit",
+    "model_id": "MiniMax-M3",
+    "provider_model": "MiniMax-M3[1m]",
+    "base_url": "https://api.minimax.cn:443/anthropic",
+    "credential_env": "MINIMAX_API_KEY",
+    "taxonagent_mcp_url": ""
+  },
+  "operations": {
+    "business_db": "/Users/lfz/Documents/Project/bioagent/open-webui/backend/data/webui.db",
+    "backup_root": "/Users/lfz/BioAgentBackups",
+    "backup_retention_count": 7,
+    "admission_state_file": "/Users/lfz/Documents/Project/bioagent/.local/admission.json",
+    "asset_release_store": "/Users/lfz/Documents/Project/bioagent/.local/asset-release-store"
+  },
+  "resources": {
+    "queue_aging_hours": 24,
+    "snakemake_cores": 8,
+    "log_warn_mib": 100,
+    "backup_max_gib": 20
+  }
+}

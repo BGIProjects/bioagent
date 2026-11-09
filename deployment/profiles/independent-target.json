@@ -1,0 +1,71 @@
+{
+  "schema_version": 4,
+  "profile_id": "independent-target",
+  "deployment_kind": "independent_target",
+  "services": {
+    "frontend": {
+      "bind_host": "0.0.0.0",
+      "port": 15173,
+      "url": "http://bioagent.local:15173"
+    },
+    "backend": {
+      "bind_host": "127.0.0.1",
+      "port": 18080,
+      "url": "http://127.0.0.1:18080"
+    },
+    "agent": {
+      "bind_host": "127.0.0.1",
+      "port": 18001,
+      "url": "http://127.0.0.1:18001"
+    }
+  },
+  "storage": {
+    "application_root": "/opt/bioagent",
+    "asset_root": "/opt/bioagent/agent/assets",
+    "data_root": "/srv/bioagent/datasets",
+    "allowed_data_roots": ["/srv/bioagent/datasets", "/srv/bioagent/imports"],
+    "run_root": "/srv/bioagent/runs",
+    "worker_root": "/srv/bioagent/worker"
+  },
+  "compute": {
+    "transport": "ssh",
+    "ssh_host": "bioagent-compute",
+    "python": "/opt/bioagent/runtime/snakemake/bin/python",
+    "control_python": "/opt/bioagent/runtime/snakemake/bin/python",
+    "tmux": "/usr/bin/tmux",
+    "snakemake": "/opt/bioagent/bin/snakemake",
+    "seqkit": "/opt/bioagent/bin/seqkit",
+    "report_python": "/opt/bioagent/bin/bioagent-report-python",
+    "rscript": "/opt/bioagent/bin/bioagent-rscript",
+    "weasyprint": "/opt/bioagent/bin/bioagent-weasyprint",
+    "workflow_sources": {
+      "workflow1": "/opt/bioagent/workflows/workflow1",
+      "workflow2": "/opt/bioagent/workflows/workflow2",
+      "workflow3": "/opt/bioagent/workflows/workflow3",
+      "workflow4": "/opt/bioagent/workflows/workflow4",
+      "workflow5": "/opt/bioagent/workflows/workflow5",
+      "workflow6": "/opt/bioagent/workflows/workflow6"
+    }
+  },
+  "model": {
+    "policy": "minimax_explicit",
+    "model_id": "MiniMax-M3",
+    "provider_model": "MiniMax-M3[1m]",
+    "base_url": "https://api.minimax.cn:443/anthropic",
+    "credential_env": "MINIMAX_API_KEY",
+    "taxonagent_mcp_url": ""
+  },
+  "operations": {
+    "business_db": "/srv/bioagent/business/webui.db",
+    "backup_root": "/srv/bioagent/backups",
+    "backup_retention_count": 7,
+    "admission_state_file": "/srv/bioagent/control/admission.json",
+    "asset_release_store": "/srv/bioagent/asset-release-store"
+  },
+  "resources": {
+    "queue_aging_hours": 24,
+    "snakemake_cores": 8,
+    "log_warn_mib": 100,
+    "backup_max_gib": 20
+  }
+}

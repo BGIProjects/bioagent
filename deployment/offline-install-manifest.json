@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "python_version": "3.11",
+  "node_version": "22.23.2",
+  "source_locks": [
+    {
+      "component": "agent-python",
+      "path": "agent/requirements-lock.txt",
+      "format": "pip-freeze"
+    },
+    {
+      "component": "backend-python",
+      "path": "open-webui/uv.lock",
+      "format": "uv-lock"
+    },
+    {
+      "component": "frontend-node",
+      "path": "open-webui/package-lock.json",
+      "format": "npm-lock-v3"
+    }
+  ],
+  "required_media": [
+    {
+      "component": "source",
+      "purpose": "Git source and submodule snapshot"
+    },
+    {
+      "component": "agent-wheelhouse",
+      "purpose": "Python 3.11 target-platform wheels for the Agent lock"
+    },
+    {
+      "component": "backend-uv-cache",
+      "purpose": "Python 3.11 target-platform packages for uv.lock"
+    },
+    {
+      "component": "frontend-npm-cache",
+      "purpose": "npm package-lock v3 package tarballs"
+    },
+    {
+      "component": "frontend-pyodide-cache",
+      "purpose": "prepare-pyodide.js runtime artifacts"
+    },
+    {
+      "component": "system-runtime",
+      "purpose": "Node 22, Python 3.11, uv, OpenSSH, rsync, tmux and service tools"
+    },
+    {
+      "component": "compute-runtime",
+      "purpose": "Snakemake, SeqKit, report runtime and Workflow 1-6 dependencies"
+    }
+  ],
+  "model": {
+    "provider": "MiniMax-M3",
+    "mode": "external",
+    "offline_capable": false,
+    "blocker": "MiniMax-M3 requires an explicitly authorized network service; no local model package is delivered."
+  }
+}

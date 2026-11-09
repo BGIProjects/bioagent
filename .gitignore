@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+
+/docs/*.html
+/docs/design.md
+/reports/*
+/.local/
